@@ -1453,11 +1453,12 @@
   // Each deck is its own dataset — katakana is not evidence about hiragana, and
   // the base gojūon is not evidence about dakuten. The picker chooses which one
   // is on screen; nothing is ever summed across them.
+  // Returns whether it actually rendered, which decides if the deck still needs
+  // naming below.
   function renderDeckPicker(decks) {
     el.deckPick.innerHTML = "";
-    // A picker with one option is not a choice — and the deck it would offer is
-    // already the heading directly below it, so nothing is lost by dropping it.
-    if (decks.length < 2) return;
+    // A picker with one option is not a choice.
+    if (decks.length < 2) return false;
     decks.forEach((r) => {
       const b = add(el.deckPick, "button", "deckpick__btn");
       b.type = "button";
@@ -1470,6 +1471,7 @@
         renderStats(lastReport);
       });
     });
+    return true;
   }
 
   function setStatsScript(id) {
@@ -1504,10 +1506,18 @@
     if (!statsDeck || !decks.some((d) => d.deck_id === statsDeck)) {
       statsDeck = decks[0].deck_id;
     }
-    renderDeckPicker(decks);
+    const picker = renderDeckPicker(decks);
 
     const report = decks.find((d) => d.deck_id === statsDeck);
-    add(el.statsBody, "h2", "sdeck", deckLabel(report.deck_id));
+    // The deck is named once, wherever that lands. The selected chip names it
+    // when there is a picker, and the seal stamp already says Hiragana or
+    // Katakana — so a heading is only worth the space when neither did, which
+    // is a lone non-base deck: the picker is gone and "Hiragana" would be the
+    // wrong name for Dakuten hiragana or a flick drill.
+    const deckName = deckLabel(report.deck_id);
+    if (!picker && deckName.toLowerCase() !== statsScript) {
+      add(el.statsBody, "h2", "sdeck", deckName);
+    }
 
     if (!report.analysable) {
       const b = statBlock("Not analysed");
