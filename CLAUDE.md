@@ -152,6 +152,15 @@ the easiest mode set a score the hardest could never beat. Every `store.best`/`s
   split; `store.migrate()` moves them to whichever mode was last selected, that being the only
   evidence of which mode earned them. It runs once at boot and is idempotent.
 
+**The menu is deliberately shallow.** Only three things sit on it: the script switch, the deck
+list (which scrolls, and holds the flick drills), and one Options button. Answer mode, font, chart,
+progress and account all live in `#moreSheet` behind that button — stacked on the menu they took
+about a third of a phone screen away from the deck list, which is the thing you came to use. The
+mode is the one setting that is otherwise invisible from the menu, so `setMode()` writes it into
+the Options button's label. Anything opened from Options goes through `fromMore()`, which closes
+it first: a second `showModal()` over an open dialog stacks them, and the backdrop-close handler
+would then only ever see the top one.
+
 **Layout model.** `body` → `.stage` (width-capped, and height-bounded from `dvh`) → one `.screen`
 flex column per screen. `.play` is four bands: `.playbar` (fixed) / `.revealbar` (fixed, touch
 only) / `.playmain` (flexes, holds the writing square) / `.dock` (fixed, holds feedback + answer
@@ -208,8 +217,21 @@ through its setter or the screen keeps showing the previous device's settings.
 The rules exist because raw timings from a practice app are mostly noise. All four are enforced in
 `analytics.py`, and each one costs data on purpose:
 
-- **Under `MIN_RUNS` (3) complete runs on a device, nothing is reported at all** — not even a
-  partial figure, because a number on that screen reads as a finding.
+- **Every deck is its own dataset.** `report()` takes a `deck_id` and nothing is ever summed
+  across decks: katakana is not evidence about hiragana, and base gojūon is not evidence about
+  dakuten or yōon. The three-run gate is **per deck**, so three hiragana runs do not unlock the
+  dakuten report. There is no all-decks total, deliberately — it would be an average over
+  unrelated material.
+- **Flick drills are listed but never analysed** (`analysable: false` for any `flick-` deck).
+  Their prompt is a direction or a key, not a character, and any character with that vowel or on
+  that key is accepted — so there is nothing to call slow and a wrong answer can't be traced to a
+  character. `enough` and `ready` are separate fields for exactly this: a flick deck can have
+  plenty of runs and still never report.
+- **Under `MIN_RUNS` (3) complete runs of that deck, no *aggregate* is reported** — no median, no
+  "weakest character", not even a partial one, because a number on that screen reads as a finding.
+  **`recent_runs` is exempt and always returned.** The distinction is fact versus inference: what
+  you scored on a run you finished is a fact and is yours from the first one; calling a character
+  weak or a time typical is an inference, and that is what needs several runs behind it.
 - **Over `MAX_CARD_MS` (10 s) on one card, the time is discarded.** That is someone looking away,
   not someone thinking. The answer still counts towards *accuracy* — they did eventually answer —
   so the two are tracked separately by the `timed` column.
