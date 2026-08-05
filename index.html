@@ -69,6 +69,12 @@
       <button type="button" class="iconbtn" id="restartBtn" aria-label="Restart this deck" title="Restart deck">↻</button>
     </header>
 
+    <!-- On touch the on-screen keyboard covers the dock, so reveal lives up here
+         instead. Only one of this and the one in the dock is ever visible. -->
+    <div class="revealbar" id="revealBar">
+      <button type="button" class="link" id="revealBtnTop">Reveal answer</button>
+    </div>
+
     <div class="playmain">
       <div class="square" id="square">
         <span class="glyph" id="glyph" lang="ja">あ</span>
@@ -87,10 +93,6 @@
                  placeholder="romaji…" aria-label="Type the romaji reading">
           <button type="button" class="btn btn--primary" id="submitBtn">Check</button>
         </div>
-        <div class="undertools">
-          <button type="button" class="link" id="revealBtn">Reveal answer</button>
-          <span class="hint hint--keys">Enter ↵ to check</span>
-        </div>
       </div>
 
       <!-- writing: romaji is shown, the kana is typed (needs a Japanese IME) -->
@@ -101,10 +103,12 @@
                  placeholder="かな…" aria-label="Type the character">
           <button type="button" class="btn btn--primary" id="writeSubmitBtn">Check</button>
         </div>
-        <div class="undertools">
-          <button type="button" class="link" id="writeRevealBtn">Reveal answer</button>
-          <span class="hint hint--ime">Japanese keyboard</span>
-        </div>
+      </div>
+
+      <!-- shared by both typing modes; the hint text is set per mode -->
+      <div class="undertools" id="typedTools">
+        <button type="button" class="link" id="revealBtn">Reveal answer</button>
+        <span class="hint hint--keys" id="typedHint">Enter ↵ to check</span>
       </div>
 
       <!-- choosing -->

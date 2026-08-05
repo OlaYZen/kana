@@ -592,6 +592,35 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   letter-spacing:0; text-transform:none; color:var(--c-ink);
 }
 
+/* ── play: reveal, above the square on touch ──────────────────────────── */
+/* Two reveal buttons exist, one here and one in the dock, and exactly one is
+   shown. With a pointer it belongs under the answer beside the keyboard hint;
+   on touch the on-screen keyboard covers the dock, so it moves above the square
+   where it stays reachable. Moving one node between the two places isn't
+   possible in CSS — they are in different flex containers. */
+.revealbar{ display:none; }
+
+@media (hover:none) and (pointer:coarse){
+  .revealbar{
+    flex:0 0 auto;
+    display:flex; justify-content:center;
+    margin-bottom:4px;
+  }
+  .revealbar .link{
+    min-height:36px; padding:0 14px;
+    font-size:13.5px;
+    background:var(--paper-card);
+    border:1px solid var(--hairline);
+    border-radius:999px;
+  }
+  .revealbar .link:active{ background:var(--paper-sunk); }
+
+  /* the dock copy goes away, and its row collapses when the keyboard hint it
+     was sharing with is itself hidden on touch (type mode) */
+  #typedTools .link{ display:none; }
+  #typedTools{ justify-content:flex-end; min-height:0; }
+}
+
 /* ── play: the writing square (genkō-yōshi) ───────────────────────────── */
 .playmain{
   flex:1 1 auto; min-height:0;
@@ -827,6 +856,8 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   .scriptbar{ margin-bottom:9px; }
   .scriptbar .hanko{ min-height:50px; }
   .scriptbar .hanko__glyph{ font-size:22px; }
+  .revealbar{ margin-bottom:2px; }
+  .revealbar .link{ min-height:32px; font-size:13px; }
   .playmain{ padding:2px 0; }
   .square{ width:min(100%, 34dvh); }
   .feedback{ min-height:32px; margin-bottom:8px; font-size:13.5px; }
@@ -855,6 +886,13 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   .playbar{ grid-area:bar; }
   .playmain{ grid-area:main; padding:0; }
   .dock{ grid-area:dock; }
+
+  /* This grid has no row for a reveal bar — left visible on a touch device it
+     would be auto-placed and shove the square out of its cell. There is room
+     beside the hint here anyway, so reveal goes back under the answer. */
+  .revealbar{ display:none; }
+  #typedTools .link{ display:inline-flex; }
+  #typedTools{ justify-content:space-between; min-height:var(--tap); }
 
   .square{ width:min(46dvh, 220px); }
   .feedback{ min-height:38px; margin-top:0; }
