@@ -1,0 +1,84 @@
+# かな — Kana Practice
+
+A Japanese kana recognition drill for hiragana and katakana. Open it, pick a deck, answer until
+the deck is done. It runs entirely in the browser — no backend, no build step, no dependencies,
+no accounts, nothing leaves the device.
+
+## Running it
+
+It has to be served over HTTP. Browsers block `fetch()` on `file://` pages, so double-clicking
+`index.html` shows a load error instead of the app.
+
+```bash
+python -m http.server 8000
+```
+
+Then open <http://localhost:8000>. Any static file server works, and the folder can be dropped
+straight onto GitHub Pages, Netlify or similar.
+
+You need a CJK-capable font installed for the kana to render at all — every desktop and mobile OS
+ships one by default.
+
+## The drill
+
+Six decks, 214 cards, in three tiers per script:
+
+| Deck | Cards | What's in it |
+|---|---|---|
+| Base | 46 | the gojūon — あ か さ た な は ま や ら わ ん |
+| Dakuten | 25 | voiced and semi-voiced — が ざ だ ば ぱ |
+| Combination | 36 | yōon, the contracted sounds — きゃ しゅ ちょ |
+
+Obsolete kana (ゐ ゑ ヰ ヱ and the archaic forms) are left out on purpose — you will not meet them
+in modern Japanese.
+
+**Three ways to answer**, switchable on the menu:
+
+- **Typing** — the character is shown, you type its sound. Alternate romanisations are accepted,
+  so `si`, `shi`, `hu`, `fu`, `sya`, `sha` and `nn` all count.
+- **Choosing** — the character is shown, you pick its sound from four options. The default on
+  phones, where typing is slow.
+- **Writing** — the *sound* is shown and you type the character. This is the one that builds
+  familiarity with a Japanese keyboard, so it needs an IME: switch to the Japanese keyboard on a
+  phone, or a Japanese input method on a desktop. Both readings of an ambiguous sound are
+  accepted — `ji` takes じ or ぢ, `zu` takes ず or づ.
+
+Reveal is always available and counts as a miss. Anything you got wrong is listed at the end and
+can be drilled on its own.
+
+**Records.** Each deck keeps your best accuracy, and your fastest time — but a time is only
+recorded for a run with no mistakes at all, so a rushed or revealed-answer run can't set a record
+that's impossible to beat honestly. The run is timed the whole way through and the clock is
+deliberately never shown while you're practising; a ticking counter turns practice into a race.
+Records are per deck rather than per mode, so all three modes compete for the same best score.
+
+**Reference chart.** "All characters & romaji" opens the full gojūon tables, laid out the standard
+way, including the extended katakana (ファ ティ ヴァ …) that are reference-only.
+
+**Character font.** Kana look quite different across faces, and recognising あ in only one of them
+isn't recognising あ. The font picker offers the Japanese faces actually installed on your device —
+it renders each candidate to a canvas and compares the pixels, so anything missing, or identical
+to an option already listed, is not offered. How many you get therefore varies by platform;
+Windows ships no Japanese serif or textbook face unless the *Japanese Supplemental Fonts* optional
+feature is installed.
+
+Everything is stored in one localStorage entry on your own device. Clearing site data resets it.
+
+## Layout
+
+```
+index.html    four screens and two dialogs
+styles.css    the whole stylesheet, mobile-first
+kana.json     all content — decks, cards, chart layout, font options
+app.js        all logic, one IIFE
+```
+
+`kana.json` is the only place content lives; `app.js` renders whatever deck it's handed. Adding a
+deck, accepting another romanisation, or changing the chart is a JSON edit, not a code change.
+
+`hiragana-game.html`, `katakana-game.html` and `kana-chart.html` are the superseded standalone
+originals that the four-file app replaced. They are kept for reference and are not wired to
+anything.
+
+Design notes and the invariants worth knowing before changing anything are in
+[CLAUDE.md](CLAUDE.md).

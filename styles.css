@@ -159,6 +159,16 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   .hint--keys{ display:none; }
 }
 
+/* …but the IME reminder is *most* needed on a phone, where the Japanese
+   keyboard has to be switched to by hand. It is deliberately not .hint--keys. */
+.hint--ime{
+  font-size:12px; letter-spacing:.02em;
+  color:var(--c-ink-mute);
+  border:1px dashed var(--hairline-2);
+  border-radius:var(--r-sm);
+  min-height:0; padding:4px 8px;
+}
+
 .iconbtn{
   width:var(--tap); height:var(--tap);
   flex:0 0 auto;
@@ -185,6 +195,23 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 }
 
 /* ── menu ─────────────────────────────────────────────────────────────── */
+/* Script switch — the same seal stamps as the chart sheet (.hanko, defined with
+   the chart), sized to share the menu's full width. It filters the deck list to
+   one script rather than listing all six decks at once. */
+.scriptbar{
+  flex:0 0 auto;
+  display:flex; gap:10px;
+  margin-bottom:13px;
+}
+.scriptbar .hanko{ flex:1 1 0; width:auto; min-height:62px; gap:5px; }
+.scriptbar .hanko__glyph{ font-size:26px; }
+
+/* katakana carries the indigo accent here too, exactly as it does in the chart */
+.menu[data-script="katakana"]{
+  --accent:var(--ai);
+  --accent-dark:#1B2C47;
+}
+
 .menu__scroll{
   flex:1; min-height:0;
   overflow-y:auto;
@@ -274,26 +301,11 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 }
 .seg__btn[aria-checked="true"]{ background:var(--paper-card); color:var(--c-ink); box-shadow:0 1px 2px rgba(60,50,30,.14); }
 
-.modebar--font{ margin-top:10px; padding-top:10px; }
-
-.fontpick{
-  display:inline-flex; align-items:center; gap:8px;
-  min-height:40px; padding:0 11px;
-  background:var(--paper-card); border:1px solid var(--hairline); border-radius:9px;
-  color:var(--c-ink); font-family:var(--sans); font-size:13.5px; font-weight:600;
-  cursor:pointer;
-  transition:border-color .15s, background .15s;
-}
-.fontpick:active{ background:var(--paper-sunk); }
-@media (hover:hover){ .fontpick:hover{ border-color:var(--hairline-2); } }
-.fontpick__sample{
-  font-family:var(--kana); font-size:19px; line-height:1;
-  color:var(--c-ink); background:var(--paper);
-  border:1px solid var(--hairline);
-  width:26px; height:26px; border-radius:5px;
-  display:inline-flex; align-items:center; justify-content:center;
-}
-.fontpick__name{ max-width:12ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Three options no longer fit beside the label on a phone, so the mode row
+   stacks: label above, buttons sharing the full width below. */
+.modebar--mode{ flex-direction:column; align-items:stretch; gap:7px; }
+.modebar--mode .seg{ display:flex; }
+.modebar--mode .seg__btn{ flex:1 1 0; padding:0 8px; }
 
 .wide{
   display:flex; align-items:center; gap:10px;
@@ -312,7 +324,9 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   border:1px solid var(--hairline);
   padding:3px 6px; border-radius:5px;
 }
-.wide__label{ flex:1; min-width:0; }
+/* a lone kana needs more size than 五十音 to carry the same optical weight */
+.wide__mark--kana{ font-size:17px; min-width:28px; text-align:center; padding:2px 5px; }
+.wide__label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .wide__go{ color:var(--c-ink-soft); font-size:15px; }
 
 /* ── sheets ───────────────────────────────────────────────────────────── */
@@ -624,6 +638,15 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   font-size:min(26vw, 102px);
   font-size:38cqw;
 }
+/* Writing mode asks with romaji, so the prompt is Latin: --mincho (never --kana,
+   which the font sheet repoints) at a size that fits the longest reading, three
+   letters — kyo, shu, nyu. */
+.glyph.is-romaji{
+  font-family:var(--mincho);
+  font-size:min(17vw, 68px);
+  font-size:25cqw;
+  letter-spacing:.01em;
+}
 
 /* teacher's red 〇 correct stamp */
 .maru{
@@ -679,6 +702,8 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 }
 .answer input::placeholder{ color:var(--c-ink-mute); }
 .answer input:focus{ border-color:var(--shu); box-shadow:0 0 0 3px rgba(178,58,38,.16); }
+/* what's typed here is kana, so it shows in the face picked in the font sheet */
+#kanaInput{ font-family:var(--kana); font-size:19px; }
 
 .undertools{
   display:flex; justify-content:space-between; align-items:center;
@@ -796,6 +821,9 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
    min-width guard on the landscape block below. The character and the input
    must both stay visible; the three metric numbers are what gives way.      */
 @media (max-height:450px) and (max-width:599px){
+  .scriptbar{ margin-bottom:9px; }
+  .scriptbar .hanko{ min-height:50px; }
+  .scriptbar .hanko__glyph{ font-size:22px; }
   .playmain{ padding:2px 0; }
   .square{ width:min(100%, 34dvh); }
   .feedback{ min-height:32px; margin-bottom:8px; font-size:13.5px; }
@@ -843,6 +871,8 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 /* ══ very small phones ════════════════════════════════════════════════ */
 @media (max-width:359px){
   :root{ --pad:11px; }
+  .scriptbar .hanko{ min-height:56px; }
+  .modebar--mode .seg__btn{ font-size:12.5px; padding:0 4px; }
   .deck{ grid-template-columns:44px 1fr auto; gap:10px; }
   .deck__sample{ height:40px; font-size:22px; }
   .deck__name{ font-size:14px; }
