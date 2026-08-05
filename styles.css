@@ -271,10 +271,13 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .deck__pct{ display:block; }
 /* fastest clean run — secondary to the score, still clearly a record */
 .deck__time{ display:block; font-size:12.5px; color:rgba(138,100,16,.78); }
+/* names the mode the figures above belong to — "Choosing" is the widest, and it
+   must stay on one line or the row grows a third line of its own */
 .deck__best small{
   display:block;
   font-family:var(--sans);
-  font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
+  font-size:9.5px; letter-spacing:.07em; text-transform:uppercase;
+  white-space:nowrap;
   color:var(--c-ink-mute); margin-top:2px;
 }
 
@@ -873,6 +876,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   :root{ --pad:11px; }
   .scriptbar .hanko{ min-height:56px; }
   .modebar--mode .seg__btn{ font-size:12.5px; padding:0 4px; }
+  .deck__best small{ font-size:9px; letter-spacing:.04em; }
   .deck{ grid-template-columns:44px 1fr auto; gap:10px; }
   .deck__sample{ height:40px; font-size:22px; }
   .deck__name{ font-size:14px; }

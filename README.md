@@ -46,11 +46,16 @@ in modern Japanese.
 Reveal is always available and counts as a miss. Anything you got wrong is listed at the end and
 can be drilled on its own.
 
-**Records.** Each deck keeps your best accuracy, and your fastest time — but a time is only
-recorded for a run with no mistakes at all, so a rushed or revealed-answer run can't set a record
-that's impossible to beat honestly. The run is timed the whole way through and the clock is
-deliberately never shown while you're practising; a ticking counter turns practice into a race.
-Records are per deck rather than per mode, so all three modes compete for the same best score.
+**Records are kept separately for each mode.** Recognising a character, picking it from four
+options, and writing it from its sound are three different skills, so each deck keeps a separate
+best score and best time per mode — a Choosing run can't set the bar for your Writing runs. The
+figures on the menu are for whichever mode is selected, and they're labelled with it; switching
+mode switches the numbers.
+
+A time is only recorded for a run with no mistakes at all, so a rushed or revealed-answer run
+can't set a record that's impossible to beat honestly. The run is timed the whole way through and
+the clock is deliberately never shown while you're practising; a ticking counter turns practice
+into a race. Missed drills don't count towards records.
 
 **Reference chart.** "All characters & romaji" opens the full gojūon tables, laid out the standard
 way, including the extended katakana (ファ ティ ヴァ …) that are reference-only.
