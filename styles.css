@@ -39,6 +39,13 @@
   --ai:       #2B4570;  /* indigo — the katakana accent */
   --guide:    #C8BFA6;  /* practice-square cross guides */
 
+  /* The page ground. Declared once because a sticky element has to repaint it
+     to sit seamlessly over the page — see .stats .scriptbar. Always paired with
+     background-attachment:fixed, which is what makes the two line up. */
+  --page-bg:
+    radial-gradient(1100px 620px at 50% -12%, #FBF7EC 0%, transparent 62%),
+    var(--paper);
+
   --accent:      var(--shu);   /* flips per script inside the chart sheet */
   --accent-dark: #7E2717;
 
@@ -75,9 +82,7 @@ body{
           calc(var(--pad) + var(--safe-b)) calc(var(--pad) + var(--safe-l));
   font-family:var(--sans);
   color:var(--c-ink);
-  background:
-    radial-gradient(1100px 620px at 50% -12%, #FBF7EC 0%, transparent 62%),
-    var(--paper);
+  background:var(--page-bg);
   background-attachment:fixed;
   display:flex;
   align-items:center;
@@ -397,12 +402,20 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .auth__danger{ justify-content:center; color:var(--shu); }
 @media (hover:hover){ .auth__danger:hover{ color:var(--shu-2); } }
 
-/* The progress screen's selectors — script, device, deck — all sit above
-   .stats__scroll as flex:0 0 auto, so they stay put while the report scrolls
-   under them. Pinned rather than position:sticky: sticky inside the scroller
-   would need a background matched to the page gradient behind it, and this
-   gets the same result with nothing to mismatch. */
-.stats .scriptbar{ margin-bottom:10px; }
+/* Everything on the progress screen scrolls except the script stamps, which
+   stick to the top of the scroller so the thing you switch between stays
+   reachable. A sticky element has page behind it, so it repaints the body's own
+   background — same gradient, same `fixed` attachment, therefore seamless
+   rather than a solid block that misses the gradient by a shade. --page-bg is
+   the single source for both. */
+.stats .scriptbar{
+  position:sticky; top:0; z-index:2;
+  margin-inline:calc(var(--pad) * -1);
+  padding:4px var(--pad) 10px;
+  margin-bottom:0;
+  background:var(--page-bg);
+  background-attachment:fixed;
+}
 
 /* katakana carries the indigo accent here too, exactly as on the menu */
 .stats[data-script="katakana"]{

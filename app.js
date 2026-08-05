@@ -1455,6 +1455,9 @@
   // is on screen; nothing is ever summed across them.
   function renderDeckPicker(decks) {
     el.deckPick.innerHTML = "";
+    // A picker with one option is not a choice — and the deck it would offer is
+    // already the heading directly below it, so nothing is lost by dropping it.
+    if (decks.length < 2) return;
     decks.forEach((r) => {
       const b = add(el.deckPick, "button", "deckpick__btn");
       b.type = "button";
@@ -1533,10 +1536,10 @@
     }
 
     const o = report.overall;
-    const head = statBlock("Overall", report.runs + " runs of this deck on " + label);
+    const head = statBlock("Overall", "On " + label + ".");
     const grid = add(head, "div", "sgrid");
     [["Accuracy", o.accuracy + "%"], ["Typical time", fmtMs(o.median_ms)],
-     ["Characters seen", String(report.cards_tracked)], ["Answers", String(o.attempts)]]
+     ["Characters seen", String(report.cards_tracked)], ["Runs", String(report.runs)]]
       .forEach(([k, v]) => {
         const cell = add(grid, "div", "sgrid__cell");
         add(cell, "div", "sgrid__n", v);
