@@ -17,11 +17,24 @@
    Washi paper throughout: cream ground, ink text, vermilion seal accent. The
    accent colours are deliberately darker than a dark theme would use — the same
    red/gold/green at "glowing on indigo" lightness fails contrast on cream.
+
+   Which is exactly why the dark theme re-declares them rather than inverting:
+   it is the same paper at night — sumi ground, warm off-white ink, the seal red
+   opened up to where it reads on a dark ground. Every colour in the sheet comes
+   from a custom property for that reason, including the translucent ones; a
+   literal colour below the :root blocks is a bug, because it can only be right
+   in one of the two themes. Shu-derived washes use color-mix so they follow the
+   accent by themselves and need no second declaration at all.
+
+   The theme is chosen in Options and applied as data-theme on <html> — light or
+   dark, already resolved, never "auto" (app.js resolves that against the OS, so
+   nothing here has to test prefers-color-scheme).
    ========================================================================== */
 
 :root{
   --paper:      #EFE9DC;  /* page ground */
   --paper-card: #FBF8F1;  /* raised card / panel */
+  --paper-lift: #FFFDF7;  /* a card lifted further still — hover, active font */
   --paper-sunk: #E7E0CE;  /* inset: progress track, pressed states */
   --gap-empty:  #E3DCC9;  /* an intentionally blank chart cell */
   --hairline:   #D8D0BC;  /* every border */
@@ -30,14 +43,32 @@
   --c-ink:      #24211C;  /* primary text */
   --c-ink-soft: #5B564C;  /* secondary text */
   --c-ink-mute: #6F6859;  /* tertiary — labels, hints, placeholders */
+  --on-fill:    #fff;     /* text on a filled accent — shu, matcha */
 
   --shu:      #B23A26;  /* vermilion / seal red */
   --shu-2:    #9A2F1D;
+  --shu-3:    #7E2717;  /* the seal's label colour, one step past shu-2 */
   --matcha:   #4F6B22;  /* correct green */
   --brass:    #8A6410;  /* record gold */
   --brass-2:  #B8892A;  /* lighter end of the progress gradient */
   --ai:       #2B4570;  /* indigo — the katakana accent */
+  --ai-2:     #1B2C47;  /* its label colour, as shu-3 is to shu */
   --guide:    #C8BFA6;  /* practice-square cross guides */
+
+  /* the pressed/hover wash on a control with no fill of its own */
+  --press:    rgba(0,0,0,.07);
+  --backdrop: rgba(36,33,28,.42);
+  /* focused text field — mixed from the accent, so it needs no dark twin */
+  --focus-glow: 0 0 0 3px color-mix(in srgb, var(--shu) 16%, transparent);
+
+  /* Shadows are whole values, not tints, because a dark ground needs a
+     different spread and opacity, not the same shadow in another colour. */
+  --shadow-fine:   0 1px 2px rgba(60,50,30,.14);          /* the seg thumb */
+  --shadow-sheet:  0 -20px 50px -22px rgba(60,50,30,.45);
+  --shadow-square: 0 14px 30px -18px rgba(60,50,30,.42);
+
+  /* the writing square: paper on paper, so it needs its own lift */
+  --square-bg: linear-gradient(180deg, #FFFDF7 0%, #F4EEE0 140%);
 
   /* The page ground. Declared once because a sticky element has to repaint it
      to sit seamlessly over the page — see .stats .scriptbar. Always paired with
@@ -47,7 +78,7 @@
     var(--paper);
 
   --accent:      var(--shu);   /* flips per script inside the chart sheet */
-  --accent-dark: #7E2717;
+  --accent-dark: var(--shu-3); /* the accent's label colour, not "dark theme" */
 
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -71,9 +102,64 @@
   --safe-r: env(safe-area-inset-right, 0px);
 }
 
+/* ── dark ─────────────────────────────────────────────────────────────────
+   The same washi at night, not an inversion. Only the palette moves: nothing
+   below re-lays-out, and no rule anywhere else in this file tests the theme.
+
+   Two things drove the numbers. The ground is warm (a red-leaning near-black),
+   because a neutral #111 under cream-white text reads as a different app
+   wearing the same layout. And the accents all move *up* in lightness — the
+   comment at the top of the file cuts both ways, so the seal red that reads on
+   cream is mud on sumi, and gets opened up here instead of being reused. */
+:root[data-theme="dark"]{
+  --paper:      #1B1916;
+  --paper-card: #24211B;
+  --paper-lift: #2C2820;
+  --paper-sunk: #131210;
+  --gap-empty:  #1F1C17;
+  --hairline:   #38332B;
+  --hairline-2: #574F41;
+
+  --c-ink:      #EDE6D6;
+  --c-ink-soft: #B5AC99;
+  /* 4.5:1 on --paper-card is the floor here, not on the page ground: labels and
+     hints sit on cards more often than not, and a card is the lighter of the
+     two. #8E8573 clears the ground and fails the card, which is the trap. */
+  --c-ink-mute: #99907D;
+  /* the fills are light here, so what sits on them is the ground, not white */
+  --on-fill:    #1B1916;
+
+  --shu:      #E2604A;
+  --shu-2:    #F07D66;
+  --shu-3:    #F2907A;
+  --matcha:   #93B94E;
+  --brass:    #D8AC58;
+  --brass-2:  #F0CE8C;
+  --ai:       #7E9CD8;
+  --ai-2:     #A3BAE6;
+  --guide:    #4A4335;
+
+  --press:    rgba(255,255,255,.09);
+  --backdrop: rgba(0,0,0,.6);
+
+  /* a shadow on a dark ground has to be near-black and tighter, or it just
+     fogs the area around the element instead of lifting it */
+  --shadow-fine:   0 1px 2px rgba(0,0,0,.45);
+  --shadow-sheet:  0 -20px 50px -24px rgba(0,0,0,.85);
+  --shadow-square: 0 14px 30px -20px rgba(0,0,0,.75);
+
+  --square-bg: linear-gradient(180deg, #2A251D 0%, #1D1A15 140%);
+
+  --page-bg:
+    radial-gradient(1100px 620px at 50% -12%, #262117 0%, transparent 62%),
+    var(--paper);
+}
+
 *{ box-sizing:border-box; }
 
 html{ -webkit-text-size-adjust:100%; color-scheme:light; }
+/* form controls, scrollbars and the caret follow the theme, not the OS */
+:root[data-theme="dark"]{ color-scheme:dark; }
 
 body{
   margin:0;
@@ -142,7 +228,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   transition:transform .06s, background .15s, border-color .15s, color .15s;
 }
 .btn:active{ transform:translateY(1px); }
-.btn--primary{ background:var(--shu); color:#fff; }
+.btn--primary{ background:var(--shu); color:var(--on-fill); }
 .btn--ghost{ background:var(--paper-card); color:var(--c-ink-soft); border-color:var(--hairline); }
 
 .link{
@@ -184,14 +270,14 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   cursor:pointer;
   transition:background .15s, color .15s;
 }
-.iconbtn:active{ background:rgba(0,0,0,.07); color:var(--c-ink); }
+.iconbtn:active{ background:var(--press); color:var(--c-ink); }
 .iconbtn--kana{ font-family:var(--kana); font-size:17px; }
 
 @media (hover:hover){
   .btn--primary:hover{ background:var(--shu-2); }
   .btn--ghost:hover{ border-color:var(--hairline-2); color:var(--c-ink); }
   .link:hover{ color:var(--c-ink); text-decoration:underline; }
-  .iconbtn:hover{ background:rgba(0,0,0,.07); color:var(--c-ink); }
+  .iconbtn:hover{ background:var(--press); color:var(--c-ink); }
 }
 
 :where(button,input):focus-visible{
@@ -214,7 +300,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 /* katakana carries the indigo accent here too, exactly as it does in the chart */
 .menu[data-script="katakana"]{
   --accent:var(--ai);
-  --accent-dark:#1B2C47;
+  --accent-dark:var(--ai-2);
 }
 
 .menu__scroll{
@@ -246,7 +332,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 }
 .deck:active{ transform:translateY(1px); background:var(--paper-sunk); }
 @media (hover:hover){
-  .deck:hover{ border-color:var(--hairline-2); background:#FFFDF7; }
+  .deck:hover{ border-color:var(--hairline-2); background:var(--paper-lift); }
 }
 
 .deck__sample{
@@ -275,7 +361,8 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 }
 .deck__pct{ display:block; }
 /* fastest clean run — secondary to the score, still clearly a record */
-.deck__time{ display:block; font-size:12.5px; color:rgba(138,100,16,.78); }
+.deck__time{ display:block; font-size:12.5px;
+              color:color-mix(in srgb, var(--brass) 78%, transparent); }
 /* names the mode the figures above belong to — "Choosing" is the widest, and it
    must stay on one line or the row grows a third line of its own */
 .deck__best small{
@@ -307,18 +394,18 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   min-height:38px; padding:0 15px; border-radius:7px; cursor:pointer;
   transition:background .15s, color .15s;
 }
-.seg__btn[aria-checked="true"]{ background:var(--paper-card); color:var(--c-ink); box-shadow:0 1px 2px rgba(60,50,30,.14); }
+.seg__btn[aria-checked="true"]{ background:var(--paper-card); color:var(--c-ink); box-shadow:var(--shadow-fine); }
 
-/* Three options no longer fit beside the label on a phone, so the mode row
-   stacks: label above, buttons sharing the full width below. It lives inside
-   the Options sheet now, where it has no top border to sit under. */
-.modebar--mode{
+/* Three options no longer fit beside the label on a phone, so these rows stack:
+   label above, buttons sharing the full width below. Both live in the Options
+   sheet, where they have no top border to sit under. */
+.modebar--stack{
   flex-direction:column; align-items:stretch; gap:7px;
   margin-top:0; padding-top:0; border-top:none;
   margin-bottom:16px;
 }
-.modebar--mode .seg{ display:flex; }
-.modebar--mode .seg__btn{ flex:1 1 0; padding:0 8px; }
+.modebar--stack .seg{ display:flex; }
+.modebar--stack .seg__btn{ flex:1 1 0; padding:0 8px; }
 
 /* The one control left at the foot of the menu. Everything that used to be
    stacked here is behind it, so the deck list keeps the screen. */
@@ -334,7 +421,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   transition:border-color .15s, background .15s, transform .06s;
 }
 .wide:active{ transform:translateY(1px); background:var(--paper-sunk); }
-@media (hover:hover){ .wide:hover{ border-color:var(--hairline-2); background:#FFFDF7; } }
+@media (hover:hover){ .wide:hover{ border-color:var(--hairline-2); background:var(--paper-lift); } }
 .wide__mark{
   font-family:var(--kana); font-size:13px; font-weight:400;
   color:var(--c-ink); background:var(--paper);
@@ -382,7 +469,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   outline:none;
   transition:border-color .15s, box-shadow .15s;
 }
-.field input:focus{ border-color:var(--shu); box-shadow:0 0 0 3px rgba(178,58,38,.16); }
+.field input:focus{ border-color:var(--shu); box-shadow:var(--focus-glow); }
 
 .auth__go{ width:100%; margin-top:4px; }
 .auth__go:disabled{ opacity:.6; cursor:default; }
@@ -392,8 +479,8 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   margin:0;
   padding:9px 12px;
   border-radius:var(--r-sm);
-  background:rgba(178,58,38,.09);
-  border:1px solid rgba(178,58,38,.3);
+  background:color-mix(in srgb, var(--shu) 9%, transparent);
+  border:1px solid color-mix(in srgb, var(--shu) 30%, transparent);
   color:var(--shu-2);
   font-size:13.5px; line-height:1.45;
 }
@@ -420,7 +507,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 /* katakana carries the indigo accent here too, exactly as on the menu */
 .stats[data-script="katakana"]{
   --accent:var(--ai);
-  --accent-dark:#1B2C47;
+  --accent-dark:var(--ai-2);
 }
 
 /* the phone/desktop split — figures from one are never comparable to the other */
@@ -455,7 +542,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .deckpick__btn[aria-checked="true"]{
   border-color:var(--shu);
   color:var(--c-ink);
-  box-shadow:0 0 0 2px rgba(178,58,38,.14);
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--shu) 14%, transparent);
 }
 .deckpick__name{ font-size:13px; font-weight:600; white-space:nowrap; }
 .deckpick__n{ font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
@@ -529,7 +616,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   border-radius:18px 18px 0 0;
   color:var(--c-ink);
   flex-direction:column;
-  box-shadow:0 -20px 50px -22px rgba(60,50,30,.45);
+  box-shadow:var(--shadow-sheet);
 }
 /* `display` belongs on [open] only. An author `display:flex` on .sheet itself
    would beat the UA's `dialog:not([open]){display:none}` — author rules always
@@ -537,7 +624,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .sheet:not([open]){ display:none; }
 .sheet[open]{ display:flex; animation:sheet-in .22s cubic-bezier(.2,.9,.3,1); }
 @keyframes sheet-in{ from{ transform:translateY(14px); opacity:.4; } to{ transform:none; opacity:1; } }
-.sheet::backdrop{ background:rgba(36,33,28,.42); }
+.sheet::backdrop{ background:var(--backdrop); }
 
 .sheet__head{
   flex:0 0 auto;
@@ -572,8 +659,8 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   transition:border-color .15s, background .15s, transform .06s;
 }
 .font:active{ transform:translateY(1px); }
-@media (hover:hover){ .font:hover{ border-color:var(--hairline-2); background:#FFFDF7; } }
-.font[aria-checked="true"]{ border-color:var(--brass); background:#FFFDF7; }
+@media (hover:hover){ .font:hover{ border-color:var(--hairline-2); background:var(--paper-lift); } }
+.font[aria-checked="true"]{ border-color:var(--brass); background:var(--paper-lift); }
 
 .font__sample{
   /* font-family is set per option by app.js */
@@ -611,7 +698,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
    vermilion for hiragana, indigo for katakana.                              */
 .sheet--chart[data-script="katakana"]{
   --accent:var(--ai);
-  --accent-dark:#1B2C47;
+  --accent-dark:var(--ai-2);
 }
 
 /* ── seal-stamp script switcher ───────────────────────────────────────── */
@@ -820,10 +907,10 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   aspect-ratio:1/1;
   container-type:size;
   /* paper on paper — it needs its own edge and a soft lift to read as a sheet */
-  background:linear-gradient(180deg,#FFFDF7 0%, #F4EEE0 140%);
+  background:var(--square-bg);
   border:1px solid var(--hairline);
   border-radius:var(--r-md);
-  box-shadow:0 14px 30px -18px rgba(60,50,30,.42);
+  box-shadow:var(--shadow-square);
   display:flex; align-items:center; justify-content:center;
   overflow:hidden;
   cursor:default;
@@ -874,7 +961,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   border-radius:50%;
   opacity:0; transform:scale(.4) rotate(-8deg);
   z-index:2; pointer-events:none;
-  box-shadow:0 0 0 1px rgba(178,58,38,.25);
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--shu) 25%, transparent);
 }
 .square.is-correct .maru{ animation:stamp .5s cubic-bezier(.2,1.3,.4,1) forwards; }
 @keyframes stamp{
@@ -919,7 +1006,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   transition:border-color .15s, box-shadow .15s;
 }
 .answer input::placeholder{ color:var(--c-ink-mute); }
-.answer input:focus{ border-color:var(--shu); box-shadow:0 0 0 3px rgba(178,58,38,.16); }
+.answer input:focus{ border-color:var(--shu); box-shadow:var(--focus-glow); }
 /* what's typed here is kana, so it shows in the face picked in the font sheet */
 #kanaInput{ font-family:var(--kana); font-size:19px; }
 
@@ -942,14 +1029,14 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   font-size:11px; font-weight:700; color:var(--c-ink-mute);
 }
 @media (hover:hover){
-  .choice:hover:not(:disabled){ background:#fff; border-color:var(--hairline-2); }
+  .choice:hover:not(:disabled){ background:var(--paper-lift); border-color:var(--hairline-2); }
 }
 .choice:active:not(:disabled){ transform:translateY(1px); }
 .choice:disabled{ cursor:default; }
-.choice.is-picked-ok{ background:var(--matcha); color:#fff; border-color:transparent; }
-.choice.is-picked-no{ background:var(--shu);    color:#fff; border-color:transparent; }
+.choice.is-picked-ok{ background:var(--matcha); color:var(--on-fill); border-color:transparent; }
+.choice.is-picked-no{ background:var(--shu);    color:var(--on-fill); border-color:transparent; }
 .choice.is-picked-ok .choice__key,
-.choice.is-picked-no .choice__key{ color:rgba(255,255,255,.82); }
+.choice.is-picked-no .choice__key{ color:color-mix(in srgb, var(--on-fill) 82%, transparent); }
 .choice.is-answer{ box-shadow:0 0 0 3px var(--matcha) inset; }
 
 /* Continue lives in a permanently reserved row, so revealing it never
@@ -1099,7 +1186,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 @media (max-width:359px){
   :root{ --pad:11px; }
   .scriptbar .hanko{ min-height:56px; }
-  .modebar--mode .seg__btn{ font-size:12.5px; padding:0 4px; }
+  .modebar--stack .seg__btn{ font-size:12.5px; padding:0 4px; }
   .deck__best small{ font-size:9px; letter-spacing:.04em; }
   .deck{ grid-template-columns:44px 1fr auto; gap:10px; }
   .deck__sample{ height:40px; font-size:22px; }

@@ -45,21 +45,26 @@
     stats: $("stats"), statsBtn: $("statsBtn"), statsBody: $("statsBody"),
     statsBackBtn: $("statsBackBtn"), deckPick: $("deckPick"),
     statsScriptSwitch: $("statsScriptSwitch"),
-    // Both switches are .seg__btn. Never select that class document-wide: the
-    // device switch has no data-mode, so a global query wires setMode(undefined)
-    // onto it and blanks its aria-checked every time the answer mode changes.
-    modeSwitch: document.querySelector(".modebar--mode .seg"),
+    themeColor: document.querySelector('meta[name="theme-color"]'),
+    // Three switches now share .seg__btn. Never select that class document-wide:
+    // the device switch has no data-mode, so a global query wires
+    // setMode(undefined) onto it and blanks its aria-checked every time the
+    // answer mode changes. Each switch has an id of its own for that reason.
+    modeSwitch: $("modeSwitch"),
+    themeSwitch: $("themeSwitch"),
     deviceSwitch: document.querySelector(".seg--device")
   };
 
   /* ---------- localStorage keys ----------
-     Both were prefixed `hkk.` — the old name of the project directory — until
-     they were renamed to match it; renameKeys() below moves anything still
-     under the old names. */
+     All three were prefixed `hkk.` — the old name of the project directory —
+     until they were renamed to match it; renameKeys() below moves anything
+     still under the old names. */
   const STORE = "kana.v1";         // prefs + records, the blob an account syncs
   const TOKEN_KEY = "kana.token";  // session token: deliberately outside the
                                    // blob, which is uploaded, and a token has no
                                    // business making that round trip
+  const THEME_KEY = "kana.theme";  // light/dark: outside it too, and for a
+                                   // second reason — see the theme section
 
   // Renaming a key silently wipes every record anyone has set, so nothing is
   // renamed without moving what was there. Runs immediately rather than at boot:
@@ -395,6 +400,56 @@
         state.fontsMissing.join(", ") + "."
       : "";
   }
+
+  /* ==========================================================================
+     Theme
+
+     Deliberately outside `store`, and so deliberately never synced to an
+     account: which theme is right is a fact about the *device* — a phone in a
+     dark room, a laptop under office lights — not a preference that should
+     follow you onto the next one. It is the one setting where copying it
+     across is wrong more often than right. Records and answer mode still sync;
+     this doesn't.
+
+     "auto" is resolved here rather than in CSS, so the stylesheet only ever
+     sees data-theme="light" or "dark" and no rule in it has to test
+     prefers-color-scheme. The same resolution is duplicated, deliberately, in
+     an inline <script> in <head>: this file loads at the end of <body>, so
+     without it every load flashes light before the theme lands. Change one and
+     change the other.
+     ========================================================================== */
+  const THEMES = ["auto", "light", "dark"];
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+  // matches the two grounds in styles.css — the browser's own chrome (status
+  // bar, address bar) has to sit on the same paper the page does
+  const THEME_COLOR = { light: "#EFE9DC", dark: "#1B1916" };
+
+  function readTheme() {
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      return THEMES.includes(saved) ? saved : "auto";
+    } catch (e) { return "auto"; }
+  }
+
+  function paintTheme() {
+    const choice = readTheme();
+    const dark = choice === "dark" || (choice === "auto" && prefersDark.matches);
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    if (el.themeColor) el.themeColor.setAttribute("content", THEME_COLOR[dark ? "dark" : "light"]);
+    Array.from(el.themeSwitch.children).forEach((b) =>
+      b.setAttribute("aria-checked", String(b.dataset.theme === choice)));
+  }
+
+  function setTheme(choice) {
+    if (!THEMES.includes(choice)) return;
+    try { localStorage.setItem(THEME_KEY, choice); }
+    catch (e) { /* private mode — the theme just won't outlive the tab */ }
+    paintTheme();
+  }
+
+  // On "auto", the OS flipping at sunset has to reach the page while it is open
+  if (prefersDark.addEventListener) prefersDark.addEventListener("change", paintTheme);
 
   /* ---------- sheets ---------- */
   function openSheet(dialog) {
@@ -1183,6 +1238,9 @@
   Array.from(el.modeSwitch.children).forEach((b) =>
     b.addEventListener("click", () => setMode(b.dataset.mode)));
 
+  Array.from(el.themeSwitch.children).forEach((b) =>
+    b.addEventListener("click", () => setTheme(b.dataset.theme)));
+
   Array.from(el.scriptSwitch.children).forEach((b) =>
     b.addEventListener("click", () => setScript(b.dataset.script)));
 
@@ -1249,9 +1307,9 @@
 
      An account does not replace localStorage so much as outrank it: the local
      copy stays as the offline cache, and the server holds the copy that
-     follows you between devices. The session token is held back from that trip
-     and lives under a key of its own; it is declared and explained at the top
-     of this file.
+     follows you between devices. Two things are held back from that trip and
+     live under their own keys — the session token and the theme; both are
+     declared and explained at the top of this file.
      ========================================================================== */
   const api = {
     up: false,
@@ -1675,6 +1733,9 @@
 
   /* ---------- boot ---------- */
   store.migrate();
+  // <head> already put data-theme on the page before first paint; this catches
+  // the switch up with it, and owns it from here on.
+  paintTheme();
   setAuthMode("login");
 
   // Is there a backend at all? Everything account-shaped stays hidden until
