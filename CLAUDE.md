@@ -134,6 +134,17 @@ chart sheet and reused by `.scriptbar`) filter `#decks` to that script's three d
 `--accent` vermilion/indigo via `[data-script]` on `.menu`, mirroring the chart sheet. The chart
 opens on whatever the menu is showing.
 
+The same `.scriptbar` markup appears a third time on the progress screen, filtering the deck
+picker rather than the deck list. It opens on the menu's script and then keeps its own selection,
+since you may well be practising one script and reading about the other. The flick drills are the
+one thing that survives both filters — they belong to neither script.
+
+**Everything above `.stats__scroll` is pinned.** The script stamps, the device switch and the deck
+picker are `flex:0 0 auto` siblings of the scroller, so they stay put while the report scrolls
+under them. That is deliberately *not* `position:sticky` inside the scroller: sticky would need a
+background matched to the page's radial gradient behind it, and a pinned sibling gets the same
+result with nothing to mismatch.
+
 **Persistence** is localStorage key `hkk.v1` (`STORE` in `app.js`), holding
 `{rev, mode, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
 merges patches — never `setItem` directly. **Do not rename the key to match the `kana` directory**:
