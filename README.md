@@ -9,12 +9,27 @@ no accounts, nothing leaves the device.
 It has to be served over HTTP. Browsers block `fetch()` on `file://` pages, so double-clicking
 `index.html` shows a load error instead of the app.
 
+**With accounts and the progress report:**
+
+```bash
+./start.sh
+```
+
+That is the whole setup. It creates the virtualenv, installs the three dependencies, pulls the
+latest commit if the checkout is clean, and serves everything on <http://localhost:8000>. Run it
+again any time — it only reinstalls when the requirements actually changed, and only pulls when
+you have no local edits. `--port 9000`, `--host 0.0.0.0`, `--no-pull` and `--reload` are there if
+you need them.
+
+**Without a backend**, the app is still four static files and works on its own:
+
 ```bash
 python -m http.server 8000
 ```
 
-Then open <http://localhost:8000>. Any static file server works, and the folder can be dropped
-straight onto GitHub Pages, Netlify or similar.
+Any static file server works, and the folder can be dropped straight onto GitHub Pages, Netlify or
+similar. The account and progress buttons simply don't appear; everything else is identical and
+your records live in the browser as before.
 
 You need a CJK-capable font installed for the kana to render at all — every desktop and mobile OS
 ships one by default.
@@ -91,18 +106,53 @@ feature is installed.
 
 Everything is stored in one localStorage entry on your own device. Clearing site data resets it.
 
+## Accounts and the progress report
+
+Signing up is a username and a password, and the only thing an account does is hold your data
+server-side so it follows you between devices instead of living in one browser. The local copy
+stays as an offline cache, so the app keeps working signed out — an account outranks localStorage
+rather than replacing it. You can delete the account, and everything stored with it, from the
+account screen.
+
+**Your progress** reads the per-card times and answers from your runs and tells you where the work
+actually is: which characters you hesitate on, which you get wrong, and what you reach for
+instead — つ answered as た, say. It is deliberately cautious about what counts as data:
+
+- **Three complete runs before it says anything.** One run can't tell a bad day from a weak
+  character, so until then it shows nothing at all rather than a figure you'd read as a finding.
+- **Anything over 10 seconds on a card is not a time.** That's you looking away, not you thinking,
+  so it's dropped from the speed figures. It still counts against accuracy — you did answer it.
+- **Revealed answers are never timed** either, for the same reason.
+- **Drills don't count.** A drill re-tests what the results screen just showed you, on the cards
+  you already know you're weak at; neither its speed nor its accuracy describes how you're doing.
+- **Phone and desktop are kept apart.** Typing romaji on a keyboard and flicking on glass aren't
+  comparable, so each has its own figures and you pick which to look at.
+
+Times are reported as medians rather than averages, so one slow card doesn't move the number.
+
 ## Layout
 
 ```
-index.html    four screens and two dialogs
-styles.css    the whole stylesheet, mobile-first
-kana.json     all content — decks, cards, chart layout, font options
-app.js        all logic, one IIFE
+index.html         six screens and two dialogs
+styles.css         the whole stylesheet, mobile-first
+kana.json          all content — decks, cards, chart layout, font options
+app.js             all front-end logic, one IIFE
+start.sh           install / update / run
+
+backend/
+  requirements.txt three dependencies
+  app/db.py        SQLite schema, no ORM
+  app/auth.py      passwords and sessions
+  app/analytics.py the rules above, applied
+  app/main.py      routes, and serves the front end
 ```
 
-That's the whole app — four files, no dependencies to install and nothing to build. `kana.json` is
+The four front-end files are the app; they need nothing installed and nothing built. `kana.json` is
 the only place content lives; `app.js` renders whatever deck it's handed. Adding a deck, accepting
 another romanisation, or changing the chart is a JSON edit, not a code change.
+
+The backend is optional and stays out of the way — three pure-Python dependencies, one SQLite file,
+no admin accounts, and every query scoped to whoever is signed in.
 
 Design notes and the invariants worth knowing before changing anything are in
 [CLAUDE.md](CLAUDE.md).

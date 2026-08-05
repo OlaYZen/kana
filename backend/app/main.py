@@ -1,0 +1,237 @@
+"""FastAPI app: accounts, saved state, run logging, analytics — and it serves
+the front end itself, so there is one origin and no CORS to configure.
+
+There are no admin routes and no admin flag. Every query is scoped to the
+authenticated user; a user can only ever read their own rows.
+"""
+import json
+import sqlite3
+from pathlib import Path
+from typing import Annotated, Any, Literal
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+
+from . import analytics, auth, db
+
+ROOT = Path(__file__).resolve().parents[2]
+
+app = FastAPI(title="Kana Practice", docs_url="/api/docs", openapi_url="/api/openapi.json")
+
+
+@app.on_event("startup")
+def _startup() -> None:
+    db.init()
+    with db.session() as conn:
+        auth.purge_expired(conn)
+
+
+# ---------------------------------------------------------------- models
+
+class Credentials(BaseModel):
+    username: str = Field(max_length=64)
+    password: str = Field(max_length=auth.MAX_PASSWORD)
+
+
+class StatePatch(BaseModel):
+    prefs: dict[str, Any]
+
+
+class AnswerIn(BaseModel):
+    q: str = Field(max_length=16)
+    a: str = Field(max_length=64)
+    given: str | None = Field(default=None, max_length=64)
+    correct: bool
+    revealed: bool = False
+    ms: int = Field(ge=0, le=6 * 60 * 60 * 1000)
+
+
+class RunIn(BaseModel):
+    deck_id: str = Field(max_length=64)
+    mode: str = Field(max_length=16)
+    script: str | None = Field(default=None, max_length=16)
+    device: Literal["mobile", "desktop"]
+    is_drill: bool = False
+    duration_ms: int = Field(ge=0)
+    answers: list[AnswerIn] = Field(max_length=500)
+
+
+# ---------------------------------------------------------------- auth dep
+
+def bearer(authorization: Annotated[str | None, Header()] = None) -> str:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return ""
+    return authorization[7:].strip()
+
+
+def current_user(token: Annotated[str, Depends(bearer)]) -> dict:
+    if not token:
+        raise HTTPException(401, "Not signed in")
+    with db.session() as conn:
+        row = auth.user_for_token(conn, token)
+        if not row:
+            raise HTTPException(401, "Session expired")
+        return {"id": row["id"], "username": row["username"]}
+
+
+User = Annotated[dict, Depends(current_user)]
+
+
+# ---------------------------------------------------------------- accounts
+
+@app.get("/api/health")
+def health() -> dict:
+    return {"ok": True}
+
+
+@app.post("/api/signup")
+def signup(body: Credentials) -> dict:
+    err = auth.validate_credentials(body.username, body.password)
+    if err:
+        raise HTTPException(400, err)
+    username = body.username.strip()
+    with db.session() as conn:
+        try:
+            cur = conn.execute(
+                "INSERT INTO users (username, password_hash, created_at) VALUES (?,?,?)",
+                (username, auth.hash_password(body.password), auth.iso(auth.now())),
+            )
+        except sqlite3.IntegrityError:
+            raise HTTPException(409, "That username is taken.")
+        user_id = cur.lastrowid
+        conn.execute(
+            "INSERT INTO state (user_id, prefs, updated_at) VALUES (?,?,?)",
+            (user_id, "{}", auth.iso(auth.now())),
+        )
+        token = auth.create_session(conn, user_id)
+    return {"token": token, "username": username}
+
+
+@app.post("/api/login")
+def login(body: Credentials) -> dict:
+    with db.session() as conn:
+        row = conn.execute(
+            "SELECT id, username, password_hash FROM users WHERE username = ?",
+            (body.username.strip(),),
+        ).fetchone()
+        # Same message and the same work either way, so a wrong username and a
+        # wrong password are indistinguishable from outside.
+        if not row or not auth.verify_password(body.password, row["password_hash"]):
+            raise HTTPException(401, "Wrong username or password.")
+        token = auth.create_session(conn, row["id"])
+        return {"token": token, "username": row["username"]}
+
+
+@app.post("/api/logout")
+def logout(token: Annotated[str, Depends(bearer)]) -> dict:
+    if token:
+        with db.session() as conn:
+            auth.destroy_session(conn, token)
+    return {"ok": True}
+
+
+@app.get("/api/me")
+def me(user: User) -> dict:
+    return {"username": user["username"]}
+
+
+@app.delete("/api/me")
+def delete_account(user: User) -> dict:
+    """Everything cascades from users, so this really does remove it all."""
+    with db.session() as conn:
+        conn.execute("DELETE FROM users WHERE id = ?", (user["id"],))
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- state
+
+@app.get("/api/state")
+def get_state(user: User) -> dict:
+    with db.session() as conn:
+        row = conn.execute("SELECT prefs FROM state WHERE user_id = ?", (user["id"],)).fetchone()
+    try:
+        prefs = json.loads(row["prefs"]) if row else {}
+    except ValueError:
+        prefs = {}
+    return {"prefs": prefs}
+
+
+@app.put("/api/state")
+def put_state(body: StatePatch, user: User) -> dict:
+    """Whole-blob replace. The client owns the merge, exactly as the `store`
+    helper already does locally, so the two can't disagree on merge rules."""
+    with db.session() as conn:
+        conn.execute(
+            """INSERT INTO state (user_id, prefs, updated_at) VALUES (?,?,?)
+               ON CONFLICT(user_id) DO UPDATE SET prefs = excluded.prefs,
+                                                  updated_at = excluded.updated_at""",
+            (user["id"], json.dumps(body.prefs), auth.iso(auth.now())),
+        )
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- runs
+
+@app.post("/api/runs")
+def post_run(body: RunIn, user: User) -> dict:
+    with db.session() as conn:
+        cur = conn.execute(
+            """INSERT INTO runs
+                 (user_id, deck_id, mode, script, device, is_drill,
+                  total, correct, duration_ms, created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            (
+                user["id"], body.deck_id, body.mode, body.script, body.device,
+                int(body.is_drill), len(body.answers),
+                sum(1 for a in body.answers if a.correct),
+                body.duration_ms, auth.iso(auth.now()),
+            ),
+        )
+        run_id = cur.lastrowid
+        conn.executemany(
+            """INSERT INTO answers
+                 (run_id, user_id, device, mode, deck_id, q, a, given,
+                  correct, revealed, ms, timed)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            [
+                (
+                    run_id, user["id"], body.device, body.mode, body.deck_id,
+                    a.q, a.a, a.given, int(a.correct), int(a.revealed), a.ms,
+                    # A revealed card was never really answered, and one left
+                    # sitting past the cap was not being looked at. Neither is
+                    # evidence of speed; both still count towards accuracy.
+                    int(not a.revealed and a.ms <= analytics.MAX_CARD_MS),
+                )
+                for a in body.answers
+            ],
+        )
+    return {"ok": True, "run_id": run_id}
+
+
+@app.get("/api/analytics")
+def get_analytics(user: User, device: str | None = None) -> dict:
+    with db.session() as conn:
+        if device:
+            if device not in analytics.DEVICES:
+                raise HTTPException(400, "device must be mobile or desktop")
+            return {device: analytics.report(conn, user["id"], device)}
+        return analytics.overview(conn, user["id"])
+
+
+# ---------------------------------------------------------------- static
+
+@app.exception_handler(HTTPException)
+def http_error(request: Request, exc: HTTPException) -> JSONResponse:
+    return JSONResponse({"error": exc.detail}, status_code=exc.status_code)
+
+
+@app.get("/")
+def index() -> FileResponse:
+    return FileResponse(ROOT / "index.html")
+
+
+# Mounted last so every /api route above wins. html=True serves index.html for
+# unknown paths, which keeps a refresh on any URL working.
+app.mount("/", StaticFiles(directory=ROOT, html=True), name="static")

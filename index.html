@@ -57,6 +57,77 @@
       <span class="wide__label">All characters &amp; romaji</span>
       <span class="wide__go" aria-hidden="true">▸</span>
     </button>
+
+    <!-- both hidden unless a backend answers /api/health -->
+    <button type="button" class="wide hidden" id="statsBtn">
+      <span class="wide__mark" lang="ja">記録</span>
+      <span class="wide__label">Your progress</span>
+      <span class="wide__go" aria-hidden="true">▸</span>
+    </button>
+
+    <button type="button" class="wide hidden" id="accountBtn">
+      <span class="wide__mark" lang="ja">名</span>
+      <span class="wide__label">Account · <span id="accountName">Sign in</span></span>
+      <span class="wide__go" aria-hidden="true">▸</span>
+    </button>
+  </section>
+
+  <!-- ───────────── SIGN IN / SIGN UP ───────────── -->
+  <section id="auth" class="screen auth hidden">
+    <p class="eyebrow"><span class="mark" lang="ja">名</span> <span id="authTitle">Sign in</span></p>
+
+    <div class="auth__scroll">
+      <p class="auth__blurb" id="authBlurb">
+        An account saves your settings and records on the server, so they follow you between
+        devices, and unlocks the progress report.
+      </p>
+
+      <form class="auth__form" id="authForm" autocomplete="on">
+        <label class="field">
+          <span class="field__label">Username</span>
+          <input id="authUser" type="text" name="username" autocomplete="username"
+                 autocapitalize="off" autocorrect="off" spellcheck="false"
+                 inputmode="latin" required>
+        </label>
+        <label class="field">
+          <span class="field__label">Password</span>
+          <input id="authPass" type="password" name="password"
+                 autocomplete="current-password" required>
+        </label>
+
+        <p class="auth__msg hidden" id="authMsg" role="status" aria-live="polite"></p>
+
+        <button type="submit" class="btn btn--primary auth__go" id="authSubmit">Sign in</button>
+      </form>
+
+      <button type="button" class="link auth__swap" id="authSwap">
+        No account yet? Create one
+      </button>
+
+      <div class="auth__signedin hidden" id="authSignedIn">
+        <p class="auth__blurb">
+          Signed in as <b id="authWho"></b>. Settings and records sync automatically.
+        </p>
+        <button type="button" class="btn btn--ghost" id="logoutBtn">Sign out</button>
+        <button type="button" class="link auth__danger" id="deleteBtn">Delete account and all data</button>
+      </div>
+    </div>
+
+    <button type="button" class="link" id="authBackBtn">← Back</button>
+  </section>
+
+  <!-- ───────────── PROGRESS ───────────── -->
+  <section id="stats" class="screen stats hidden">
+    <p class="eyebrow"><span class="mark" lang="ja">記録</span> Your progress</p>
+
+    <div class="seg seg--device" role="radiogroup" aria-label="Device">
+      <button type="button" class="seg__btn" data-device="mobile" role="radio" aria-checked="false">Phone</button>
+      <button type="button" class="seg__btn" data-device="desktop" role="radio" aria-checked="true">Desktop</button>
+    </div>
+
+    <div class="stats__scroll" id="statsBody"></div>
+
+    <button type="button" class="link" id="statsBackBtn">← Back</button>
   </section>
 
   <!-- ───────────── PLAY ───────────── -->

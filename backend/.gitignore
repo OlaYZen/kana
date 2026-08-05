@@ -1,0 +1,6 @@
+venv/
+kana.db
+kana.db-wal
+kana.db-shm
+__pycache__/
+.requirements.sha
