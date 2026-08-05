@@ -78,12 +78,9 @@ kana.json     all content — decks, cards, chart layout, font options
 app.js        all logic, one IIFE
 ```
 
-`kana.json` is the only place content lives; `app.js` renders whatever deck it's handed. Adding a
-deck, accepting another romanisation, or changing the chart is a JSON edit, not a code change.
-
-`hiragana-game.html`, `katakana-game.html` and `kana-chart.html` are the superseded standalone
-originals that the four-file app replaced. They are kept for reference and are not wired to
-anything.
+That's the whole app — four files, no dependencies to install and nothing to build. `kana.json` is
+the only place content lives; `app.js` renders whatever deck it's handed. Adding a deck, accepting
+another romanisation, or changing the chart is a JSON edit, not a code change.
 
 Design notes and the invariants worth knowing before changing anything are in
 [CLAUDE.md](CLAUDE.md).

@@ -14,10 +14,11 @@ build step, no dependencies, no package manager, no test suite. Four files are t
 | `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`. No kana or font names live in JS or CSS |
 | `app.js` | all logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
 
-Three standalone HTML files predate the four-file app and are superseded: `hiragana-game.html`
-and `katakana-game.html` (two near-identical copies of the drill) and `kana-chart.html` (a
-self-contained reference chart that pulled fonts off Google Fonts). None are wired to anything —
-they are dead weight, don't sync changes into them.
+Those four plus `README.md` and this file are the entire repository. Three superseded standalone
+pages — `hiragana-game.html`, `katakana-game.html` and `kana-chart.html`, near-identical
+predecessors of the drill and the chart — were deleted; they are in git history at `3ece9c6` if
+one is ever needed. Don't reintroduce a second copy of the game: they drifted out of sync with the
+real app the moment they stopped being loaded.
 
 The project directory used to be called `hkk`, and that name survives in exactly one place: the
 localStorage key. See **Persistence** below — it is deliberate, not a leftover to tidy up.
