@@ -1482,6 +1482,19 @@
            "." + String(total % 1000).padStart(3, "0");
   }
 
+  // When a run was finished. The server stamps runs in UTC; `Date` renders that
+  // in the device's own zone, which is the only one the person reading it was
+  // ever in. Formatted here rather than with toLocaleString so the shape is the
+  // same on every device — a run list that reads 05.07.26 on the phone and
+  // 7/5/26 on the laptop is the same history looking like two.
+  function fmtWhen(iso) {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const p = (n) => String(n).padStart(2, "0");
+    return p(d.getHours()) + ":" + p(d.getMinutes()) + " " +
+           p(d.getDate()) + "." + p(d.getMonth() + 1) + "." + p(d.getFullYear() % 100);
+  }
+
   function deckLabel(id) {
     const deck = state.decks.concat(FLICK_DECKS).find((d) => d.id === id);
     return deck ? deck.label : id;
@@ -1490,7 +1503,13 @@
   function statRow(parent, cells, cls) {
     const row = add(parent, "div", "srow" + (cls ? " " + cls : ""));
     cells.forEach((c) => {
-      const n = add(row, "span", c.cls || null, c.text);
+      const n = add(row, "span", c.cls || null, c.sub == null ? c.text : null);
+      // A cell can carry a second line. Both halves need display:block of their
+      // own or the two run together — the same trap as .deck__name/.deck__meta.
+      if (c.sub != null) {
+        add(n, "span", "srow__t", c.text);
+        add(n, "span", "srow__sub", c.sub);
+      }
       if (c.lang) n.lang = c.lang;
     });
     return row;
@@ -1512,9 +1531,14 @@
     const b = statBlock("Runs", runs.length >= 25 ? "Most recent 25." : null);
     runs.forEach((r) => {
       const pct = r.total ? Math.round(r.correct / r.total * 100) : 0;
-      // the deck is already the heading here, so the row names the mode instead
+      // The deck is already the heading here, so the row names the mode instead,
+      // with when it was finished under it — five columns of figures don't fit
+      // across a small phone, and the two belong together anyway: they are what
+      // the run *was*, as against how it went.
+      const when = fmtWhen(r.created_at);
       statRow(b, [
-        { text: MODE_LABEL[r.mode] || r.mode, cls: "srow__r srow__r--wide" },
+        { text: MODE_LABEL[r.mode] || r.mode, cls: "srow__r srow__r--wide",
+          sub: when || null },
         { text: r.correct + "/" + r.total, cls: "srow__s" },
         { text: fmtExact(r.duration_ms), cls: "srow__s srow__s--time" },
         { text: pct + "%", cls: "srow__v" + (pct < 70 ? " srow__v--bad" : "") }

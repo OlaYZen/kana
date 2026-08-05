@@ -150,9 +150,9 @@ Switching the stamps in here only changes what you're reading; the menu stays wh
 follow, unless there's only one, in which case there's nothing to pick and the heading says which
 it is. Pick a deck and you get that deck's runs — mode, score and time — from the very first one. Below that, once there's enough of them, it works out
 where the effort actually is: which characters you hesitate on, which are already automatic, which
-you get wrong, and what you reach for instead — つ answered as た, say. Each run is listed with its
-exact time down to the millisecond, so two attempts at the same deck are actually comparable. The
-analysis is deliberately cautious about what counts as data:
+you get wrong, and what you reach for instead — つ answered as た, say. Each run is listed with the
+time and date you finished it and its exact length down to the millisecond, so two attempts at the
+same deck are actually comparable. The analysis is deliberately cautious about what counts as data:
 
 - **Each of the six decks is its own dataset.** Katakana tells you nothing about hiragana, and the
   base gojūon tells you nothing about dakuten or yōon — they're separate material. Nothing is ever
@@ -352,8 +352,9 @@ Dark は固定です。ダークは色を反転したものではなく、同じ
 ます（1 つしかないときは選ぶものがないので出ません。見出しにデッキ名が出ます）。デッキを選ぶと、
 そのデッキのラン（答え方、スコア、タイム）が最初の 1 回から並びます。その下には、十分な数がたまってから、実際に手間取っている場所が出ます。
 どの文字で迷うか、どれがもう自動で出るか、どれを間違えるか、そして代わりに何を打っているか —
-たとえば つ を た と答えている、といったことです。ランのタイムはミリ秒まで表示されるので、同じ
-デッキの 2 回を実際に比べられます。分析の部分は、何をデータとして数えるかについて慎重です。
+たとえば つ を た と答えている、といったことです。ラン一覧には終えた日時が並び、長さはミリ秒まで
+出るので、同じデッキの 2 回を実際に比べられます。分析の部分は、何をデータとして数えるかについて
+慎重です。
 
 - **6 つのデッキはそれぞれ別のデータです。** カタカナはひらがなの証拠になりませんし、五十音は
   濁音や拗音の証拠になりません。別の教材だからです。デッキをまたいで平均することはなく、
