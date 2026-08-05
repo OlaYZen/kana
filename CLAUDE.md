@@ -17,7 +17,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `styles.css` | the entire stylesheet, mobile-first |
 | `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`. No kana or font names live in JS or CSS |
 | `app.js` | all front-end logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
-| `icon.svg` | the app icon — see **The icon** below before touching it |
+| `icon.svg` | the app icon, and the source the `.ico` is generated from — see **The icon** |
+| `favicon.ico` | six sizes rasterised from `icon.svg`; what `<link rel="icon">` points at |
 | `start.sh` | install / update / run, executable in git (mode `100755`) |
 | `backend/` | the optional FastAPI server |
 
@@ -400,8 +401,28 @@ dashed guides the app draws characters in. Two things about it are load-bearing:
   contrast so they read as texture when large and disappear when small instead of muddying the
   glyph.
 
-`rel="apple-touch-icon"` points at the same SVG, which iOS does not support — it falls back to a
-screenshot there. Generating PNG sizes would fix that if it ever matters.
+**`favicon.ico` is what the page actually links**, and `icon.svg` is the source it comes from —
+neither is redundant. The `.ico` is the conventional one: it is also the path every browser requests
+unprompted when no link tag resolves, and `StaticFiles` at the root serves it without a route.
+
+It carries **16, 32, 48, 64, 128 and 256**, and every size is rendered from the SVG *at that size*:
+
+```bash
+for s in 16 32 48 64 128 256; do rsvg-convert -w $s -h $s -o icon-$s.png icon.svg; done
+# then packed with Pillow: Image.save("favicon.ico", sizes=[...], append_images=[...])
+```
+
+**Do not generate it by scaling one large raster down.** The 16px frame has to hold up alone —
+that is the whole reason the glyph is SemiBold and the guides are faint — and a 256px render
+squeezed to 16 turns it into the grey mush that choice was made to avoid. Regenerate all six
+whenever `icon.svg` changes, or the favicon quietly keeps showing the old glyph.
+
+The frames are PNG-compressed rather than BMP, which every browser has read for well over a decade
+and which keeps the file at ~21 KB instead of several times that.
+
+`rel="apple-touch-icon"` still points at the SVG, which iOS does not support — it falls back to a
+screenshot there. A 180×180 PNG from the same pipeline would fix that if it ever matters; the `.ico`
+does not, since iOS ignores it for the home screen.
 
 ## Invariants that are easy to break
 
