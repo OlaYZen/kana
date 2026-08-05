@@ -44,7 +44,9 @@ in modern Japanese.
   accepted — `ji` takes じ or ぢ, `zu` takes ず or づ.
 
 In the two typing modes the answer box takes focus on every card, so you can type straight through
-a deck without tapping it again each time. Reveal is always available and counts as a miss — on a
+a deck without tapping it again each time. On a phone the keyboard stays up for the whole run —
+tapping Check, Reveal or the character to continue won't dismiss it. If you close it yourself it
+stays closed until you tap the box again. Reveal is always available and counts as a miss — on a
 phone it sits above the character, clear of the on-screen keyboard, and under the answer box
 everywhere else. Anything you got wrong is listed at the end and can be drilled on its own.
 

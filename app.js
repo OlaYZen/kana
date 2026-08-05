@@ -200,6 +200,7 @@
     answered: 0, correct: 0, streak: 0, bestStreak: 0,
     missed: [],        // unique wrong cards, chart order
     graded: false,     // answer already scored — waiting to advance
+    kbDismissed: false, // user put the on-screen keyboard away; don't force it back
     isDrill: false,
     timer: 0,          // pending auto-advance, cleared whenever the card changes
     startedAt: 0,      // performance.now() when the run began
@@ -342,6 +343,11 @@
   function closeSheet(dialog) {
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
+    // a sheet steals focus while it is up; hand it back so the keyboard returns
+    // with it rather than staying down for the rest of the card
+    if (!el.play.classList.contains("hidden") && state.mode !== "choose") {
+      focusField(typedField().input);
+    }
   }
 
   const sheetIsOpen = () => Boolean(document.querySelector("dialog[open]"));
@@ -516,6 +522,7 @@
     state.answered = 0; state.correct = 0;
     state.streak = 0; state.bestStreak = 0;
     state.missed = [];
+    state.kbDismissed = false;   // a fresh run always offers the keyboard
     store.write({ deck: deck.id });
 
     el.playMark.textContent = deck.sample;
@@ -580,8 +587,40 @@
   // preventScroll: the stage is height-capped, so a focus that scrolls the page
   // drags the dock out from under the keyboard
   function focusField(input) {
+    if (TOUCH && state.kbDismissed) return;      // they closed it on purpose
+    if (document.activeElement === input) return; // already there — don't churn
     try { input.focus({ preventScroll: true }); }
     catch (e) { input.focus(); }
+  }
+
+  /* The on-screen keyboard follows focus, so anything that takes focus off the
+     answer field closes it — and the refocus on the next card opens it again,
+     which reads as the keyboard flickering between every card. Tapping the
+     square to continue, Check, and Reveal all did exactly that.
+
+     preventDefault on the press stops the control taking focus in the first
+     place, so focus never leaves the field and the keyboard simply never moves.
+     The click still fires; this only suppresses the focus side effect.
+
+     Both pointerdown and mousedown are guarded: whichever one a browser treats
+     as the focus trigger has to be the one prevented, and preventing the other
+     as well is harmless. Neither suppresses the click. */
+  function keepKeyboard(node) {
+    const hold = (e) => {
+      if (state.mode === "choose") return;   // nothing is focused to protect
+      e.preventDefault();
+    };
+    node.addEventListener("pointerdown", hold);
+    node.addEventListener("mousedown", hold);
+  }
+
+  // A blur that survives the guards above was the user's own doing — the
+  // keyboard's hide key, or a tap somewhere we don't own. Respect it and stop
+  // forcing the keyboard back up until they put the caret in a field again.
+  function noteBlur() {
+    if (!TOUCH) return;
+    if (sheetIsOpen()) return;              // a sheet took focus, not the user
+    state.kbDismissed = true;
   }
 
   function buildChoices(c) {
@@ -798,6 +837,15 @@
   el.writeSubmitBtn.addEventListener("click", submitTyped);
   el.revealBtn.addEventListener("click", reveal);
   el.revealBtnTop.addEventListener("click", reveal);
+
+  // every control that can be tapped mid-card, so none of them close the keyboard
+  [el.square, el.submitBtn, el.writeSubmitBtn, el.revealBtn, el.revealBtnTop]
+    .forEach(keepKeyboard);
+
+  [el.input, el.kanaInput].forEach((f) => {
+    f.addEventListener("blur", noteBlur);
+    f.addEventListener("focus", () => { state.kbDismissed = false; });
+  });
 
   // Enter must not grade while an IME is composing — that keypress belongs to
   // the IME, which is confirming the kana being built. Without the guard the
