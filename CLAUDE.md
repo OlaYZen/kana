@@ -4,26 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-> The front end is still four static files that work on their own. The backend
-> in `backend/` is **optional**: it adds accounts, server-side saves and the
-> progress report, and if nothing answers `/api/health` the app hides all of
-> that and runs exactly as it always did. Don't make it a hard dependency.
+> The front end is four static files that work on their own — no build step, no bundler, nothing
+> to install. The backend in `backend/` is **optional**: it adds accounts, server-side saves and
+> the progress report, and if nothing answers `/api/health` the app hides all of that and runs
+> exactly as it did before it existed. Don't make it a hard dependency.
 
-`kana` — a Japanese kana (hiragana/katakana) recognition drill. Pure client-side: no backend, no
-build step, no dependencies, no package manager, no test suite. Four files are the app:
+`kana` — a Japanese kana (hiragana/katakana) recognition drill.
 
 | File | Role |
 |---|---|
-| `index.html` | markup only — four screens (`#menu`, `#play`, `#end`, `#fatal`) plus two `<dialog>` sheets (`#fontSheet`, `#chartSheet`); `#play` holds one answer block per mode (`#typeMode`, `#writeMode`, `#chooseMode`) |
+| `index.html` | markup only — six screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`) plus three `<dialog>` sheets (`#moreSheet`, `#fontSheet`, `#chartSheet`); `#play` holds one answer block per mode (`#typeMode`, `#writeMode`, `#chooseMode`) |
 | `styles.css` | the entire stylesheet, mobile-first |
 | `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`. No kana or font names live in JS or CSS |
-| `app.js` | all logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
+| `app.js` | all front-end logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
+| `icon.svg` | the app icon — see **The icon** below before touching it |
+| `start.sh` | install / update / run, executable in git (mode `100755`) |
+| `backend/` | the optional FastAPI server |
 
-Those four plus `README.md` and this file are the entire repository. Three superseded standalone
-pages — `hiragana-game.html`, `katakana-game.html` and `kana-chart.html`, near-identical
-predecessors of the drill and the chart — were deleted; they are in git history at `3ece9c6` if
-one is ever needed. Don't reintroduce a second copy of the game: they drifted out of sync with the
-real app the moment they stopped being loaded.
+That plus `README.md` and this file is the whole repository. Three superseded standalone pages —
+`hiragana-game.html`, `katakana-game.html` and `kana-chart.html`, near-identical predecessors of
+the drill and the chart — were deleted; they are in git history at `3ece9c6` if one is ever
+needed. Don't reintroduce a second copy of the game: they drifted out of sync with the real app
+the moment they stopped being loaded.
 
 The project directory used to be called `hkk`, and that name survives in exactly one place: the
 localStorage key. See **Persistence** below — it is deliberate, not a leftover to tidy up.
@@ -39,8 +41,8 @@ python -m http.server 8000   # front end only, no accounts
 ```
 
 `start.sh` is idempotent: it only pulls when the tree is clean, only reinstalls when
-`requirements.txt`'s hash changed, and FastAPI serves the four static files itself, so there is
-one origin and no CORS.
+`requirements.txt`'s hash changed, and FastAPI serves the static files itself, so there is one
+origin and no CORS.
 
 It binds **0.0.0.0** by default and prints the LAN address, because the flick drills only exist on
 a touch device — testing them means opening the app on a phone, and a loopback-only bind makes
@@ -80,7 +82,7 @@ Six decks: base / dakuten / combination × hiragana / katakana (46 / 25 / 36 car
 total). Obsolete kana (ゐ ゑ ヰ ヱ, the archaic yi/ye/wu forms, polysyllabics) are excluded on
 purpose — do not "complete" the charts by adding them back.
 
-**Three answer modes**, chosen on the menu and held in `state.mode`:
+**Three answer modes**, chosen in the Options sheet and held in `state.mode`:
 
 | mode | prompt | answer | graded by |
 |---|---|---|---|
@@ -132,12 +134,14 @@ chart sheet and reused by `.scriptbar`) filter `#decks` to that script's three d
 `--accent` vermilion/indigo via `[data-script]` on `.menu`, mirroring the chart sheet. The chart
 opens on whatever the menu is showing.
 
-**Persistence** is one localStorage key, `hkk.v1` (`STORE` in `app.js`), holding
+**Persistence** is localStorage key `hkk.v1` (`STORE` in `app.js`), holding
 `{rev, mode, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
 merges patches — never `setItem` directly. **Do not rename the key to match the `kana` directory**:
 it is the only handle on a returning user's saved bests, and changing it silently wipes every
 record anyone has set. `rev` versions the *shape* inside the key, which is how shape changes ship
-without renaming it.
+without renaming it. The session token lives in a *second* key, `hkk.token` — deliberately
+outside the synced blob, since the blob is uploaded to the server and a token has no business
+making that round trip.
 
 **Records belong to a deck _and_ a mode**, keyed `deckId|mode` by `recordKey()` — reading kana,
 picking from four, and writing kana from a sound are three different skills, and pooling them let
@@ -214,8 +218,8 @@ through its setter or the screen keeps showing the previous device's settings.
 
 ### What the analytics deliberately throw away
 
-The rules exist because raw timings from a practice app are mostly noise. All four are enforced in
-`analytics.py`, and each one costs data on purpose:
+The rules exist because raw timings from a practice app are mostly noise. All of them are
+enforced in `analytics.py`, and each one costs data on purpose:
 
 - **Every deck is its own dataset.** `report()` takes a `deck_id` and nothing is ever summed
   across decks: katakana is not evidence about hiragana, and base gojūon is not evidence about
@@ -254,6 +258,23 @@ Medians, not means, throughout — with a hard cap at one end and real hesitatio
 slow card must not move the number. Confusions are cross-referenced through `kana.json` so a wrong
 answer is reported as the character the user reached for ("つ → た"), and a pair needs to appear
 twice before it is called a pattern rather than a slip.
+
+## The icon
+
+`icon.svg` is hiragana あ on the cream ground, inside the same genkō-yōshi square with the same
+dashed guides the app draws characters in. Two things about it are load-bearing:
+
+- **The glyph is an outlined `<path>`, not `<text>`.** An icon must render where no Japanese font
+  is installed — which is most Windows machines. A `<text>` element would fall back to tofu or
+  vanish. It was outlined from Noto Serif CJK JP with `fontTools`; regenerate the same way rather
+  than reaching for `<text>`, and keep the file free of `@font-face` and external references.
+- **SemiBold, not Regular.** A Mincho face at Regular weight breaks up into grey mush at 16 px.
+  This was chosen by rendering at 16 px and looking, not by taste. The guides are deliberately low
+  contrast so they read as texture when large and disappear when small instead of muddying the
+  glyph.
+
+`rel="apple-touch-icon"` points at the same SVG, which iOS does not support — it falls back to a
+screenshot there. Generating PNG sizes would fix that if it ever matters.
 
 ## Invariants that are easy to break
 
@@ -345,16 +366,27 @@ installed, so `mincho`, `textbook` and `rounded` are commonly absent.
 
 ## Verifying changes
 
-There is no test runner. Verification means driving the real DOM in the browser and asserting on
-geometry and state — `read_page`, then `javascript_tool` to script a run and measure.
+**No test suite is committed.** Nothing in the repo runs tests, and there is no test runner to
+invoke. What follows is how to build one in a scratch directory — do that rather than assuming a
+change is fine because it looks fine.
 
-**When no browser is available**, `app.js` runs fine under jsdom, which is enough to drive an
-entire run end to end (script switching, all three modes, grading, records) — install jsdom in a
-scratch directory, not the project, and stub four things: `fetch` returning `kana.json`,
-`HTMLDialogElement.prototype.showModal`/`close` (jsdom implements neither), and `matchMedia`.
-Canvas is absent, so font probing takes its documented privacy-mode path and offers everything
-unverified. **jsdom has no layout engine** — it proves logic, never geometry, so anything about
-size, overflow or collision still needs a real browser.
+**Front end — jsdom.** `app.js` runs under it unmodified, which is enough to drive whole runs end
+to end: script switching, all four modes, grading, records, the account flow, the progress screen.
+Install jsdom in a scratch directory, never the project, and stub four things — `fetch` (return
+`kana.json`, and *reject* `/api/*` unless you are deliberately testing the backend path),
+`HTMLDialogElement.prototype.showModal`/`close` (jsdom implements neither), `matchMedia`, and
+`confirm`. Canvas is absent, so font probing takes its documented privacy-mode path and offers
+everything unverified. Two traps: **advance a graded card by clicking `#square`** rather than
+waiting out the 620 ms auto-advance, or a suite with several full runs in it takes minutes; and
+**`window.performance` has only a getter**, so it cannot be reassigned.
+
+**Backend — a real server.** Start it on a random port and drive it with `urllib`; no HTTP client
+dependency is needed. It must be a **fresh process per suite run**: the rate limiter is in-memory
+by design, so a suite that trips it (any suite testing the throttle must run last) will fail the
+login tests on a second pass against the same process.
+
+**jsdom has no layout engine** — it proves logic, never geometry. Anything about size, overflow,
+collision or whether a control is on screen still needs a real browser.
 
 Two environment quirks worth knowing:
 
