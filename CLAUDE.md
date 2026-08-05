@@ -101,6 +101,13 @@ both ways. Three rules follow from that and are what keep it to one block:
 hints sit on cards more often than not, and the card is the lighter surface. A value that clears
 the ground and fails the card is the trap here, and it is where the first pass landed.
 
+**`--page-bg`'s glow is matched by proportion, not by step**, and the two themes therefore look
+nothing alike in the source: light lifts twelve points off its ground, dark three. Equal RGB steps
+are not equal gradients — +12 on cream's 239 is a 4% lift the eye barely registers, while +12 on
+sumi's 27 is +58% luminance and reads as a spotlight pointed at the top of the page. Both now fall
+off ~3.8%. Keep the dark step neutral as well as small; a warm one reads as a glow rather than as
+paper catching light, which is what made the first version obvious.
+
 Six decks: base / dakuten / combination × hiragana / katakana (46 / 25 / 36 cards each, 214
 total). Obsolete kana (ゐ ゑ ヰ ヱ, the archaic yi/ye/wu forms, polysyllabics) are excluded on
 purpose — do not "complete" the charts by adding them back.

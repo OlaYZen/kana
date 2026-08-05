@@ -150,8 +150,15 @@
 
   --square-bg: linear-gradient(180deg, #2A251D 0%, #1D1A15 140%);
 
+  /* The glow sits *much* closer to the ground than the light theme's does, and
+     copying that one's step across is the mistake here: identical RGB deltas
+     are not identical gradients. On cream, +12 on 239 is a 4% lift the eye
+     reads as almost nothing; on sumi the same +12 on 27 is +58% luminance and
+     reads as a spotlight. What has to match is the *proportion*, which puts
+     this three points off the ground, not twelve. Keep it neutral too — a warm
+     step reads as a glow rather than as paper catching light. */
   --page-bg:
-    radial-gradient(1100px 620px at 50% -12%, #262117 0%, transparent 62%),
+    radial-gradient(1100px 620px at 50% -12%, #1E1C19 0%, transparent 62%),
     var(--paper);
 }
 
