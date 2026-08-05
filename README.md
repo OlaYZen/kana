@@ -146,8 +146,10 @@ counts as data:
 - **Anything over 10 seconds on a card is not a time.** That's you looking away, not you thinking,
   so it's dropped from the speed figures. It still counts against accuracy — you did answer it.
 - **Revealed answers are never timed** either, for the same reason.
-- **Drills don't count.** A drill re-tests what the results screen just showed you, on the cards
-  you already know you're weak at; neither its speed nor its accuracy describes how you're doing.
+- **Drills don't appear at all.** A drill re-tests what the results screen just showed you, on the
+  cards you already know you're weak at — neither its speed nor its accuracy describes how you're
+  doing, and a short high score sitting in the history beside a full run just muddies it. They're
+  still recorded, they're simply not shown.
 - **Phone and desktop are kept apart.** Typing romaji on a keyboard and flicking on glass aren't
   comparable, so each has its own figures and you pick which to look at.
 

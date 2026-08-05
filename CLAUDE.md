@@ -236,9 +236,12 @@ The rules exist because raw timings from a practice app are mostly noise. All fo
   not someone thinking. The answer still counts towards *accuracy* — they did eventually answer —
   so the two are tracked separately by the `timed` column.
 - **Reveals are never timed** either, for the same reason: nothing was recalled.
-- **Drills are excluded from every figure**, not just from the run count. A drill re-tests what the
-  results screen just showed you, seconds earlier, on a deliberately hard subset — its speed is
-  fresh recall and its card mix is skewed.
+- **Drills are excluded from everything the API returns** — every figure, the run count, *and*
+  `recent_runs`. A drill re-tests what the results screen just showed you seconds earlier, on a
+  deliberately hard subset: its speed is fresh recall, its card mix is skewed, and "18/20, 0:31"
+  sitting in the history beside a full 46-card run reads as a result when it isn't one. They are
+  still stored in full — the rows exist, they are simply never selected — so the decision is one
+  query away from being reversed.
 - **Mobile and desktop are never pooled.** Typing romaji on a keyboard and flicking on glass are
   different physical acts. Every figure belongs to one bucket; the client sends `device` from the
   same `TOUCH` test the rest of the app uses.
