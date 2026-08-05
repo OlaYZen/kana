@@ -45,8 +45,7 @@ one origin and no CORS.
 It binds **0.0.0.0** by default and prints the LAN address, because the flick drills only exist on
 a touch device — testing them means opening the app on a phone, and a loopback-only bind makes
 that impossible. The cost is that the whole network can reach it over plain HTTP; `--host
-127.0.0.1` is the way back. There is no rate limiting on `/api/login`, which is worth knowing
-before this is pointed at anything less friendly than a home network.
+127.0.0.1` is the way back.
 
 Kana glyphs need a CJK-capable font installed on the host to render at all.
 
@@ -170,9 +169,29 @@ switching kana faces never reshuffles the numbers.
 
 ## The backend
 
-`backend/app/` — `db.py` (SQLite, no ORM), `auth.py`, `analytics.py`, `main.py` (routes + static).
-Three pure dependencies; passwords are stdlib PBKDF2 rather than bcrypt so `pip install` needs no
-compiler. Sessions are opaque tokens stored only as their SHA-256.
+`backend/app/` — `db.py` (SQLite, no ORM), `auth.py`, `ratelimit.py`, `analytics.py`, `main.py`
+(routes + static). Three pure dependencies; passwords are stdlib PBKDF2 rather than bcrypt so
+`pip install` needs no compiler. Sessions are opaque tokens stored only as their SHA-256.
+
+**Sign-in is throttled** (`ratelimit.py`), in-process and in-memory — one server, no Redis to
+stand up, and counters that reset on restart, which is the right trade for a home network. Four
+things about it are deliberate:
+
+- **The check runs before the password is verified.** A throttled attempt costs ~7 ms instead of a
+  600k-round PBKDF2, so the limit protects the CPU as much as the account. Move the check below
+  the verify and that property is silently lost.
+- **Only failures count, and a success clears the counter**, so signing in normally is never
+  throttled however often you do it.
+- **Per-IP is the real limit; per-username is deliberately much slacker.** A strict per-username
+  limit lets anyone lock a user out of their own account by submitting rubbish for their name —
+  trading a small attack for a more annoying one.
+- **`exc.headers` must survive the custom exception handler**, or the `Retry-After` on a 429 is
+  dropped and the client is told to wait without being told how long.
+
+Signup is limited separately (it counts successes too — the cap is on how fast accounts can be
+created at all). Behind a reverse proxy every request appears to come from the proxy, which
+collapses per-IP into one global bucket; that needs uvicorn's `--proxy-headers` and
+`--forwarded-allow-ips`, and never blind trust in `X-Forwarded-For`.
 
 **There are no admin routes and no admin flag.** Every query is scoped to the authenticated user.
 Keep it that way — a "just for debugging" cross-user read is the whole security model gone.

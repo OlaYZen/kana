@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import analytics, auth, db
+from . import analytics, auth, db, ratelimit
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -86,8 +86,21 @@ def health() -> dict:
     return {"ok": True}
 
 
+def _throttle(limiter: ratelimit.AttemptLimiter, key: str, what: str) -> None:
+    wait = limiter.retry_after(key)
+    if wait:
+        raise HTTPException(
+            429,
+            f"Too many {what}. Try again in {wait} second{'' if wait == 1 else 's'}.",
+            headers={"Retry-After": str(wait)},
+        )
+
+
 @app.post("/api/signup")
-def signup(body: Credentials) -> dict:
+def signup(body: Credentials, request: Request) -> dict:
+    ip = ratelimit.client_ip(request)
+    # otherwise a network-reachable server can be filled with junk accounts
+    _throttle(ratelimit.signup_ip, ip, "new accounts from here")
     err = auth.validate_credentials(body.username, body.password)
     if err:
         raise HTTPException(400, err)
@@ -99,6 +112,7 @@ def signup(body: Credentials) -> dict:
                 (username, auth.hash_password(body.password), auth.iso(auth.now())),
             )
         except sqlite3.IntegrityError:
+            ratelimit.signup_ip.record(ip)
             raise HTTPException(409, "That username is taken.")
         user_id = cur.lastrowid
         conn.execute(
@@ -106,11 +120,20 @@ def signup(body: Credentials) -> dict:
             (user_id, "{}", auth.iso(auth.now())),
         )
         token = auth.create_session(conn, user_id)
+        ratelimit.signup_ip.record(ip)
     return {"token": token, "username": username}
 
 
 @app.post("/api/login")
-def login(body: Credentials) -> dict:
+def login(body: Credentials, request: Request) -> dict:
+    ip = ratelimit.client_ip(request)
+    name = body.username.strip().lower()
+
+    # Checked before the password is verified, so a throttled attempt costs no
+    # PBKDF2 work — the throttle protects the CPU as much as the account.
+    _throttle(ratelimit.login_ip, ip, "sign-in attempts from here")
+    _throttle(ratelimit.login_user, name, "sign-in attempts for that account")
+
     with db.session() as conn:
         row = conn.execute(
             "SELECT id, username, password_hash FROM users WHERE username = ?",
@@ -119,7 +142,13 @@ def login(body: Credentials) -> dict:
         # Same message and the same work either way, so a wrong username and a
         # wrong password are indistinguishable from outside.
         if not row or not auth.verify_password(body.password, row["password_hash"]):
+            ratelimit.login_ip.record(ip)
+            ratelimit.login_user.record(name)
             raise HTTPException(401, "Wrong username or password.")
+        # Proving you own the account clears the count, so normal use — even
+        # after a few fumbled attempts — is never throttled.
+        ratelimit.login_ip.clear(ip)
+        ratelimit.login_user.clear(name)
         token = auth.create_session(conn, row["id"])
         return {"token": token, "username": row["username"]}
 
@@ -224,7 +253,10 @@ def get_analytics(user: User, device: str | None = None) -> dict:
 
 @app.exception_handler(HTTPException)
 def http_error(request: Request, exc: HTTPException) -> JSONResponse:
-    return JSONResponse({"error": exc.detail}, status_code=exc.status_code)
+    # exc.headers must be carried through, or the Retry-After on a 429 is lost
+    # and the client is told to wait without being told how long.
+    return JSONResponse({"error": exc.detail}, status_code=exc.status_code,
+                        headers=exc.headers)
 
 
 @app.get("/")
