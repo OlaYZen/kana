@@ -1,0 +1,875 @@
+/* ==========================================================================
+   Kana Practice — single stylesheet, mobile-first.
+
+   Layout model
+   ------------
+   body      : full dynamic-viewport box, safe-area padded
+   .stage    : the column everything lives in (capped at 440px / 760px)
+   .screen   : one flex column per screen, grows to fill .stage
+   .play     : playbar (fixed) · playmain (flexes, holds the square) · dock (fixed)
+
+   The square is sized off dvh as well as vw, and the viewport meta uses
+   interactive-widget=resizes-content, so opening the on-screen keyboard
+   shrinks the character instead of pushing the answer box off-screen.
+
+   Colour
+   ------
+   Washi paper throughout: cream ground, ink text, vermilion seal accent. The
+   accent colours are deliberately darker than a dark theme would use — the same
+   red/gold/green at "glowing on indigo" lightness fails contrast on cream.
+   ========================================================================== */
+
+:root{
+  --paper:      #EFE9DC;  /* page ground */
+  --paper-card: #FBF8F1;  /* raised card / panel */
+  --paper-sunk: #E7E0CE;  /* inset: progress track, pressed states */
+  --gap-empty:  #E3DCC9;  /* an intentionally blank chart cell */
+  --hairline:   #D8D0BC;  /* every border */
+  --hairline-2: #BFB59B;  /* hairline on hover */
+
+  --c-ink:      #24211C;  /* primary text */
+  --c-ink-soft: #5B564C;  /* secondary text */
+  --c-ink-mute: #6F6859;  /* tertiary — labels, hints, placeholders */
+
+  --shu:      #B23A26;  /* vermilion / seal red */
+  --shu-2:    #9A2F1D;
+  --matcha:   #4F6B22;  /* correct green */
+  --brass:    #8A6410;  /* record gold */
+  --brass-2:  #B8892A;  /* lighter end of the progress gradient */
+  --ai:       #2B4570;  /* indigo — the katakana accent */
+  --guide:    #C8BFA6;  /* practice-square cross guides */
+
+  --accent:      var(--shu);   /* flips per script inside the chart sheet */
+  --accent-dark: #7E2717;
+
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --mincho: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP",
+            "MS PMincho", "Songti SC", serif;
+
+  /* Every Japanese character on screen uses this. app.js overwrites it with the
+     stack picked in the font sheet; --mincho stays put for the Latin numerals
+     so switching kana faces never moves the score display around. */
+  --kana: var(--mincho);
+
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  --pad: 14px;                 /* gutter around the stage */
+  --tap: 44px;                 /* minimum touch target */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+
+*{ box-sizing:border-box; }
+
+html{ -webkit-text-size-adjust:100%; color-scheme:light; }
+
+body{
+  margin:0;
+  min-height:100dvh;
+  padding:calc(var(--pad) + var(--safe-t)) calc(var(--pad) + var(--safe-r))
+          calc(var(--pad) + var(--safe-b)) calc(var(--pad) + var(--safe-l));
+  font-family:var(--sans);
+  color:var(--c-ink);
+  background:
+    radial-gradient(1100px 620px at 50% -12%, #FBF7EC 0%, transparent 62%),
+    var(--paper);
+  background-attachment:fixed;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overscroll-behavior-y:contain;
+  -webkit-font-smoothing:antialiased;
+}
+
+.stage{
+  --avail:calc(100dvh - 2 * var(--pad) - var(--safe-t) - var(--safe-b));
+  width:100%;
+  max-width:440px;
+  display:flex;
+  flex-direction:column;
+  /* fill the viewport on phones, stay a centered card on big screens… */
+  min-height:min(760px, var(--avail));
+  /* …but never exceed it: long content scrolls inside .menu__scroll /
+     .end__scroll instead of scrolling the page out from under the dock. */
+  max-height:var(--avail);
+}
+
+.screen{ flex:1; display:flex; flex-direction:column; min-height:0; }
+
+.hidden{ display:none !important; }
+
+/* ── shared type ──────────────────────────────────────────────────────── */
+.eyebrow{
+  display:flex; align-items:baseline; gap:10px;
+  justify-content:center;
+  margin:0 0 18px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  font-size:12px;
+  color:var(--c-ink-soft);
+}
+.eyebrow .mark{
+  font-family:var(--kana);
+  font-size:19px;
+  letter-spacing:0;
+  text-transform:none;
+  color:var(--c-ink);
+}
+
+.section-title{
+  font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--c-ink-mute); margin:24px 0 12px;
+}
+
+/* ── buttons ──────────────────────────────────────────────────────────── */
+button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+
+.btn{
+  font-family:var(--sans); font-size:15px; font-weight:600;
+  min-height:var(--tap);
+  padding:0 20px; border-radius:var(--r-md); cursor:pointer;
+  border:1px solid transparent; white-space:nowrap;
+  transition:transform .06s, background .15s, border-color .15s, color .15s;
+}
+.btn:active{ transform:translateY(1px); }
+.btn--primary{ background:var(--shu); color:#fff; }
+.btn--ghost{ background:var(--paper-card); color:var(--c-ink-soft); border-color:var(--hairline); }
+
+.link{
+  background:none; border:none; color:var(--c-ink-soft);
+  font-size:14px; font-family:var(--sans);
+  cursor:pointer;
+  min-height:var(--tap); padding:0 4px;
+  display:inline-flex; align-items:center;
+}
+
+.hint{
+  font-size:13.5px; color:var(--c-ink-mute);
+  min-height:var(--tap); padding:0 4px;
+  display:inline-flex; align-items:center;
+}
+
+/* keyboard hints are noise on touch devices */
+@media (hover:none) and (pointer:coarse){
+  .hint--keys{ display:none; }
+}
+
+.iconbtn{
+  width:var(--tap); height:var(--tap);
+  flex:0 0 auto;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:19px; line-height:1;
+  color:var(--c-ink-soft);
+  background:none; border:none; border-radius:50%;
+  cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.iconbtn:active{ background:rgba(0,0,0,.07); color:var(--c-ink); }
+.iconbtn--kana{ font-family:var(--kana); font-size:17px; }
+
+@media (hover:hover){
+  .btn--primary:hover{ background:var(--shu-2); }
+  .btn--ghost:hover{ border-color:var(--hairline-2); color:var(--c-ink); }
+  .link:hover{ color:var(--c-ink); text-decoration:underline; }
+  .iconbtn:hover{ background:rgba(0,0,0,.07); color:var(--c-ink); }
+}
+
+:where(button,input):focus-visible{
+  outline:2px solid var(--shu);
+  outline-offset:2px;
+}
+
+/* ── menu ─────────────────────────────────────────────────────────────── */
+.menu__scroll{
+  flex:1; min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  /* let a long list bleed to the edges of its own scroller */
+  margin-inline:calc(var(--pad) * -1);
+  padding-inline:var(--pad);
+}
+
+.decks{ display:grid; gap:9px; }
+
+.deck{
+  display:grid;
+  grid-template-columns:52px 1fr auto;
+  align-items:center;
+  gap:12px;
+  text-align:left;
+  min-height:64px;
+  padding:11px 13px;
+  border-radius:var(--r-lg);
+  background:var(--paper-card);
+  border:1px solid var(--hairline);
+  color:var(--c-ink);
+  font-family:var(--sans);
+  cursor:pointer;
+  transition:border-color .15s, background .15s, transform .06s;
+}
+.deck:active{ transform:translateY(1px); background:var(--paper-sunk); }
+@media (hover:hover){
+  .deck:hover{ border-color:var(--hairline-2); background:#FFFDF7; }
+}
+
+.deck__sample{
+  font-family:var(--kana);
+  font-size:25px; line-height:1;
+  color:var(--c-ink);
+  background:var(--paper);
+  border:1px solid var(--hairline);
+  border-radius:var(--r-sm);
+  height:44px;
+  display:flex; align-items:center; justify-content:center;
+}
+.deck--combo .deck__sample{ font-size:18px; }
+
+/* both are spans inside one grid cell — they must stack, not run together */
+.deck__name{ display:block; font-size:15px; font-weight:600; }
+.deck__meta{ display:block; font-size:12px; color:var(--c-ink-soft); margin-top:3px; }
+
+.deck__best{
+  font-family:var(--mincho);
+  font-size:16px;
+  color:var(--brass);
+  text-align:right;
+  min-width:42px;
+  line-height:1.15;
+}
+.deck__pct{ display:block; }
+/* fastest clean run — secondary to the score, still clearly a record */
+.deck__time{ display:block; font-size:12.5px; color:rgba(138,100,16,.78); }
+.deck__best small{
+  display:block;
+  font-family:var(--sans);
+  font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--c-ink-mute); margin-top:2px;
+}
+
+.modebar{
+  flex:0 0 auto;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-top:14px; padding-top:12px;
+  border-top:1px solid var(--hairline);
+}
+.modebar__label{
+  font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--c-ink-mute);
+}
+.seg{
+  display:inline-flex; gap:2px; padding:3px;
+  background:var(--paper-sunk);
+  border:1px solid var(--hairline);
+  border-radius:9px;
+}
+.seg__btn{
+  font-family:var(--sans); font-size:13.5px; font-weight:600;
+  color:var(--c-ink-soft); background:none; border:none;
+  min-height:38px; padding:0 15px; border-radius:7px; cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.seg__btn[aria-checked="true"]{ background:var(--paper-card); color:var(--c-ink); box-shadow:0 1px 2px rgba(60,50,30,.14); }
+
+.modebar--font{ margin-top:10px; padding-top:10px; }
+
+.fontpick{
+  display:inline-flex; align-items:center; gap:8px;
+  min-height:40px; padding:0 11px;
+  background:var(--paper-card); border:1px solid var(--hairline); border-radius:9px;
+  color:var(--c-ink); font-family:var(--sans); font-size:13.5px; font-weight:600;
+  cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.fontpick:active{ background:var(--paper-sunk); }
+@media (hover:hover){ .fontpick:hover{ border-color:var(--hairline-2); } }
+.fontpick__sample{
+  font-family:var(--kana); font-size:19px; line-height:1;
+  color:var(--c-ink); background:var(--paper);
+  border:1px solid var(--hairline);
+  width:26px; height:26px; border-radius:5px;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.fontpick__name{ max-width:12ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.wide{
+  display:flex; align-items:center; gap:10px;
+  width:100%; min-height:var(--tap);
+  margin-top:9px; padding:0 12px;
+  background:var(--paper-card); border:1px solid var(--hairline); border-radius:var(--r-lg);
+  color:var(--c-ink); font-family:var(--sans); font-size:14px; font-weight:600;
+  cursor:pointer; text-align:left;
+  transition:border-color .15s, background .15s, transform .06s;
+}
+.wide:active{ transform:translateY(1px); background:var(--paper-sunk); }
+@media (hover:hover){ .wide:hover{ border-color:var(--hairline-2); background:#FFFDF7; } }
+.wide__mark{
+  font-family:var(--kana); font-size:13px; font-weight:400;
+  color:var(--c-ink); background:var(--paper);
+  border:1px solid var(--hairline);
+  padding:3px 6px; border-radius:5px;
+}
+.wide__label{ flex:1; min-width:0; }
+.wide__go{ color:var(--c-ink-soft); font-size:15px; }
+
+/* ── sheets ───────────────────────────────────────────────────────────── */
+.sheet{
+  margin:0; padding:0; border:0;
+  position:fixed; inset:auto 0 0 0;
+  width:100%; max-width:100%;
+  max-height:84dvh;
+  background:var(--paper);
+  border-top:1px solid var(--hairline);
+  border-radius:18px 18px 0 0;
+  color:var(--c-ink);
+  flex-direction:column;
+  box-shadow:0 -20px 50px -22px rgba(60,50,30,.45);
+}
+/* `display` belongs on [open] only. An author `display:flex` on .sheet itself
+   would beat the UA's `dialog:not([open]){display:none}` — author rules always
+   win over UA rules — leaving a dead, unclosable panel in the page. */
+.sheet:not([open]){ display:none; }
+.sheet[open]{ display:flex; animation:sheet-in .22s cubic-bezier(.2,.9,.3,1); }
+@keyframes sheet-in{ from{ transform:translateY(14px); opacity:.4; } to{ transform:none; opacity:1; } }
+.sheet::backdrop{ background:rgba(36,33,28,.42); }
+
+.sheet__head{
+  flex:0 0 auto;
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:6px 8px 6px 18px;
+  border-bottom:1px solid var(--hairline);
+}
+.sheet__title{
+  margin:0; font-size:11px; font-weight:600;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--c-ink-soft);
+}
+.sheet__body{
+  flex:1 1 auto; min-height:0;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:12px 14px calc(14px + var(--safe-b));
+}
+.sheet__note{
+  margin:14px 2px 0;
+  font-size:12.5px; line-height:1.55; color:var(--c-ink-soft);
+}
+
+.fonts{ display:grid; gap:8px; }
+
+.font{
+  display:grid; grid-template-columns:58px 1fr 20px;
+  align-items:center; gap:13px;
+  text-align:left;
+  min-height:64px; padding:9px 11px;
+  background:var(--paper-card); border:1px solid var(--hairline); border-radius:var(--r-lg);
+  color:var(--c-ink); font-family:var(--sans);
+  cursor:pointer;
+  transition:border-color .15s, background .15s, transform .06s;
+}
+.font:active{ transform:translateY(1px); }
+@media (hover:hover){ .font:hover{ border-color:var(--hairline-2); background:#FFFDF7; } }
+.font[aria-checked="true"]{ border-color:var(--brass); background:#FFFDF7; }
+
+.font__sample{
+  /* font-family is set per option by app.js */
+  font-size:32px; line-height:1;
+  height:50px;
+  color:var(--c-ink);
+  background:var(--paper);
+  border:1px solid var(--hairline);
+  border-radius:var(--r-sm);
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+.font__name{ display:block; font-size:15px; font-weight:600; }
+.font__name .ja{ font-family:var(--kana); font-weight:400; color:var(--c-ink-soft); margin-left:6px; }
+.font__note{ display:block; font-size:12px; color:var(--c-ink-soft); margin-top:3px; }
+/* the tick marks the active font — hidden, not removed, so rows never reflow */
+.font__tick{ font-size:15px; color:var(--brass); text-align:center; visibility:hidden; }
+.font[aria-checked="true"] .font__tick{ visibility:visible; }
+
+@media (min-width:600px){
+  .sheet{
+    inset:0; margin:auto;
+    width:calc(100% - 40px); max-width:410px;
+    max-height:min(78dvh, 620px);
+    border:1px solid var(--hairline); border-radius:var(--r-lg);
+  }
+  /* the reference tables want the extra width when there is any */
+  .sheet--chart{ max-width:700px; max-height:min(90dvh, 940px); }
+  @keyframes sheet-in{ from{ transform:scale(.97); opacity:.4; } to{ transform:none; opacity:1; } }
+}
+.sheet--chart{ max-height:92dvh; }
+
+/* ══ character chart ══════════════════════════════════════════════════════
+   The palette is now the app's own, so the chart only re-points the accent —
+   vermilion for hiragana, indigo for katakana.                              */
+.sheet--chart[data-script="katakana"]{
+  --accent:var(--ai);
+  --accent-dark:#1B2C47;
+}
+
+/* ── seal-stamp script switcher ───────────────────────────────────────── */
+.chart__switch{
+  flex:0 0 auto;
+  display:flex; justify-content:center; gap:12px;
+  padding:14px 14px 12px;
+  border-bottom:1px solid var(--hairline);
+}
+.hanko{
+  width:96px; min-height:88px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
+  background:var(--paper-card);
+  border:2px solid transparent;
+  border-radius:8px;
+  color:var(--c-ink-soft);
+  font-family:var(--sans);
+  cursor:pointer;
+  transition:transform .15s ease, border-color .15s, color .15s;
+}
+.hanko__glyph{ font-family:var(--kana); font-size:34px; line-height:1; color:var(--c-ink); }
+.hanko__label{ font-size:12px; letter-spacing:.04em; }
+.hanko[aria-checked="true"]{
+  border-color:var(--accent);
+  color:var(--accent-dark);
+  transform:rotate(-1.5deg);
+  box-shadow:0 0 0 3px var(--paper) inset;
+}
+.hanko[aria-checked="true"] .hanko__glyph{ color:var(--accent); }
+@media (hover:hover){
+  .hanko:not([aria-checked="true"]):hover{ transform:translateY(-2px); color:var(--c-ink); }
+}
+
+/* ── masthead + blocks ────────────────────────────────────────────────── */
+.chart__body{ padding:16px 14px calc(20px + var(--safe-b)); }
+
+.chart__masthead{ text-align:center; margin:0 0 22px; }
+.chart__masthead h3{
+  font-family:var(--kana); font-weight:600;
+  font-size:34px; line-height:1.1; margin:0;
+  letter-spacing:.02em; color:var(--c-ink);
+}
+.chart__masthead p{
+  margin:6px 0 0;
+  font-size:11.5px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--c-ink-soft);
+}
+
+.chart__block{ margin-bottom:30px; }
+.chart__block:last-child{ margin-bottom:6px; }
+.chart__block h4{
+  display:flex; align-items:baseline; gap:9px; flex-wrap:wrap;
+  margin:0 0 2px; padding-bottom:7px;
+  border-bottom:1px solid var(--hairline);
+  font-family:var(--kana); font-weight:600; font-size:17px;
+  color:var(--c-ink);
+}
+.chart__block h4 .en{
+  font-family:var(--sans); font-weight:400; font-size:12px;
+  letter-spacing:.03em; color:var(--c-ink-soft);
+}
+
+/* ── grids ────────────────────────────────────────────────────────────── */
+/* a real table so <th scope> keeps headers tied to their cells;
+   table-layout:fixed gives the even columns a grid would */
+.chart{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:separate;
+  border-spacing:4px;
+  margin:10px -4px 0;
+}
+.chart th{
+  font-family:var(--mono); font-weight:400; font-size:11px;
+  color:var(--c-ink-soft);
+}
+.chart thead th{ padding-bottom:2px; }
+.chart thead th:first-child{ width:44px; }
+.chart td{ padding:0; text-align:center; vertical-align:middle; }
+.chart td.is-gap{
+  background:var(--gap-empty);
+  border:1px dashed var(--hairline);
+  border-radius:6px;
+}
+
+/* the loose wrapping lists (yōon, extended katakana) */
+.chart--flow{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(74px, 1fr));
+  gap:4px;
+  margin-top:10px;
+}
+.chart--single{ margin-top:8px; width:88px; }
+
+.kcell{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:5px;
+  min-height:62px;
+  padding:6px 2px;
+  background:var(--paper-card);
+  border:1px solid var(--hairline);
+  border-radius:6px;
+}
+.kcell__k{
+  font-family:var(--kana);
+  font-size:24px; line-height:1;
+  color:var(--c-ink);
+}
+.kcell__r{
+  font-family:var(--mono); font-size:11px; line-height:1;
+  letter-spacing:.02em; color:var(--c-ink-soft);
+}
+
+.chart__note{
+  margin:22px 0 0; text-align:center;
+  font-size:11.5px; line-height:1.6; color:var(--c-ink-soft);
+}
+.chart__notetext{ display:block; }
+.chart__seal{
+  display:inline-block; margin-bottom:9px; padding:4px 10px;
+  font-family:var(--kana); font-size:13px;
+  border:1px solid var(--accent); border-radius:4px;
+  color:var(--accent);
+}
+
+@media (max-width:400px){
+  .chart{ border-spacing:3px; margin-inline:-3px; }
+  .chart thead th:first-child{ width:26px; }
+  .chart--flow{ grid-template-columns:repeat(auto-fill, minmax(62px, 1fr)); gap:3px; }
+  .kcell{ min-height:54px; gap:4px; padding:5px 1px; }
+  .kcell__k{ font-size:20px; }
+  .kcell__r{ font-size:10px; }
+  .hanko{ width:84px; min-height:78px; }
+  .hanko__glyph{ font-size:29px; }
+  .chart__masthead h3{ font-size:28px; }
+}
+@media (min-width:600px){
+  .chart__body{ padding:20px 20px 24px; }
+  .chart{ border-spacing:5px; margin-inline:-5px; }
+  .kcell{ min-height:72px; }
+  .kcell__k{ font-size:27px; }
+  .hanko{ width:112px; min-height:100px; }
+  .hanko__glyph{ font-size:38px; }
+  .chart__masthead h3{ font-size:40px; }
+}
+
+/* ── play: bar ────────────────────────────────────────────────────────── */
+.playbar{
+  flex:0 0 auto;
+  display:flex; align-items:center; gap:6px;
+  margin:calc(var(--tap) / -4) calc(var(--tap) / -4) 4px;
+}
+.playbar__title{
+  flex:1; min-width:0;
+  margin:0;
+  display:flex; align-items:baseline; justify-content:center; gap:8px;
+  font-size:12px; font-weight:600;
+  letter-spacing:.12em; text-transform:uppercase;
+  color:var(--c-ink-soft);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.playbar__mark{
+  font-family:var(--kana); font-size:18px;
+  letter-spacing:0; text-transform:none; color:var(--c-ink);
+}
+
+/* ── play: the writing square (genkō-yōshi) ───────────────────────────── */
+.playmain{
+  flex:1 1 auto; min-height:0;
+  display:flex; align-items:center; justify-content:center;
+  padding:6px 0;
+}
+
+.square{
+  position:relative;
+  width:min(100%, 268px, 42dvh);
+  aspect-ratio:1/1;
+  container-type:size;
+  /* paper on paper — it needs its own edge and a soft lift to read as a sheet */
+  background:linear-gradient(180deg,#FFFDF7 0%, #F4EEE0 140%);
+  border:1px solid var(--hairline);
+  border-radius:var(--r-md);
+  box-shadow:0 14px 30px -18px rgba(60,50,30,.42);
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  cursor:default;
+  -webkit-tap-highlight-color:transparent;
+}
+/* while an answer is on screen the whole square is a "continue" target */
+.square.is-graded{ cursor:pointer; }
+
+/* faint dashed cross guides of the writing box */
+.square::before,
+.square::after{
+  content:""; position:absolute;
+  background:repeating-linear-gradient(var(--dir), var(--guide) 0 6px, transparent 6px 12px);
+  opacity:.55;
+}
+.square::before{ --dir:to right;  left:8%; right:8%; top:50%; height:1px; }
+.square::after { --dir:to bottom; top:8%; bottom:8%; left:50%; width:1px; }
+
+.glyph{
+  font-family:var(--kana);
+  line-height:1;
+  color:var(--c-ink);
+  position:relative; z-index:1;
+  user-select:none;
+  font-size:min(38vw, 148px);   /* fallback */
+  font-size:55cqw;              /* scales with the square itself */
+}
+.glyph.is-pair{
+  letter-spacing:-.02em;
+  font-size:min(26vw, 102px);
+  font-size:38cqw;
+}
+
+/* teacher's red 〇 correct stamp */
+.maru{
+  position:absolute; inset:0; margin:auto;
+  width:78%; height:78%;
+  border:7px solid var(--shu);
+  border-radius:50%;
+  opacity:0; transform:scale(.4) rotate(-8deg);
+  z-index:2; pointer-events:none;
+  box-shadow:0 0 0 1px rgba(178,58,38,.25);
+}
+.square.is-correct .maru{ animation:stamp .5s cubic-bezier(.2,1.3,.4,1) forwards; }
+@keyframes stamp{
+  0%  { opacity:0; transform:scale(.4) rotate(-8deg); }
+  55% { opacity:1; transform:scale(1.06) rotate(2deg); }
+  100%{ opacity:.92; transform:scale(1) rotate(0); }
+}
+.square.is-wrong{ animation:shake .32s ease; }
+@keyframes shake{
+  0%,100%{ transform:translateX(0); }
+  25%    { transform:translateX(-7px); }
+  75%    { transform:translateX(7px); }
+}
+
+/* ── play: the answer dock ────────────────────────────────────────────── */
+.dock{ flex:0 0 auto; }
+
+.feedback{
+  text-align:center;
+  min-height:42px;
+  margin:2px 0 12px;
+  font-size:14.5px;
+  line-height:1.4;
+  color:var(--c-ink-soft);
+}
+.feedback b{ font-family:var(--kana); font-size:18px; }
+.feedback .ok{ color:var(--matcha); }
+.feedback .no{ color:var(--shu); }
+
+.answer{ display:flex; gap:8px; }
+.answer input{
+  flex:1; min-width:0;
+  font-family:var(--sans);
+  font-size:17px;              /* >=16px so iOS doesn't zoom on focus */
+  min-height:var(--tap);
+  padding:12px 15px;
+  color:var(--c-ink);
+  background:var(--paper-card);
+  border:1px solid var(--hairline);
+  border-radius:var(--r-md);
+  outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.answer input::placeholder{ color:var(--c-ink-mute); }
+.answer input:focus{ border-color:var(--shu); box-shadow:0 0 0 3px rgba(178,58,38,.16); }
+
+.undertools{
+  display:flex; justify-content:space-between; align-items:center;
+  min-height:var(--tap);
+}
+
+.choices{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.choice{
+  font-family:var(--sans); font-size:18px; font-weight:600;
+  min-height:56px;
+  padding:10px; border-radius:var(--r-md); cursor:pointer;
+  background:var(--paper-card); color:var(--c-ink);
+  border:1px solid var(--hairline);
+  transition:transform .06s, background .15s, color .15s, box-shadow .15s;
+}
+.choice__key{
+  display:block; margin-bottom:1px;
+  font-size:11px; font-weight:700; color:var(--c-ink-mute);
+}
+@media (hover:hover){
+  .choice:hover:not(:disabled){ background:#fff; border-color:var(--hairline-2); }
+}
+.choice:active:not(:disabled){ transform:translateY(1px); }
+.choice:disabled{ cursor:default; }
+.choice.is-picked-ok{ background:var(--matcha); color:#fff; border-color:transparent; }
+.choice.is-picked-no{ background:var(--shu);    color:#fff; border-color:transparent; }
+.choice.is-picked-ok .choice__key,
+.choice.is-picked-no .choice__key{ color:rgba(255,255,255,.82); }
+.choice.is-answer{ box-shadow:0 0 0 3px var(--matcha) inset; }
+
+/* Continue lives in a permanently reserved row, so revealing it never
+   reflows the square above it. */
+.undertools--choose{ min-height:56px; padding-top:9px; align-items:start; }
+.undertools--choose .btn{ width:100%; }
+
+/* ── play: stats ──────────────────────────────────────────────────────── */
+.stats{ margin-top:8px; border-top:1px solid var(--hairline); padding-top:12px; }
+.bar{ height:5px; background:var(--paper-sunk); border-radius:3px; overflow:hidden; }
+.bar > span{
+  display:block; height:100%; width:0;
+  background:linear-gradient(90deg,var(--brass),var(--brass-2));
+  transition:width .3s ease;
+}
+.metrics{ display:flex; justify-content:space-between; margin-top:9px; }
+.metric{ text-align:center; flex:1; }
+.metric__n{ font-family:var(--mincho); font-size:20px; color:var(--c-ink); }
+.metric__n small{ font-size:12px; color:var(--c-ink-mute); }
+.metric__l{
+  font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--c-ink-mute); margin-top:1px;
+}
+.metric--streak .metric__n{ color:var(--brass); }
+/* your best for this deck, shown beside the live figure — brass is this
+   design's "record" colour, so it reads as a target rather than a second score */
+.metric__best{ font-size:12px; color:var(--brass); margin-left:3px; }
+/* separator, so an unanswered "—" next to the best doesn't read as "−88%" */
+.metric__best::before{ content:"·"; margin-right:3px; color:var(--c-ink-mute); }
+
+/* ── end screen ───────────────────────────────────────────────────────── */
+.end{ text-align:center; }
+.end__scroll{
+  flex:1; min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  display:flex; flex-direction:column; justify-content:center;
+}
+.end__scoreline{
+  display:flex; align-items:baseline; justify-content:center; gap:10px;
+  margin:10px 0 2px;
+}
+.end__score{
+  font-family:var(--mincho); font-size:56px; line-height:1;
+  color:var(--brass);
+}
+.end__chip{
+  font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--c-ink-mute); white-space:nowrap;
+}
+.end__chip b{ font-family:var(--mincho); font-size:17px; letter-spacing:0; color:var(--brass); }
+.end__sub{ color:var(--c-ink-soft); font-size:14px; margin:0; }
+.end__best{ color:var(--brass); font-size:13px; margin:8px 0 0; }
+
+.missed{ display:flex; flex-wrap:wrap; gap:7px; justify-content:center; }
+.miss{
+  background:var(--paper-card); color:var(--c-ink);
+  border:1px solid var(--hairline);
+  border-radius:var(--r-sm); padding:7px 5px;
+  min-width:54px;
+}
+.miss__k{ font-family:var(--kana); font-size:24px; display:block; line-height:1.1; }
+.miss__r{ font-size:12px; color:var(--shu); font-weight:700; margin-top:2px; display:block; }
+
+.end__actions{
+  flex:0 0 auto;
+  display:flex; flex-direction:column; align-items:stretch; gap:9px;
+  margin-top:18px; padding-top:14px;
+  border-top:1px solid var(--hairline);
+}
+.end__actions .link{ justify-content:center; }
+
+/* ── fatal load error ─────────────────────────────────────────────────── */
+.fatal{ text-align:center; justify-content:center; }
+.fatal__msg{ color:var(--shu); font-size:14px; }
+.fatal__hint{ color:var(--c-ink-soft); font-size:13.5px; line-height:1.6; }
+.fatal code{ font-family:var(--mono); font-size:12.5px; color:var(--c-ink); }
+.fatal__cmd{
+  background:var(--paper-card); border:1px solid var(--hairline);
+  border-radius:var(--r-md); padding:12px 14px;
+  text-align:left; overflow-x:auto;
+}
+
+/* ══ portrait phone, on-screen keyboard open ═══════════════════════════
+   interactive-widget=resizes-content shrinks the layout viewport, which also
+   flips `orientation` to landscape — hence the max-width guard here and the
+   min-width guard on the landscape block below. The character and the input
+   must both stay visible; the three metric numbers are what gives way.      */
+@media (max-height:450px) and (max-width:599px){
+  .playmain{ padding:2px 0; }
+  .square{ width:min(100%, 34dvh); }
+  .feedback{ min-height:32px; margin-bottom:8px; font-size:13.5px; }
+  .feedback b{ font-size:16px; }
+  .undertools{ min-height:38px; }
+  .undertools--choose{ min-height:52px; padding-top:6px; }
+  .stats{ margin-top:6px; padding-top:8px; }
+  .metrics{ display:none; }          /* the progress bar itself stays */
+  .choices{ gap:7px; }
+  .choice{ min-height:48px; font-size:16px; }
+}
+
+/* ══ landscape phones/tablets: square beside the answers ═══════════════ */
+@media (orientation:landscape) and (max-height:560px) and (min-width:600px){
+  .stage{ max-width:760px; }
+
+  .play{
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr);
+    grid-template-areas:
+      "bar  bar"
+      "main dock";
+    align-items:center;
+    column-gap:20px;
+  }
+  .playbar{ grid-area:bar; }
+  .playmain{ grid-area:main; padding:0; }
+  .dock{ grid-area:dock; }
+
+  .square{ width:min(46dvh, 220px); }
+  .feedback{ min-height:38px; margin-top:0; }
+  .stats{ margin-top:6px; padding-top:9px; }
+
+  /* four options in one row reads better than 2×2 in a wide box */
+  .choices{ grid-template-columns:repeat(4, 1fr); }
+  .choice{ min-height:52px; font-size:16px; padding:8px 4px; }
+
+  .end__scoreline{ margin:4px 0 2px; }
+  .end__score{ font-size:44px; }
+  .end__actions{ flex-direction:row; flex-wrap:wrap; justify-content:center; margin-top:12px; }
+  .end__actions .btn{ flex:1 1 200px; }
+  .end__actions .link{ flex:1 1 100%; }
+}
+
+/* ══ very small phones ════════════════════════════════════════════════ */
+@media (max-width:359px){
+  :root{ --pad:11px; }
+  .deck{ grid-template-columns:44px 1fr auto; gap:10px; }
+  .deck__sample{ height:40px; font-size:22px; }
+  .deck__name{ font-size:14px; }
+  .choice{ font-size:16px; }
+  .metric__n{ font-size:18px; }
+}
+
+/* ══ tablet / desktop ═════════════════════════════════════════════════ */
+@media (min-width:600px) and (min-height:600px){
+  :root{ --pad:28px; }
+  .eyebrow{ margin-bottom:20px; }
+  .playbar{ margin-bottom:6px; }
+  .playbar__title{ font-size:12.5px; }
+  .deck{ grid-template-columns:56px 1fr auto; gap:14px; min-height:70px; padding:13px 15px; }
+  .deck__sample{ height:48px; font-size:27px; }
+  .deck--combo .deck__sample{ font-size:19px; }
+  .deck__name{ font-size:15.5px; }
+  .feedback{ font-size:15px; min-height:44px; }
+  .answer input{ font-size:19px; }
+  .choice{ font-size:19px; min-height:58px; }
+  .stats{ margin-top:16px; padding-top:16px; }
+  .metric__n{ font-size:22px; }
+  .metric__l{ font-size:11px; }
+  .end__score{ font-size:60px; }
+}
+
+/* ══ motion ═══════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
