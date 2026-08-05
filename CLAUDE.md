@@ -334,6 +334,10 @@ enforced in `analytics.py`, and each one costs data on purpose:
   sitting in the history beside a full 46-card run reads as a result when it isn't one. They are
   still stored in full — the rows exist, they are simply never selected — so the decision is one
   query away from being reversed.
+- **`recent_runs` carries `created_at`**, which `runs` has always stored: the server stamps every
+  run in UTC ISO-8601 and the client renders it in the device's own zone. `fmtWhen()` formats it
+  by hand rather than with `toLocaleString`, so the shape is the same everywhere — one history
+  reading `05.08.26` on a phone and `8/5/26` on a laptop looks like two.
 - **Mobile and desktop are never pooled.** Typing romaji on a keyboard and flicking on glass are
   different physical acts. Every figure belongs to one bucket; the client sends `device` from the
   same `TOUCH` test the rest of the app uses.
