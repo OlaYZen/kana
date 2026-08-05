@@ -141,6 +141,16 @@ These each cost a real bug once. Comments in the source mark most of them.
   tidier and means tapping the box again for every single character on a phone, because tapping
   the square to advance moves focus off the input. `preventScroll` matters: `.stage` is
   height-capped, so a focus that scrolls drags the dock out from under the keyboard.
+- **Refocusing is not enough on its own — the keyboard visibly flickers.** The on-screen keyboard
+  follows focus, so tapping the square, Check or Reveal closes it and the refocus on the next card
+  reopens it. `keepKeyboard()` calls `preventDefault()` on `pointerdown` *and* `mousedown` for
+  every control tappable mid-card, which stops them taking focus at all, so focus never leaves the
+  field. Prevent the press, not the click: preventing the click would break the control. Any new
+  mid-card control has to be added to that list or it reintroduces the flicker.
+- **A blur that gets through means the user closed the keyboard themselves**, and `state.kbDismissed`
+  makes `focusField()` respect that until they put the caret back in a field. `noteBlur()` ignores
+  blurs while a sheet is open — that focus move is the app's doing, not theirs — and `start()`
+  clears the flag so a fresh run always offers the keyboard.
 - **Any new direct child of `.play` needs a `grid-area` in the landscape block, or hiding there.**
   That media query re-declares `.play` as a two-column grid with named areas; an unplaced child is
   auto-placed into a row of its own and shoves the square out of its cell. `.revealbar` is hidden
