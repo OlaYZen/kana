@@ -84,14 +84,24 @@ chart sheet and reused by `.scriptbar`) filter `#decks` to that script's three d
 opens on whatever the menu is showing.
 
 **Persistence** is one localStorage key, `hkk.v1` (`STORE` in `app.js`), holding
-`{mode, script, deck, font, best:{deckId:pct}, bestTime:{deckId:ms}}`. All writes go through the
-`store` helper, which merges patches — never `setItem` directly. **Do not rename the key to match
-the `kana` directory**: it is the only handle on a returning user's saved bests, and changing it
-silently wipes every record anyone has set.
+`{rev, mode, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
+merges patches — never `setItem` directly. **Do not rename the key to match the `kana` directory**:
+it is the only handle on a returning user's saved bests, and changing it silently wipes every
+record anyone has set. `rev` versions the *shape* inside the key, which is how shape changes ship
+without renaming it.
 
-Records are per deck, not per mode — a `write` run and a `choose` run of the same deck compete for
-one best score. That is deliberate (it already applied to `type` vs `choose`), but it does mean
-`write` is scored against the easier modes.
+**Records belong to a deck _and_ a mode**, keyed `deckId|mode` by `recordKey()` — reading kana,
+picking from four, and writing kana from a sound are three different skills, and pooling them let
+the easiest mode set a score the hardest could never beat. Every `store.best`/`setBest`/`bestTime`/
+`setBestTime` call therefore takes a mode. Two consequences that are easy to miss:
+
+- **`setMode()` has to rebuild the menu**, not just re-render the play screen. The deck rows show
+  the selected mode's figures, so switching mode while on the menu changes every number in the
+  list. The `<small>` under each figure names the mode for the same reason — an unlabelled
+  percentage reads as *the* score for that deck.
+- **`rev < 2` stores are migrated, not discarded.** Records keyed by bare deck id predate the
+  split; `store.migrate()` moves them to whichever mode was last selected, that being the only
+  evidence of which mode earned them. It runs once at boot and is idempotent.
 
 **Layout model.** `body` → `.stage` (width-capped, and height-bounded from `dvh`) → one `.screen`
 flex column per screen. `.play` is three bands: `.playbar` (fixed) / `.playmain` (flexes, holds
@@ -135,6 +145,9 @@ These each cost a real bug once. Comments in the source mark most of them.
   ticking counter turns practice into a race. Total appears once, on the results screen.
 - **Best *time* is only recorded for a flawless (100%) run.** Timing every run lets a rushed or
   revealed-answer run set an unbeatable record. Reveals count as misses.
+- **Never look a record up by deck alone.** `store.best(deckId)` without a mode silently returns
+  `undefined`→`0`, which renders as "no attempts yet" rather than failing — a bug that reads as
+  wiped records.
 - **`kana.json` is fetched with `cache: "no-cache"`.** Without it the HTTP cache silently serves a
   stale deck file and edits appear to do nothing.
 

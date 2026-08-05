@@ -41,6 +41,14 @@
   // keyboard eats half the screen, so first-time visitors start in Choosing.
   const TOUCH = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 
+  const MODES = ["type", "choose", "write"];
+  const MODE_LABEL = { type: "Typing", choose: "Choosing", write: "Writing" };
+
+  // Reading kana, picking from four, and writing kana from a sound are three
+  // different skills, so each keeps its own records — a record belongs to a
+  // deck *and* a mode, never to a deck alone.
+  const recordKey = (deckId, mode) => deckId + "|" + mode;
+
   /* ---------- persisted preferences + best scores ---------- */
   const store = {
     read() {
@@ -51,24 +59,47 @@
       try { localStorage.setItem(STORE, JSON.stringify(Object.assign(store.read(), patch))); }
       catch (e) { /* private mode — preferences just don't persist */ }
     },
-    best(deckId) { return (store.read().best || {})[deckId] || 0; },
-    setBest(deckId, pct) {
+
+    // Records were once keyed by deck alone, from when all modes shared one
+    // score. Those are moved to whichever mode was last selected — the only
+    // evidence there is of which mode earned them — rather than being thrown
+    // away. `rev` tracks the *shape*; the localStorage key itself must not be
+    // renamed, since that would orphan every record anyone has set.
+    migrate() {
+      const data = store.read();
+      if (data.rev >= 2) return;
+      const mode = MODES.includes(data.mode) ? data.mode : "type";
+      const rekey = (table) => {
+        const out = {};
+        Object.keys(table || {}).forEach((k) => {
+          out[k.indexOf("|") > -1 ? k : recordKey(k, mode)] = table[k];
+        });
+        return out;
+      };
+      store.write({ rev: 2, best: rekey(data.best), bestTime: rekey(data.bestTime) });
+    },
+
+    best(deckId, mode) { return (store.read().best || {})[recordKey(deckId, mode)] || 0; },
+    setBest(deckId, mode, pct) {
       const best = store.read().best || {};
-      if (pct > (best[deckId] || 0)) { best[deckId] = pct; store.write({ best: best }); return true; }
+      const k = recordKey(deckId, mode);
+      if (pct > (best[k] || 0)) { best[k] = pct; store.write({ best: best }); return true; }
       return false;
     },
 
     // Best time is only recorded for a run with no mistakes. Timing every run
     // would let a rushed or revealed-answer run set a record that can never be
     // beaten honestly, which makes the number worthless.
-    bestTime(deckId) { return (store.read().bestTime || {})[deckId] || 0; },
-    setBestTime(deckId, ms) {
+    bestTime(deckId, mode) { return (store.read().bestTime || {})[recordKey(deckId, mode)] || 0; },
+    setBestTime(deckId, mode, ms) {
       const times = store.read().bestTime || {};
-      const prev = times[deckId] || 0;
-      if (!prev || ms < prev) { times[deckId] = ms; store.write({ bestTime: times }); return true; }
+      const k = recordKey(deckId, mode);
+      const prev = times[k] || 0;
+      if (!prev || ms < prev) { times[k] = ms; store.write({ bestTime: times }); return true; }
       return false;
     }
   };
+  store.migrate();
 
   /* ==========================================================================
      Fonts
@@ -162,7 +193,7 @@
       : "hiragana",
     // type: kana → romaji.  choose: kana → romaji, multiple choice.
     // write: romaji → kana, which needs the device's Japanese keyboard.
-    mode: ["type", "choose", "write"].includes(store.read().mode)
+    mode: MODES.includes(store.read().mode)
       ? store.read().mode
       : (TOUCH ? "choose" : "type"),
     answered: 0, correct: 0, streak: 0, bestStreak: 0,
@@ -419,21 +450,25 @@
       b.type = "button";
       b.className = "deck" + (deck.sample.length > 1 ? " deck--combo" : "");
 
-      const best = store.best(deck.id);
-      const bestMs = store.bestTime(deck.id);
+      // the figures shown are this mode's — switching mode rebuilds the list
+      const best = store.best(deck.id, state.mode);
+      const bestMs = store.bestTime(deck.id, state.mode);
       b.setAttribute("aria-label", deck.label + " — " + deck.cards.length + " cards" +
-        (best ? ", best " + best + "%" : "") +
+        ", " + MODE_LABEL[state.mode].toLowerCase() +
+        (best ? ", best " + best + "%" : ", no attempts yet") +
         (bestMs ? ", fastest clean run " + fmtTime(bestMs) : ""));
 
       b.innerHTML =
         '<span class="deck__sample" lang="ja">' + deck.sample + "</span>" +
         '<span><span class="deck__name">' + deck.label + "</span>" +
         '<span class="deck__meta">' + deck.subtitle + " · " + deck.cards.length + " cards</span></span>" +
-        '<span class="deck__best">' +
+        '<span class="deck__best" title="Your best in ' + MODE_LABEL[state.mode] + '">' +
           '<span class="deck__pct">' + (best ? best + "%" : "—") + "</span>" +
           (bestMs ? '<span class="deck__time" title="Fastest run with no mistakes">' +
                     fmtTime(bestMs) + "</span>" : "") +
-          "<small>" + (best ? "best" : "new") + "</small>" +
+          // the mode names the figure: each mode keeps its own records, and an
+          // unlabelled percentage would silently look like the deck's only score
+          "<small>" + MODE_LABEL[state.mode] + "</small>" +
         "</span>";
 
       b.addEventListener("click", () => start(deck));
@@ -454,7 +489,9 @@
     document.querySelectorAll(".seg__btn").forEach((b) =>
       b.setAttribute("aria-checked", String(b.dataset.mode === mode)));
     store.write({ mode: mode });
-    if (!el.play.classList.contains("hidden")) render();
+    // the deck list shows this mode's records, so it has to be rebuilt too
+    if (el.play.classList.contains("hidden")) buildMenu();
+    else render();
   }
 
   // Which script's decks the menu is showing. The accent flips with it, the same
@@ -557,7 +594,7 @@
     const pct = state.answered
       ? Math.round(state.correct / state.answered * 100) + "%"
       : "—";
-    const best = state.deck && !state.isDrill ? store.best(state.deck.id) : 0;
+    const best = state.deck && !state.isDrill ? store.best(state.deck.id, state.mode) : 0;
     el.mAcc.innerHTML = pct +
       (best ? '<span class="metric__best">' + best + "%</span>" : "");
 
@@ -669,13 +706,14 @@
     stopClock(true);
     const took = elapsed();
     const pct = state.answered ? Math.round(state.correct / state.answered * 100) : 0;
-    const isRecord = !state.isDrill && store.setBest(state.deck.id, pct);
-    const best = store.best(state.deck.id);
+    const mode = state.mode;
+    const isRecord = !state.isDrill && store.setBest(state.deck.id, mode, pct);
+    const best = store.best(state.deck.id, mode);
     // a clean sweep is what earns a time; reveals count as misses, so this
     // can't be gamed by rushing
     const flawless = !state.isDrill && pct === 100;
-    const isFastest = flawless && store.setBestTime(state.deck.id, took);
-    const bestMs = state.isDrill ? 0 : store.bestTime(state.deck.id);
+    const isFastest = flawless && store.setBestTime(state.deck.id, mode, took);
+    const bestMs = state.isDrill ? 0 : store.bestTime(state.deck.id, mode);
 
     el.endMark.textContent = state.deck.sample;
     el.endLabel.textContent = state.deck.label + " complete";
@@ -684,17 +722,20 @@
       state.correct + " of " + state.answered + " right · " + fmtTime(took) +
       " · longest streak " + state.bestStreak;
 
-    // Beside the score: this deck's records. The accuracy is dropped when it
+    // Beside the score: this deck's records *in this mode*, named so the figure
+    // can't be mistaken for a different mode's. The accuracy is dropped when it
     // equals this run (first attempt, new record, exact tie) — repeating the same
     // number twice says nothing. Drills are a handful of cards, so no records.
     const parts = [];
     if (!state.isDrill && best > 0 && best !== pct) parts.push("<b>" + best + "%</b>");
     if (bestMs && !isFastest) parts.push("<b>" + fmtTime(bestMs) + "</b>");
     el.endBestChip.classList.toggle("hidden", !parts.length);
-    if (parts.length) el.endBestChip.innerHTML = "best " + parts.join(" · ");
+    if (parts.length) {
+      el.endBestChip.innerHTML = MODE_LABEL[mode].toLowerCase() + " best " + parts.join(" · ");
+    }
 
     const news = [];
-    if (isRecord) news.push("New best for this deck.");
+    if (isRecord) news.push("New " + MODE_LABEL[mode] + " best for this deck.");
     if (isFastest) news.push(isRecord ? "Fastest clean run too." : "Fastest clean run yet.");
     el.endBest.classList.toggle("hidden", !news.length);
     el.endBest.textContent = news.join(" ");
