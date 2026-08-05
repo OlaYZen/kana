@@ -591,9 +591,11 @@
 
     // Flick drills aren't decks and aren't script-specific, so they sit in
     // their own section below the list rather than being filtered with it.
+    // They are offered on touch devices only: flicking is a phone keyboard
+    // gesture, and there is nothing to practise with a physical keyboard.
     // Both are derived from the chart grids, so without charts there is nothing
     // to drill and the section is dropped entirely.
-    const ready = flickIndex.key.size > 0;
+    const ready = TOUCH && flickIndex.key.size > 0;
     el.flickTitle.classList.toggle("hidden", !ready);
     el.flickDecks.classList.toggle("hidden", !ready);
     el.flickDecks.innerHTML = "";

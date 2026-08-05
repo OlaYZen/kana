@@ -43,10 +43,11 @@ in modern Japanese.
   phone, or a Japanese input method on a desktop. Both readings of an ambiguous sound are
   accepted — `ji` takes じ or ぢ, `zu` takes ず or づ.
 
-**Flick keyboard drills.** Below the decks are two drills for the Japanese phone keyboard itself,
-which has ten keys — one per gojūon row — where the vowel comes from the direction you swipe:
-middle **a**, left **i**, up **u**, right **e**, down **o**. Each drill is 20 prompts and needs a
-Japanese keyboard.
+**Flick keyboard drills — phones and tablets only.** Below the decks, on a touch device, are two
+drills for the Japanese phone keyboard itself, which has ten keys — one per gojūon row — where the
+vowel comes from the direction you swipe: middle **a**, left **i**, up **u**, right **e**, down
+**o**. Each drill is 20 prompts and needs the Japanese keyboard. They don't appear on a desktop:
+there's no flicking to practise with a physical keyboard.
 
 - **Flick directions** shows a vowel — A, I, U, E or O — and takes *any* character with that
   vowel. Prompted with O, everything from お to こ そ と の ほ も よ ろ counts; つ counts for U and
