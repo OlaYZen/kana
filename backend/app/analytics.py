@@ -13,6 +13,15 @@ a practice app are mostly noise:
 * **Phones and desktops are not comparable.** Typing romaji on a keyboard and
   flicking on glass are different physical acts, so the two are never pooled;
   every figure belongs to one device or the other.
+* **Neither are two different decks.** Katakana is not evidence about hiragana,
+  and the base gojūon is not evidence about dakuten or yōon — they are separate
+  material learned at separate times. Every deck therefore gets its own report,
+  its own run count and its own three-run gate; nothing is ever summed across
+  decks.
+* **Flick drills are listed but never analysed.** Their prompt is a direction or
+  a key, not a character, and *any* character with that vowel or on that key is
+  accepted — so "which character is slow" has no meaning, and a wrong answer
+  can't be cross-referenced to the character reached for. The runs still show.
 * **Drills are excluded entirely.** A drill re-tests the cards you just missed,
   seconds after the results screen showed you their answers — the speed is
   fresh recall rather than knowledge, and the card mix is deliberately the hard
@@ -31,7 +40,9 @@ from statistics import median
 
 ROOT = Path(__file__).resolve().parents[2]
 
-MIN_RUNS = 3           # complete, non-drill runs on a device before reporting
+FLICK_PREFIX = "flick-"   # decks whose prompts are directions, not characters
+
+MIN_RUNS = 3           # complete, non-drill runs of one deck before reporting
 MAX_CARD_MS = 10_000   # over this, the timing is discarded as "distracted"
 MIN_ATTEMPTS = 3       # per-character minimum before it can be called slow/weak
 TOP_N = 8
@@ -87,33 +98,53 @@ def _summarise(rows: list[sqlite3.Row]) -> dict:
     }
 
 
-def report(conn: sqlite3.Connection, user_id: int, device: str) -> dict:
+def report(conn: sqlite3.Connection, user_id: int, device: str, deck_id: str) -> dict:
     if device not in DEVICES:
         raise ValueError("unknown device")
 
     runs = conn.execute(
         """SELECT COUNT(*) AS n FROM runs
-            WHERE user_id = ? AND device = ? AND is_drill = 0""",
-        (user_id, device),
+            WHERE user_id = ? AND device = ? AND deck_id = ? AND is_drill = 0""",
+        (user_id, device, deck_id),
     ).fetchone()["n"]
 
+    analysable = not deck_id.startswith(FLICK_PREFIX)
+    enough = runs >= MIN_RUNS
+
     out: dict = {
+        "deck_id": deck_id,
         "device": device,
         "runs": runs,
         "runs_needed": max(0, MIN_RUNS - runs),
-        "ready": runs >= MIN_RUNS,
+        "enough": enough,
+        "analysable": analysable,      # false for the flick drills
+        "ready": enough and analysable,
         "min_runs": MIN_RUNS,
         "max_card_ms": MAX_CARD_MS,
     }
+
+    # What you scored on a run you actually finished is a fact, and it is yours
+    # to look at from the first one — including for the flick drills, which are
+    # never analysed. The gate below is on *inference*: calling a character weak,
+    # or a time typical. Drills are listed too, flagged as drills.
+    out["recent_runs"] = [
+        dict(r) for r in conn.execute(
+            """SELECT id, deck_id, mode, total, correct, duration_ms, created_at, is_drill
+                 FROM runs WHERE user_id = ? AND device = ? AND deck_id = ?
+                ORDER BY id DESC LIMIT 25""",
+            (user_id, device, deck_id),
+        ).fetchall()
+    ]
+
     if not out["ready"]:
-        # Deliberately no partial figures — a number shown here would be read
-        # as a finding, and the whole point is that it isn't one yet.
+        # No aggregate figures — a median or a "weakest character" shown here
+        # would read as a finding, and it isn't one.
         return out
 
     rows = conn.execute(
         """SELECT a.* FROM answers a JOIN runs r ON r.id = a.run_id
-            WHERE a.user_id = ? AND a.device = ? AND r.is_drill = 0""",
-        (user_id, device),
+            WHERE a.user_id = ? AND a.device = ? AND a.deck_id = ? AND r.is_drill = 0""",
+        (user_id, device, deck_id),
     ).fetchall()
     if not rows:
         out["ready"] = False
@@ -173,18 +204,30 @@ def report(conn: sqlite3.Connection, user_id: int, device: str) -> dict:
         )
 
     out["by_mode"] = group_by("mode")
-    out["by_deck"] = group_by("deck_id")
-
-    recent = conn.execute(
-        """SELECT deck_id, mode, total, correct, duration_ms, created_at, is_drill
-             FROM runs WHERE user_id = ? AND device = ?
-            ORDER BY id DESC LIMIT 10""",
-        (user_id, device),
-    ).fetchall()
-    out["recent_runs"] = [dict(r) for r in recent]
     return out
+
+
+def decks_seen(conn: sqlite3.Connection, user_id: int, device: str) -> list[str]:
+    """Decks this user has actually run on this device, most recent first."""
+    return [
+        r["deck_id"] for r in conn.execute(
+            """SELECT deck_id, MAX(id) AS last FROM runs
+                WHERE user_id = ? AND device = ?
+             GROUP BY deck_id ORDER BY last DESC""",
+            (user_id, device),
+        ).fetchall()
+    ]
+
+
+def device_report(conn: sqlite3.Connection, user_id: int, device: str) -> dict:
+    """One report per deck touched on this device. Nothing is summed across
+    them — a katakana figure must never be built out of hiragana answers."""
+    return {
+        "device": device,
+        "decks": [report(conn, user_id, device, d) for d in decks_seen(conn, user_id, device)],
+    }
 
 
 def overview(conn: sqlite3.Connection, user_id: int) -> dict:
     """Both device buckets at once, so the UI can say which one has data."""
-    return {d: report(conn, user_id, d) for d in DEVICES}
+    return {d: device_report(conn, user_id, d) for d in DEVICES}

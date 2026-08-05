@@ -240,12 +240,15 @@ def post_run(body: RunIn, user: User) -> dict:
 
 
 @app.get("/api/analytics")
-def get_analytics(user: User, device: str | None = None) -> dict:
+def get_analytics(user: User, device: str | None = None, deck: str | None = None) -> dict:
     with db.session() as conn:
         if device:
             if device not in analytics.DEVICES:
                 raise HTTPException(400, "device must be mobile or desktop")
-            return {device: analytics.report(conn, user["id"], device)}
+            if deck:
+                return {device: {"device": device,
+                                 "decks": [analytics.report(conn, user["id"], device, deck)]}}
+            return {device: analytics.device_report(conn, user["id"], device)}
         return analytics.overview(conn, user["id"])
 
 

@@ -102,6 +102,12 @@ can't set a record that's impossible to beat honestly. The run is timed the whol
 the clock is deliberately never shown while you're practising; a ticking counter turns practice
 into a race. Missed drills don't count towards records.
 
+**The menu stays out of the way.** It is the script switch, the list of decks, and one **Options**
+button — everything else (answer mode, font, the chart, progress, account) is behind that button,
+so the deck list keeps the screen instead of losing a third of a phone to stacked settings. The
+Options button shows the current answer mode, since that's the one setting worth seeing at a
+glance, and the deck rows are labelled with it too.
+
 **Reference chart.** "All characters & romaji" opens the full gojūon tables, laid out the standard
 way, including the extended katakana (ファ ティ ヴァ …) that are reference-only.
 
@@ -122,12 +128,21 @@ stays as an offline cache, so the app keeps working signed out — an account ou
 rather than replacing it. You can delete the account, and everything stored with it, from the
 account screen.
 
-**Your progress** reads the per-card times and answers from your runs and tells you where the work
-actually is: which characters you hesitate on, which you get wrong, and what you reach for
-instead — つ answered as た, say. It is deliberately cautious about what counts as data:
+**Your progress** is kept per deck. Pick a deck at the top and you get that deck's runs — mode,
+score and time — from the very first one. Below that, once there's enough of them, it works out
+where the effort actually is: which characters you hesitate on, which you get wrong, and what you
+reach for instead — つ answered as た, say. That second part is deliberately cautious about what
+counts as data:
 
-- **Three complete runs before it says anything.** One run can't tell a bad day from a weak
-  character, so until then it shows nothing at all rather than a figure you'd read as a finding.
+- **Each of the six decks is its own dataset.** Katakana tells you nothing about hiragana, and the
+  base gojūon tells you nothing about dakuten or yōon — they're separate material. Nothing is ever
+  averaged across decks, and three hiragana runs won't unlock the dakuten breakdown.
+- **Three complete runs of that deck before it draws any conclusions.** One run can't tell a bad
+  day from a weak character, so until then there's no breakdown — only your runs, which are simply
+  what happened.
+- **Flick drills are listed but not analysed.** They ask for a direction or a key, and any
+  character with that vowel or on that key counts — so there's no character to call slow, and a
+  wrong answer can't be traced back to one. You still see every flick run you've done.
 - **Anything over 10 seconds on a card is not a time.** That's you looking away, not you thinking,
   so it's dropped from the speed figures. It still counts against accuracy — you did answer it.
 - **Revealed answers are never timed** either, for the same reason.

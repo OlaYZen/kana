@@ -40,6 +40,8 @@
     authSignedIn: $("authSignedIn"), authWho: $("authWho"), authBackBtn: $("authBackBtn"),
     logoutBtn: $("logoutBtn"), deleteBtn: $("deleteBtn"),
     accountBtn: $("accountBtn"), accountName: $("accountName"),
+    moreBtn: $("moreBtn"), moreSheet: $("moreSheet"), moreCloseBtn: $("moreCloseBtn"),
+    moreMode: $("moreMode"),
     stats: $("stats"), statsBtn: $("statsBtn"), statsBody: $("statsBody"),
     statsBackBtn: $("statsBackBtn"),
     // Both switches are .seg__btn. Never select that class document-wide: the
@@ -676,6 +678,9 @@
     Array.from(el.modeSwitch.children).forEach((b) =>
       b.setAttribute("aria-checked", String(b.dataset.mode === mode)));
     store.write({ mode: mode });
+    // the mode lives behind the Options sheet now, so the button that opens it
+    // carries the current value — otherwise it is invisible from the menu
+    el.moreMode.textContent = MODE_LABEL[mode] || mode;
     // the deck list shows this mode's records, so it has to be rebuilt too
     if (el.play.classList.contains("hidden")) buildMenu();
     else render();
@@ -1112,10 +1117,18 @@
   el.input.addEventListener("keydown", enterSubmits);
   el.kanaInput.addEventListener("keydown", enterSubmits);
 
+  // Everything reachable from Options closes it on the way out: a second
+  // showModal() over an open dialog stacks them, and the backdrop-close handler
+  // below would then only ever see the top one.
+  const fromMore = (fn) => () => { closeSheet(el.moreSheet); fn(); };
+
+  el.moreBtn.addEventListener("click", () => openSheet(el.moreSheet));
+  el.moreCloseBtn.addEventListener("click", () => closeSheet(el.moreSheet));
+
   el.playFontBtn.addEventListener("click", openFontSheet);
-  el.menuFontBtn.addEventListener("click", openFontSheet);
+  el.menuFontBtn.addEventListener("click", fromMore(openFontSheet));
   el.fontCloseBtn.addEventListener("click", () => closeSheet(el.fontSheet));
-  el.chartBtn.addEventListener("click", openChartSheet);
+  el.chartBtn.addEventListener("click", fromMore(openChartSheet));
   el.chartCloseBtn.addEventListener("click", () => closeSheet(el.chartSheet));
   Array.from(el.chartSwitch.children).forEach((b) =>
     b.addEventListener("click", () => {
@@ -1124,7 +1137,7 @@
     }));
 
   // click outside the panel (i.e. on the backdrop) closes it
-  [el.fontSheet, el.chartSheet].forEach((sheet) =>
+  [el.fontSheet, el.chartSheet, el.moreSheet].forEach((sheet) =>
     sheet.addEventListener("click", (e) => { if (e.target === sheet) closeSheet(sheet); }));
 
   document.addEventListener("keydown", (e) => {
@@ -1153,12 +1166,12 @@
   el.restartBtn.addEventListener("click", () => start(state.deck));
 
   /* account + progress */
-  el.accountBtn.addEventListener("click", () => {
+  el.accountBtn.addEventListener("click", fromMore(() => {
     authError("");
     paintAccount();
     show(el.auth);
     if (!api.user) el.authUser.focus();
-  });
+  }));
   el.authBackBtn.addEventListener("click", toMenu);
   el.statsBackBtn.addEventListener("click", toMenu);
   el.authForm.addEventListener("submit", submitAuth);
@@ -1184,9 +1197,13 @@
     }).catch((err) => authError(err.message));
   });
 
-  el.statsBtn.addEventListener("click", openStats);
+  el.statsBtn.addEventListener("click", fromMore(openStats));
   Array.from(el.deviceSwitch.children).forEach((b) =>
-    b.addEventListener("click", () => { statsDevice = b.dataset.device; openStats(); }));
+    b.addEventListener("click", () => {
+      statsDevice = b.dataset.device;
+      statsDeck = null;          // the other device may not have run this deck
+      openStats();
+    }));
 
   /* ==========================================================================
      Backend
@@ -1357,8 +1374,14 @@
      Progress report
      ========================================================================== */
   let statsDevice = DEVICE;
+  let statsDeck = null;      // which deck's report is on screen
 
   const fmtMs = (ms) => (ms == null ? "—" : (ms / 1000).toFixed(1) + "s");
+
+  function deckLabel(id) {
+    const deck = state.decks.concat(FLICK_DECKS).find((d) => d.id === id);
+    return deck ? deck.label : id;
+  }
 
   function statRow(parent, cells, cls) {
     const row = add(parent, "div", "srow" + (cls ? " " + cls : ""));
@@ -1376,27 +1399,97 @@
     return b;
   }
 
-  function renderStats(report) {
+  // Your own runs, listed from the first one. What you scored is a fact; the
+  // analysis below the gate is an inference, which is the part that needs
+  // several runs before it means anything.
+  function renderRuns(runs) {
+    if (!runs || !runs.length) return;
+    const b = statBlock("Runs", runs.length >= 25 ? "Most recent 25." : null);
+    runs.forEach((r) => {
+      const pct = r.total ? Math.round(r.correct / r.total * 100) : 0;
+      // the deck is already the heading here, so the row names the mode instead
+      statRow(b, [
+        { text: (MODE_LABEL[r.mode] || r.mode) + (r.is_drill ? " · drill" : ""),
+          cls: "srow__r srow__r--wide" },
+        { text: r.correct + "/" + r.total, cls: "srow__s" },
+        { text: fmtTime(r.duration_ms), cls: "srow__s" },
+        { text: pct + "%", cls: "srow__v" + (pct < 70 ? " srow__v--bad" : "") }
+      ], r.is_drill ? "srow--dim" : null);
+    });
+  }
+
+  // Each deck is its own dataset — katakana is not evidence about hiragana, and
+  // the base gojūon is not evidence about dakuten. The picker chooses which one
+  // is on screen; nothing is ever summed across them.
+  function renderDeckPicker(decks) {
+    const bar = add(el.statsBody, "div", "deckpick");
+    decks.forEach((r) => {
+      const b = add(bar, "button", "deckpick__btn");
+      b.type = "button";
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", String(r.deck_id === statsDeck));
+      add(b, "span", "deckpick__name", deckLabel(r.deck_id));
+      add(b, "span", "deckpick__n", r.runs + (r.runs === 1 ? " run" : " runs"));
+      b.addEventListener("click", () => {
+        statsDeck = r.deck_id;
+        renderStats(lastReport);
+      });
+    });
+  }
+
+  let lastReport = null;
+
+  function renderStats(payload) {
+    lastReport = payload;
     el.statsBody.innerHTML = "";
     const label = statsDevice === "mobile" ? "phone" : "desktop";
+    const decks = (payload && payload.decks) || [];
+
+    if (!decks.length) {
+      const b = statBlock("Nothing here yet");
+      add(b, "p", "sblock__note", "No finished runs on " + label + " yet.");
+      add(b, "p", "sblock__note",
+        "Phone and desktop are kept apart — typing on a keyboard and flicking " +
+        "on glass aren't comparable — so each has its own figures.");
+      return;
+    }
+
+    if (!statsDeck || !decks.some((d) => d.deck_id === statsDeck)) {
+      statsDeck = decks[0].deck_id;
+    }
+    renderDeckPicker(decks);
+
+    const report = decks.find((d) => d.deck_id === statsDeck);
+    add(el.statsBody, "h2", "sdeck", deckLabel(report.deck_id));
+
+    if (!report.analysable) {
+      const b = statBlock("Not analysed");
+      add(b, "p", "sblock__note",
+        "A flick drill asks for a direction or a key, and any character with " +
+        "that vowel or on that key counts — so there is no character to call " +
+        "slow, and a wrong answer can't be traced to one. The runs are below.");
+      renderRuns(report.recent_runs);
+      return;
+    }
 
     if (!report.ready) {
-      const b = statBlock("Not enough yet");
+      const b = statBlock(report.runs ? "Not enough to analyse yet" : "Nothing here yet");
       add(b, "p", "sblock__note",
         report.runs === 0
-          ? "No finished runs on " + label + " yet. " + report.min_runs +
-            " are needed before this can say anything useful."
-          : report.runs + " of " + report.min_runs + " runs done on " + label + ". " +
-            report.runs_needed + " more to go.");
+          ? "No finished runs of this deck on " + label + " yet."
+          : report.runs + " of " + report.min_runs + " runs of this deck on " + label +
+            ". " + report.runs_needed + " more before the breakdown appears.");
       add(b, "p", "sblock__note",
-        "One run can't tell a bad day from a weak character, so nothing is " +
-        "reported until there are enough of them. Drills don't count — they " +
-        "re-test what you just got shown.");
+        "One run can't tell a bad day from a weak character, so which " +
+        "characters are slow or shaky isn't worked out until there are enough " +
+        "of them — and runs of another deck don't count towards this one. " +
+        "Your runs themselves are below either way.");
+      renderRuns(report.recent_runs);
       return;
     }
 
     const o = report.overall;
-    const head = statBlock("Overall", report.runs + " runs on " + label);
+    const head = statBlock("Overall", report.runs + " runs of this deck on " + label);
     const grid = add(head, "div", "sgrid");
     [["Accuracy", o.accuracy + "%"], ["Typical time", fmtMs(o.median_ms)],
      ["Characters seen", String(report.cards_tracked)], ["Answers", String(o.attempts)]]
@@ -1443,19 +1536,16 @@
       ]));
     }
 
-    if (report.by_mode.length > 1 || report.by_deck.length > 1) {
-      const b = statBlock("By mode and deck");
+    if (report.by_mode.length > 1) {
+      const b = statBlock("By answer mode", "Same deck, different skill.");
       report.by_mode.forEach((m) => statRow(b, [
         { text: MODE_LABEL[m.mode] || m.mode, cls: "srow__r srow__r--wide" },
         { text: fmtMs(m.median_ms), cls: "srow__v" },
         { text: m.accuracy + "%", cls: "srow__s" }
       ]));
-      report.by_deck.forEach((d) => statRow(b, [
-        { text: d.deck_id, cls: "srow__r srow__r--wide" },
-        { text: fmtMs(d.median_ms), cls: "srow__v" },
-        { text: d.accuracy + "%", cls: "srow__s" }
-      ], "srow--dim"));
     }
+
+    renderRuns(report.recent_runs);
   }
 
   function openStats() {
@@ -1465,7 +1555,7 @@
     Array.from(el.deviceSwitch.children).forEach((b) =>
       b.setAttribute("aria-checked", String(b.dataset.device === statsDevice)));
     api.call("GET", "/api/analytics?device=" + statsDevice)
-      .then((data) => renderStats(data[statsDevice]))
+      .then((data) => renderStats(data[statsDevice] || { decks: [] }))
       .catch((err) => {
         el.statsBody.innerHTML = "";
         add(el.statsBody, "p", "sblock__note", "Couldn’t load: " + err.message);
