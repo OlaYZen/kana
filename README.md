@@ -1,8 +1,12 @@
 # かな — Kana Practice
 
 A Japanese kana recognition drill for hiragana and katakana. Open it, pick a deck, answer until
-the deck is done. It runs entirely in the browser — no backend, no build step, no dependencies,
-no accounts, nothing leaves the device.
+the deck is done. The app itself is four static files with no build step and no dependencies, and
+works on its own with nothing installed.
+
+There is also an optional server. Run it and you get accounts — so your settings and records
+follow you between devices — and a progress report that tells you which characters you're actually
+slow on. Skip it and nothing is missing except those two things; your data stays in your browser.
 
 ## Running it
 
@@ -55,7 +59,7 @@ Six decks, 214 cards, in three tiers per script:
 Obsolete kana (ゐ ゑ ヰ ヱ and the archaic forms) are left out on purpose — you will not meet them
 in modern Japanese.
 
-**Three ways to answer**, switchable on the menu:
+**Three ways to answer**, switchable under **Options**:
 
 - **Typing** — the character is shown, you type its sound. Alternate romanisations are accepted,
   so `si`, `shi`, `hu`, `fu`, `sya`, `sha` and `nn` all count.
@@ -118,7 +122,8 @@ to an option already listed, is not offered. How many you get therefore varies b
 Windows ships no Japanese serif or textbook face unless the *Japanese Supplemental Fonts* optional
 feature is installed.
 
-Everything is stored in one localStorage entry on your own device. Clearing site data resets it.
+Signed out, everything lives in your own browser's storage and nowhere else. Clearing site data
+resets it.
 
 ## Accounts and the progress report
 
@@ -159,16 +164,18 @@ Times are reported as medians rather than averages, so one slow card doesn't mov
 ## Layout
 
 ```
-index.html         six screens and two dialogs
+index.html         six screens and three dialogs
 styles.css         the whole stylesheet, mobile-first
 kana.json          all content — decks, cards, chart layout, font options
 app.js             all front-end logic, one IIFE
+icon.svg           the app icon
 start.sh           install / update / run
 
 backend/
   requirements.txt three dependencies
   app/db.py        SQLite schema, no ORM
   app/auth.py      passwords and sessions
+  app/ratelimit.py sign-in throttling
   app/analytics.py the rules above, applied
   app/main.py      routes, and serves the front end
 ```
@@ -189,24 +196,49 @@ Design notes and the invariants worth knowing before changing anything are in
 
 **かな — Kana Practice**
 
-ひらがなとカタカナの認識ドリルです。開いて、デッキを選び、終わるまで答えるだけ。すべてブラウザ内
-で動作します。バックエンドもビルドも依存ライブラリもアカウントもなく、データが端末の外に出ること
-はありません。
+ひらがなとカタカナの認識ドリルです。開いて、デッキを選び、終わるまで答えるだけ。アプリ本体は
+静的ファイル 4 つで、ビルドも依存ライブラリもなく、そのままで動きます。
+
+サーバーもありますが、必須ではありません。動かすとアカウントが使えるようになり、設定と記録が
+端末をまたいで引き継がれ、さらに「どの文字で実際につまずいているか」を出す進捗レポートが
+見られます。使わなくても足りなくなるのはその 2 つだけで、データはブラウザの中に残ります。
 
 ## 動かし方
 
 HTTP 経由で配信する必要があります。ブラウザは `file://` ページでの `fetch()` をブロックするため、
 `index.html` をダブルクリックしても、アプリではなくエラー画面が出ます。
 
+**アカウントと進捗レポートも使う場合：**
+
+```bash
+./start.sh
+```
+
+準備はこれだけです。仮想環境を作り、依存を 3 つ入れ、作業ツリーが汚れていなければ最新の
+コミットを取得し、<http://localhost:5556> で配信します。何度実行しても構いません。依存は
+`requirements.txt` が変わったときだけ入れ直し、`git pull` はローカルの変更がないときだけ走ります。
+`--port 9000`、`--no-pull`、`--reload` も用意してあります。
+
+**この機械だけでなく、同じネットワークからも見えます。** スマートフォンで開けるようにするため
+で、フリック入力のドリルはそこにしか出ません。起動時に `http://192.168.1.30:5556` のような
+アドレスを表示するので、同じ Wi-Fi につないだスマートフォンのブラウザに入力してください。
+引き換えに、そのネットワーク上の他の機器からも平文の HTTP で届いてしまうので、自宅の
+ネットワーク向けです。`--host 127.0.0.1` でこの機械だけに戻せます。
+
+パスワードを続けて間違えると制限がかかるので、総当たりは進みません。自分のパスワードが通れば
+カウントは消えるため、何度か打ち間違えた程度では影響しません。
+
+**サーバーなしの場合**、アプリは静的ファイル 4 つのままで動きます。
+
 ```bash
 python -m http.server 8000
 ```
 
-あとは <http://localhost:8000> を開いてください。静的ファイルサーバーなら何でも動き、フォルダごと
-GitHub Pages や Netlify に置けます。
+静的ファイルサーバーなら何でも動き、フォルダごと GitHub Pages や Netlify に置けます。アカウント
+と進捗のボタンが出ないだけで、ほかはまったく同じです。
 
-かなを表示するには CJK 対応フォントが必要ですが、いまのデスクトップ・モバイル OS には標準で入って
-います。
+かなを表示するには CJK 対応フォントが必要ですが、いまのデスクトップ・モバイル OS には標準で
+入っています。
 
 ## ドリルの内容
 
@@ -221,7 +253,7 @@ GitHub Pages や Netlify に置けます。
 使われなくなったかな（ゐ ゑ ヰ ヱ や古い字形）は意図的に外してあります。現代の日本語では出てきま
 せん。
 
-**答え方は 3 種類**、メニューで切り替えられます。
+**答え方は 3 種類**、「Options」から切り替えられます。
 
 - **タイピング** — 文字が出るので、その読みをローマ字で入力します。別の綴りも受け付けるので、
   `si`、`shi`、`hu`、`fu`、`sya`、`sha`、`nn` のどれでも正解です。
@@ -264,6 +296,11 @@ GitHub Pages や Netlify に置けます。
 を残さないためです。ランは常に計測されていますが、練習中に時計はわざと表示しません。進むカウンター
 があると練習が競争になるからです。間違いだけの練習は記録に入りません。
 
+**メニューは邪魔をしません。** 置いてあるのは文字種の切り替え、デッキの一覧、そして **Options**
+ボタンだけです。ほかのもの（答え方、フォント、一覧表、進捗、アカウント）はすべてそのボタンの中に
+あります。設定を積み上げるとスマートフォンの画面の 3 分の 1 が消えてしまい、本当に使いたいデッキ
+一覧が狭くなるからです。Options ボタンには今の答え方が表示され、デッキの行にもラベルが付きます。
+
 **一覧表。**「All characters & romaji」で五十音表が開きます。標準的な並びで、参照用の拡張カタカナ
 （ファ ティ ヴァ など）も入っています。
 
@@ -273,19 +310,66 @@ GitHub Pages や Netlify に置けます。
 せん。そのため数は環境によります。Windows は *Japanese Supplemental Fonts* を入れない限り、明朝や
 教科書体が入っていません。
 
-データは端末の localStorage に 1 つだけ保存されます。サイトデータを消すとリセットされます。
+サインインしていなければ、データはブラウザの中だけに残ります。サイトデータを消すとリセットされ
+ます。
+
+## アカウントと進捗レポート
+
+登録に必要なのはユーザー名とパスワードだけです。アカウントの役割はデータをサーバー側に置くこと
+だけで、1 つのブラウザに閉じ込めず、端末をまたいで引き継げるようにします。ローカルの控えは
+オフライン用にそのまま残るので、サインアウトしていてもアプリは動きます。アカウントは localStorage
+を置き換えるのではなく、上に立つ関係です。アカウントと、そこに保存されたものすべては、アカウント
+画面から削除できます。
+
+**進捗レポートはデッキごとです。** 上でデッキを選ぶと、そのデッキのラン（答え方、スコア、タイム）
+が最初の 1 回から並びます。その下には、十分な数がたまってから、実際に手間取っている場所が出ます。
+どの文字で迷うか、どれがもう自動で出るか、どれを間違えるか、そして代わりに何を打っているか —
+たとえば つ を た と答えている、といったことです。ランのタイムはミリ秒まで表示されるので、同じ
+デッキの 2 回を実際に比べられます。分析の部分は、何をデータとして数えるかについて慎重です。
+
+- **6 つのデッキはそれぞれ別のデータです。** カタカナはひらがなの証拠になりませんし、五十音は
+  濁音や拗音の証拠になりません。別の教材だからです。デッキをまたいで平均することはなく、
+  ひらがなを 3 回やってもダクテンの分析は出ません。
+- **そのデッキを 3 回やり終えるまで、結論は出しません。** 1 回では調子の悪い日と苦手な文字を
+  区別できないので、それまでは分析を出さず、実際に起きたことであるラン一覧だけを見せます。
+- **フリックのドリルは一覧には出ますが、分析はしません。** 方向やキーを訊くもので、その母音・
+  その行の文字なら何でも正解になるため、「遅い文字」を特定できず、間違いも 1 文字に紐づけられ
+  ません。ラン自体はすべて見られます。
+- **1 枚に 10 秒を超えたら、それはタイムとして数えません。** 考えていたのではなく、よそを見て
+  いたからです。ただし正誤には数えます。実際に答えてはいるからです。
+- **「答えを見る」もタイムには入りません。** 同じ理由です。
+- **間違いだけの練習は表示もされません。** 直前に答えを見せられたカードをやり直すものなので、
+  速さも正誤も実力を表さず、通常のランの隣に並ぶと数字を濁します。記録はされていますが、
+  出しません。
+- **スマートフォンとデスクトップは分けてあります。** キーボードで打つのとガラスをなぞるのは
+  別の動作なので、それぞれ独自の数字を持ち、どちらを見るかを選べます。
+
+タイムは平均ではなく中央値です。1 枚遅かっただけで数字が動かないようにするためです。
 
 ## ファイル構成
 
 ```
-index.html    4 つの画面と 2 つのダイアログ
-styles.css    スタイル全部、モバイルファースト
-kana.json     内容全部 — デッキ、カード、表のレイアウト、フォント
-app.js        ロジック全部、IIFE 1 つ
+index.html         6 つの画面と 3 つのダイアログ
+styles.css         スタイル全部、モバイルファースト
+kana.json          内容全部 — デッキ、カード、表のレイアウト、フォント
+app.js             フロント側のロジック全部、IIFE 1 つ
+icon.svg           アプリのアイコン
+start.sh           導入・更新・起動
+
+backend/
+  requirements.txt 依存 3 つ
+  app/db.py        SQLite のスキーマ、ORM なし
+  app/auth.py      パスワードとセッション
+  app/ratelimit.py サインインの制限
+  app/analytics.py 上のルールの実装
+  app/main.py      ルーティングとフロントの配信
 ```
 
-これだけでアプリ全体です。インストールする依存も、ビルドもありません。内容は `kana.json` だけに
-あり、`app.js` は渡されたデッキをそのまま表示します。デッキを増やす、別の綴りを受け付ける、表を
-変える — どれも JSON の編集であって、コードの変更ではありません。
+フロント側の 4 ファイルがアプリ本体で、インストールするものもビルドも要りません。内容は
+`kana.json` だけにあり、`app.js` は渡されたデッキをそのまま表示します。デッキを増やす、別の綴りを
+受け付ける、表を変える — どれも JSON の編集であって、コードの変更ではありません。
+
+バックエンドは任意で、出しゃばりません。純 Python の依存が 3 つ、SQLite ファイルが 1 つ、管理者
+アカウントはなく、すべてのクエリはサインインした本人に限定されています。
 
 設計のメモと、変更前に知っておくべき不変条件は [CLAUDE.md](CLAUDE.md) にあります。
