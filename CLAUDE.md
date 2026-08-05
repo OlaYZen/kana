@@ -27,8 +27,11 @@ the drill and the chart — were deleted; they are in git history at `3ece9c6` i
 needed. Don't reintroduce a second copy of the game: they drifted out of sync with the real app
 the moment they stopped being loaded.
 
-The project directory used to be called `hkk`, and that name survives in exactly one place: the
-localStorage key. See **Persistence** below — it is deliberate, not a leftover to tidy up.
+The project directory used to be called `hkk`, and both localStorage keys carried that prefix long
+after. They are now `kana.*`, and `renameKeys()` in `app.js` moves anything still found under the
+old names at boot. **Don't delete it** — it is the only thing standing between a returning user and
+a silently wiped set of records, and it costs one pass over two keys on a load that finds nothing.
+See **Persistence** below.
 
 ## Running it
 
@@ -171,14 +174,16 @@ the stamp would give the *wrong* name — `Dakuten hiragana` and `Flick directio
 the あ stamp. Don't simplify this to "never show the heading"; that case loses the deck's identity
 entirely.
 
-**Persistence** is localStorage key `hkk.v1` (`STORE` in `app.js`), holding
+**Persistence** is localStorage key `kana.v1` (`STORE` in `app.js`), holding
 `{rev, mode, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
-merges patches — never `setItem` directly. **Do not rename the key to match the `kana` directory**:
-it is the only handle on a returning user's saved bests, and changing it silently wipes every
-record anyone has set. `rev` versions the *shape* inside the key, which is how shape changes ship
-without renaming it. The session token lives in a *second* key, `hkk.token` — deliberately
-outside the synced blob, since the blob is uploaded to the server and a token has no business
-making that round trip.
+merges patches — never `setItem` directly. **Renaming that key wipes every record anyone has set**,
+because it is the only handle on a returning user's saved bests — the `hkk.v1` → `kana.v1` rename
+was only safe because `renameKeys()` moves the old value across first, and any future rename needs
+the same treatment. `rev` versions the *shape* inside the key, which is how a shape change ships
+without touching the name at all; reach for that first.
+
+The session token is kept in a key of its own, **`kana.token`**, deliberately outside the synced
+blob: the blob is uploaded to the server, and a token has no business making that round trip.
 
 **Records belong to a deck _and_ a mode**, keyed `deckId|mode` by `recordKey()` — reading kana,
 picking from four, and writing kana from a sound are three different skills, and pooling them let
