@@ -10,6 +10,7 @@
   const el = {
     menu: $("menu"), play: $("play"), end: $("end"), fatal: $("fatal"),
     decks: $("decks"), menuScroll: document.querySelector(".menu__scroll"),
+    flickDecks: $("flickDecks"), flickTitle: $("flickTitle"),
     scriptSwitch: $("scriptSwitch"),
     playMark: $("playMark"), playLabel: $("playLabel"),
     square: $("square"), glyph: $("glyph"), feedback: $("feedback"),
@@ -43,7 +44,9 @@
   const TOUCH = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 
   const MODES = ["type", "choose", "write"];
-  const MODE_LABEL = { type: "Typing", choose: "Choosing", write: "Writing" };
+  // "flick" is not a selectable answer mode — the flick drills are their own
+  // runs, and they record under it so their scores never mix with a deck's.
+  const MODE_LABEL = { type: "Typing", choose: "Choosing", write: "Writing", flick: "Flick" };
 
   // Reading kana, picking from four, and writing kana from a sound are three
   // different skills, so each keeps its own records — a record belongs to a
@@ -201,6 +204,7 @@
     missed: [],        // unique wrong cards, chart order
     graded: false,     // answer already scored — waiting to advance
     kbDismissed: false, // user put the on-screen keyboard away; don't force it back
+    flick: null,       // "vowel" | "key" while a flick drill is running
     isDrill: false,
     timer: 0,          // pending auto-advance, cleared whenever the card changes
     startedAt: 0,      // performance.now() when the run began
@@ -237,10 +241,16 @@
   const writeAccepts = (c, value) =>
     state.deck.cards.some((x) => x.a === c.a && normKana(x.q) === value);
 
+  // What the current run scores as. A flick drill ignores the answer mode.
+  const activeMode = () => (state.flick ? "flick" : state.mode);
+
+  // The answer is kana in write and flick alike, so both use the IME field.
+  const kanaAnswer = () => state.flick !== null || state.mode === "write";
+
   // typing and writing are one interaction with the prompt reversed, so they
   // share a submit path — only the field and what counts as correct differ
   const typedField = () =>
-    state.mode === "write"
+    kanaAnswer()
       ? { input: el.kanaInput, submit: el.writeSubmitBtn }
       : { input: el.input, submit: el.submitBtn };
 
@@ -288,7 +298,8 @@
   // The sample is the card being asked when there is one — seeing *this*
   // character in another face is the whole point.
   function fontSampleText() {
-    return el.play.classList.contains("hidden") || !state.queue.length
+    // a flick prompt is a Latin letter, which shows nothing about a kana face
+    return el.play.classList.contains("hidden") || !state.queue.length || state.flick
       ? "あ"
       : card().q;
   }
@@ -449,44 +460,187 @@
     el.chartBody.focus();     // so arrow keys / space scroll the tables
   }
 
+  /* ==========================================================================
+     Flick keyboard drills
+
+     A Japanese phone keyboard has ten keys, one per gojūon row, and the vowel
+     comes from the direction you flick: middle a, left i, up u, right e, down o.
+     These two drills train the two halves of that separately — one asks for a
+     direction and takes any character with that vowel, the other asks for a key
+     and takes any character from its row.
+
+     Both mappings are derived from the chart grids in kana.json rather than
+     listed here: a grid row already knows its consonant and a grid column
+     already knows its vowel, so the drills cannot disagree with the chart.
+     ========================================================================== */
+  const FLICK_LEN = 20;            // prompts per run
+  const VOWELS = ["a", "i", "u", "e", "o"];
+
+  // Dakuten rows are not their own keys — が is the か key plus the ゛ mark, so
+  // for "which key is it on" they fold back onto the base row.
+  const BASE_KEY = { g: "k", z: "s", d: "t", b: "h", p: "h" };
+
+  // ふ is "fu" but lives on the は key, which is worth spelling out on the prompt
+  const KEY_LABEL = { a: "A", k: "K", s: "S", t: "T", n: "N",
+                      h: "H/F", m: "M", y: "Y", r: "R", w: "W" };
+
+  const flickIndex = { vowel: new Map(), key: new Map(), reading: new Map() };
+
+  function buildFlickIndex() {
+    flickIndex.vowel.clear(); flickIndex.key.clear(); flickIndex.reading.clear();
+
+    state.decks.forEach((d) => d.cards.forEach((c) => {
+      if (!flickIndex.reading.has(c.q)) flickIndex.reading.set(c.q, c.a);
+    }));
+
+    state.charts.forEach((ch) => (ch.sections || []).forEach((sec) => {
+      if (sec.type !== "grid") return;
+      (sec.rows || []).forEach((row) => {
+        // an empty row label is the vowel row itself — the あ key
+        const k = BASE_KEY[row.label] || row.label || "a";
+        row.cells.forEach((cell, i) => {
+          if (!cell) return;
+          if (!flickIndex.key.has(cell)) flickIndex.key.set(cell, k);
+          if (!flickIndex.vowel.has(cell)) flickIndex.vowel.set(cell, sec.cols[i]);
+        });
+      });
+    }));
+  }
+
+  // The keys actually present in the charts, in chart order.
+  function flickKeys() {
+    const seen = [];
+    flickIndex.key.forEach((k) => { if (seen.indexOf(k) < 0) seen.push(k); });
+    return seen;
+  }
+
+  // What a typed character is, as far as the keyboard is concerned. A yōon like
+  // きゃ is typed on the first kana's key and carries the small kana's vowel —
+  // ゃゅょ are not in the grids, so the vowel falls back to the deck reading.
+  // ん resolves to neither and is rejected: it has no vowel, and which key it
+  // sits on differs between keyboards, so drilling it would teach a guess.
+  function kanaInfo(value) {
+    const v = normKana(value);
+    if (!v) return null;
+    const key = flickIndex.key.get(v[0]);
+    let vowel = flickIndex.vowel.get(v[v.length - 1]);
+    if (!vowel) {
+      const reading = flickIndex.reading.get(v) || "";
+      const last = reading.slice(-1);
+      if (VOWELS.indexOf(last) > -1) vowel = last;
+    }
+    return (key || vowel) ? { key: key, vowel: vowel } : null;
+  }
+
+  // a few real characters to show as "what would have counted"
+  function flickExamples(kind, group) {
+    const out = [];
+    const table = kind === "vowel" ? flickIndex.vowel : flickIndex.key;
+    table.forEach((g, kana) => {
+      if (g === group && out.length < 6 && flickIndex.reading.has(kana)) out.push(kana);
+    });
+    return out;
+  }
+
+  function flickCard(kind, group) {
+    return {
+      q: kind === "vowel" ? group.toUpperCase() : KEY_LABEL[group] || group.toUpperCase(),
+      a: flickExamples(kind, group).join(" "),
+      flick: { kind: kind, group: group }
+    };
+  }
+
+  // Deal the groups out evenly and then shuffle, rather than sampling at
+  // random: over only 20 prompts, random sampling can leave a whole direction
+  // out of the run entirely, which is the one thing this drill must not do.
+  function flickQueue(kind, only) {
+    const groups = only && only.length
+      ? only
+      : (kind === "vowel" ? VOWELS.slice() : flickKeys());
+    const len = only && only.length
+      ? Math.min(FLICK_LEN, only.length * 4)
+      : FLICK_LEN;
+    const out = [];
+    while (out.length < len) out.push.apply(out, shuffle(groups));
+    out.length = len;
+    return shuffle(out).map((g) => flickCard(kind, g));
+  }
+
+  function flickAccepts(c, value) {
+    const info = kanaInfo(value);
+    if (!info) return false;
+    return c.flick.kind === "vowel"
+      ? info.vowel === c.flick.group
+      : info.key === c.flick.group;
+  }
+
+  const FLICK_DECKS = [
+    { id: "flick-vowel", flick: "vowel", sample: "あ", label: "Flick directions",
+      subtitle: "a i u e o by swipe" },
+    { id: "flick-key", flick: "key", sample: "か", label: "Flick keys",
+      subtitle: "which key each row is on" }
+  ];
+
+  const deckSize = (deck) => (deck.flick ? FLICK_LEN : deck.cards.length);
+
   /* ---------- menu ---------- */
   function buildMenu() {
     el.decks.innerHTML = "";
-    state.decks.filter((d) => d.script === state.script).forEach((deck) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "deck" + (deck.sample.length > 1 ? " deck--combo" : "");
+    state.decks.filter((d) => d.script === state.script)
+      .forEach((deck) => el.decks.appendChild(deckRow(deck)));
 
-      // the figures shown are this mode's — switching mode rebuilds the list
-      const best = store.best(deck.id, state.mode);
-      const bestMs = store.bestTime(deck.id, state.mode);
-      b.setAttribute("aria-label", deck.label + " — " + deck.cards.length + " cards" +
-        ", " + MODE_LABEL[state.mode].toLowerCase() +
-        (best ? ", best " + best + "%" : ", no attempts yet") +
-        (bestMs ? ", fastest clean run " + fmtTime(bestMs) : ""));
+    // Flick drills aren't decks and aren't script-specific, so they sit in
+    // their own section below the list rather than being filtered with it.
+    // Both are derived from the chart grids, so without charts there is nothing
+    // to drill and the section is dropped entirely.
+    const ready = flickIndex.key.size > 0;
+    el.flickTitle.classList.toggle("hidden", !ready);
+    el.flickDecks.classList.toggle("hidden", !ready);
+    el.flickDecks.innerHTML = "";
+    if (ready) FLICK_DECKS.forEach((deck) => el.flickDecks.appendChild(deckRow(deck)));
+  }
 
-      b.innerHTML =
-        '<span class="deck__sample" lang="ja">' + deck.sample + "</span>" +
-        '<span><span class="deck__name">' + deck.label + "</span>" +
-        '<span class="deck__meta">' + deck.subtitle + " · " + deck.cards.length + " cards</span></span>" +
-        '<span class="deck__best" title="Your best in ' + MODE_LABEL[state.mode] + '">' +
-          '<span class="deck__pct">' + (best ? best + "%" : "—") + "</span>" +
-          (bestMs ? '<span class="deck__time" title="Fastest run with no mistakes">' +
-                    fmtTime(bestMs) + "</span>" : "") +
-          // the mode names the figure: each mode keeps its own records, and an
-          // unlabelled percentage would silently look like the deck's only score
-          "<small>" + MODE_LABEL[state.mode] + "</small>" +
-        "</span>";
+  function deckRow(deck) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "deck" + (deck.sample.length > 1 ? " deck--combo" : "");
 
-      b.addEventListener("click", () => start(deck));
-      el.decks.appendChild(b);
-    });
+    // A flick run is its own skill and always scores as "flick", whatever the
+    // answer mode is set to; a deck's figures are the selected mode's, which is
+    // why switching mode rebuilds the list.
+    const mode = deck.flick ? "flick" : state.mode;
+    const size = deckSize(deck);
+    const unit = deck.flick ? " prompts" : " cards";
+    const best = store.best(deck.id, mode);
+    const bestMs = store.bestTime(deck.id, mode);
+
+    b.setAttribute("aria-label", deck.label + " — " + size + unit +
+      ", " + MODE_LABEL[mode].toLowerCase() +
+      (best ? ", best " + best + "%" : ", no attempts yet") +
+      (bestMs ? ", fastest clean run " + fmtTime(bestMs) : ""));
+
+    b.innerHTML =
+      '<span class="deck__sample" lang="ja">' + deck.sample + "</span>" +
+      '<span><span class="deck__name">' + deck.label + "</span>" +
+      '<span class="deck__meta">' + deck.subtitle + " · " + size + unit + "</span></span>" +
+      '<span class="deck__best" title="Your best in ' + MODE_LABEL[mode] + '">' +
+        '<span class="deck__pct">' + (best ? best + "%" : "—") + "</span>" +
+        (bestMs ? '<span class="deck__time" title="Fastest run with no mistakes">' +
+                  fmtTime(bestMs) + "</span>" : "") +
+        // the mode names the figure: each mode keeps its own records, and an
+        // unlabelled percentage would silently look like the deck's only score
+        "<small>" + MODE_LABEL[mode] + "</small>" +
+      "</span>";
+
+    b.addEventListener("click", () => start(deck));
+    return b;
   }
 
   function toMenu() {
     clearTimeout(state.timer);
     stopClock(false);          // abandoned run — drop the clock, don't record it
     state.graded = false;
+    state.flick = null;        // back to the selected answer mode
     buildMenu();
     show(el.menu);
   }
@@ -516,8 +670,13 @@
   /* ---------- run ---------- */
   function start(deck, cards) {
     state.deck = deck;
+    state.flick = deck.flick || null;
     state.isDrill = Boolean(cards);
-    state.queue = shuffle(cards && cards.length ? cards : deck.cards);
+    // a flick run is generated, not dealt from a deck; a drill of one narrows
+    // the generator to the groups that were missed
+    state.queue = state.flick
+      ? flickQueue(state.flick, (cards || []).map((c) => c.flick.group))
+      : shuffle(cards && cards.length ? cards : deck.cards);
     state.i = 0;
     state.answered = 0; state.correct = 0;
     state.streak = 0; state.bestStreak = 0;
@@ -537,15 +696,22 @@
     state.graded = false;
     clearTimeout(state.timer);
 
-    const writing = state.mode === "write";
+    // Latin prompt in three of the four cases: writing asks with romaji, and
+    // both flick drills ask with a bare letter.
+    const flicking = state.flick !== null;
+    const writing = !flicking && state.mode === "write";
+    const choosing = !flicking && state.mode === "choose";
+    const latinPrompt = writing || flicking;
 
     el.square.classList.remove("is-correct", "is-wrong", "is-graded");
-    // writing asks the other way round: the romaji is the prompt, the kana the answer
-    el.glyph.textContent = writing ? c.a : c.q;
-    el.glyph.lang = writing ? "en" : "ja";
-    el.glyph.classList.toggle("is-pair", !writing && c.q.length > 1);
-    el.glyph.classList.toggle("is-romaji", writing);
+    el.glyph.textContent = flicking ? c.q : writing ? c.a : c.q;
+    el.glyph.lang = latinPrompt ? "en" : "ja";
+    el.glyph.classList.toggle("is-pair", !latinPrompt && c.q.length > 1);
+    el.glyph.classList.toggle("is-romaji", latinPrompt);
     el.feedback.textContent =
+      flicking ? (state.flick === "vowel"
+                    ? "Any character that ends in this vowel."
+                    : "Any character from this key.") :
       state.mode === "type"   ? "Type the sound this character makes." :
       state.mode === "choose" ? "Pick the sound this character makes."
                               : "Write the character for this sound.";
@@ -553,9 +719,8 @@
     el.mProgress.innerHTML = (state.i + 1) + "<small>/" + state.queue.length + "</small>";
     updateStats();
 
-    const choosing = state.mode === "choose";
-    el.typeMode.classList.toggle("hidden", state.mode !== "type");
-    el.writeMode.classList.toggle("hidden", !writing);
+    el.typeMode.classList.toggle("hidden", flicking || state.mode !== "type");
+    el.writeMode.classList.toggle("hidden", !kanaAnswer());
     el.chooseMode.classList.toggle("hidden", !choosing);
     // reveal and the hint row belong to the two typing modes only
     el.typedTools.classList.toggle("hidden", choosing);
@@ -569,8 +734,9 @@
     } else {
       // the IME reminder has to survive on touch, where the keyboard hint is
       // deliberately suppressed — hence the different class
-      el.typedHint.textContent = writing ? "Japanese keyboard" : "Enter ↵ to check";
-      el.typedHint.className = writing ? "hint hint--ime" : "hint hint--keys";
+      const ime = kanaAnswer();
+      el.typedHint.textContent = ime ? "Japanese keyboard" : "Enter ↵ to check";
+      el.typedHint.className = ime ? "hint hint--ime" : "hint hint--keys";
 
       const f = typedField();
       f.input.value = "";
@@ -653,7 +819,7 @@
     const pct = state.answered
       ? Math.round(state.correct / state.answered * 100) + "%"
       : "—";
-    const best = state.deck && !state.isDrill ? store.best(state.deck.id, state.mode) : 0;
+    const best = state.deck && !state.isDrill ? store.best(state.deck.id, activeMode()) : 0;
     el.mAcc.innerHTML = pct +
       (best ? '<span class="metric__best">' + best + "%</span>" : "");
 
@@ -664,6 +830,14 @@
   function submitTyped() {
     if (state.graded) { next(); return; }
     const c = card();
+
+    if (state.flick) {
+      const value = normKana(el.kanaInput.value);
+      if (!value) return;
+      if (flickAccepts(c, value)) markCorrect(value);
+      else markWrong(c, false, value);
+      return;
+    }
 
     if (state.mode === "write") {
       const value = normKana(el.kanaInput.value);
@@ -710,13 +884,16 @@
     const shown = typed && typed !== normKana(c.q) ? typed : c.q;
 
     el.square.classList.add("is-correct", "is-graded");
-    el.feedback.innerHTML = '<span class="ok">Correct — <b lang="ja">' + shown +
-      '</b> is “' + c.a + '”.</span>';
+    el.feedback.innerHTML = state.flick
+      ? '<span class="ok">Correct — <b lang="ja">' + shown + "</b> " +
+        (state.flick === "vowel" ? "ends in " : "is on ") + c.q + ".</span>"
+      : '<span class="ok">Correct — <b lang="ja">' + shown +
+        '</b> is “' + c.a + '”.</span>';
     updateStats();
     state.timer = setTimeout(next, REVEAL_DELAY);
   }
 
-  function markWrong(c, viaReveal) {
+  function markWrong(c, viaReveal, typed) {
     state.answered++;
     state.streak = 0;
     state.graded = true;
@@ -725,19 +902,37 @@
     el.square.classList.remove("is-correct");
     el.square.classList.add("is-wrong", "is-graded");
 
-    const readings = [c.a].concat(c.alt || []).join(" / ");
-    el.feedback.innerHTML =
-      (viaReveal ? "" : '<span class="no">Not quite. </span>') +
-      '<b lang="ja">' + c.q + '</b> is “<span class="no">' + readings + '</span>”. ' +
-      (TOUCH ? "Tap to continue." : state.mode !== "choose" ? "Press Enter to continue." : "");
+    const tail = TOUCH ? "Tap to continue."
+      : activeMode() !== "choose" ? "Press Enter to continue." : "";
+
+    if (state.flick) {
+      // name what they actually typed, so a wrong answer teaches where that
+      // character really sits rather than only restating the prompt
+      const info = typed ? kanaInfo(typed) : null;
+      const got = !typed ? ""
+        : !info ? '<b lang="ja">' + typed + "</b> isn’t a character this keyboard makes. "
+        : '<b lang="ja">' + typed + '</b> is <span class="no">' +
+          (state.flick === "vowel"
+            ? (info.vowel || "?").toUpperCase()
+            : KEY_LABEL[info.key] || "?") + "</span>, not " + c.q + ". ";
+      el.feedback.innerHTML =
+        (viaReveal ? "" : '<span class="no">Not quite. </span>') + got +
+        "Try " + '<b lang="ja">' + c.a + "</b>. " + tail;
+    } else {
+      const readings = [c.a].concat(c.alt || []).join(" / ");
+      el.feedback.innerHTML =
+        (viaReveal ? "" : '<span class="no">Not quite. </span>') +
+        '<b lang="ja">' + c.q + '</b> is “<span class="no">' + readings + '</span>”. ' + tail;
+    }
 
     updateStats();
 
-    if (state.mode !== "choose") {
+    if (activeMode() !== "choose") {
       const f = typedField();
-      // show the answer in the field the user was answering in: the kana when
-      // writing, the romaji when typing
-      f.input.value = state.mode === "write" ? c.q : c.a;
+      // show the answer in the field the user was answering in: a worked example
+      // for flick, the kana when writing, the romaji when typing
+      f.input.value = state.flick ? c.a.split(" ")[0]
+        : state.mode === "write" ? c.q : c.a;
       focusField(f.input);
       // selecting shows drag handles on a phone, which reads as an invitation
       // to edit an answer that is already graded
@@ -768,7 +963,7 @@
     stopClock(true);
     const took = elapsed();
     const pct = state.answered ? Math.round(state.correct / state.answered * 100) : 0;
-    const mode = state.mode;
+    const mode = activeMode();
     const isRecord = !state.isDrill && store.setBest(state.deck.id, mode, pct);
     const best = store.best(state.deck.id, mode);
     // a clean sweep is what earns a time; reveals count as misses, so this
@@ -797,13 +992,19 @@
     }
 
     const news = [];
-    if (isRecord) news.push("New " + MODE_LABEL[mode] + " best for this deck.");
+    if (isRecord) news.push("New " + MODE_LABEL[mode] + " best for this " +
+      (state.flick ? "drill." : "deck."));
     if (isFastest) news.push(isRecord ? "Fastest clean run too." : "Fastest clean run yet.");
     el.endBest.classList.toggle("hidden", !news.length);
     el.endBest.textContent = news.join(" ");
 
-    // unique misses, back in chart order
-    const missed = state.deck.cards.filter((c) => state.missed.includes(c));
+    // Unique misses, back in chart order. A flick run has no deck to order by,
+    // and the same prompt recurs through the run as separate cards, so its
+    // misses are collapsed by group instead.
+    const missed = state.flick
+      ? state.missed.filter((c, i) =>
+          state.missed.findIndex((x) => x.flick.group === c.flick.group) === i)
+      : state.deck.cards.filter((c) => state.missed.includes(c));
 
     if (missed.length) {
       el.missedBlock.classList.remove("hidden");
@@ -824,7 +1025,9 @@
       el.drillBtn.classList.add("hidden");
     }
 
-    el.againBtn.textContent = "Practice all " + state.deck.cards.length + " again";
+    el.againBtn.textContent = state.flick
+      ? "Practice " + FLICK_LEN + " more"     // a fresh random run, not the same one
+      : "Practice all " + state.deck.cards.length + " again";
     el.againBtn.onclick = () => start(state.deck);
     show(el.end);
   }
@@ -911,6 +1114,7 @@
       state.decks = data.decks;
       state.charts = data.charts || [];
       el.chartBtn.classList.toggle("hidden", !state.charts.length);
+      buildFlickIndex();   // needs both decks and charts
       const fonts = resolveFonts(data.fonts);
       state.fonts = fonts.list;
       state.fontsMissing = fonts.missing;
