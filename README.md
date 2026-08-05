@@ -18,8 +18,13 @@ It has to be served over HTTP. Browsers block `fetch()` on `file://` pages, so d
 That is the whole setup. It creates the virtualenv, installs the three dependencies, pulls the
 latest commit if the checkout is clean, and serves everything on <http://localhost:5556>. Run it
 again any time — it only reinstalls when the requirements actually changed, and only pulls when
-you have no local edits. `--port 9000`, `--host 0.0.0.0`, `--no-pull` and `--reload` are there if
-you need them.
+you have no local edits. `--port 9000`, `--no-pull` and `--reload` are there if you need them.
+
+**It listens on your network, not just this machine,** so you can open it on your phone — which is
+the only place the flick drills appear. On start-up it prints the address to use, something like
+`http://192.168.1.30:5556`; type that into the phone's browser with both devices on the same
+Wi-Fi. The trade-off is that anything else on that network can reach it too, over plain HTTP, so
+it belongs on a home network rather than a café one. `--host 127.0.0.1` keeps it to this machine.
 
 **Without a backend**, the app is still four static files and works on its own:
 
