@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#EFE9DC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>かな — Kana Practice</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="stage">
+
+  <!-- ───────────── MENU ───────────── -->
+  <section id="menu" class="screen menu">
+    <p class="eyebrow"><span class="mark" lang="ja">かな</span> Kana Practice</p>
+
+    <div class="menu__scroll">
+      <div class="decks" id="decks"></div>
+    </div>
+
+    <div class="modebar">
+      <span class="modebar__label">Answer by</span>
+      <div class="seg" role="radiogroup" aria-label="Answer mode">
+        <button type="button" class="seg__btn" data-mode="type" role="radio" aria-checked="true">Typing</button>
+        <button type="button" class="seg__btn" data-mode="choose" role="radio" aria-checked="false">Choosing</button>
+      </div>
+    </div>
+
+    <div class="modebar modebar--font">
+      <span class="modebar__label">Character font</span>
+      <button type="button" class="fontpick" id="menuFontBtn">
+        <span class="fontpick__sample" lang="ja">あ</span>
+        <span class="fontpick__name" id="menuFontName">Mincho</span>
+        <span aria-hidden="true">▾</span>
+      </button>
+    </div>
+
+    <button type="button" class="wide" id="chartBtn">
+      <span class="wide__mark" lang="ja">五十音</span>
+      <span class="wide__label">All characters &amp; romaji</span>
+      <span class="wide__go" aria-hidden="true">▸</span>
+    </button>
+  </section>
+
+  <!-- ───────────── PLAY ───────────── -->
+  <section id="play" class="screen play hidden">
+
+    <header class="playbar">
+      <button type="button" class="iconbtn" id="menuBtn" aria-label="Back to all decks" title="All decks">←</button>
+      <h1 class="playbar__title">
+        <span class="playbar__mark" id="playMark" lang="ja">かな</span>
+        <span id="playLabel">Hiragana</span>
+      </h1>
+      <button type="button" class="iconbtn iconbtn--kana" id="playFontBtn"
+              aria-label="Change the character font" title="Character font" lang="ja">字</button>
+      <button type="button" class="iconbtn" id="restartBtn" aria-label="Restart this deck" title="Restart deck">↻</button>
+    </header>
+
+    <div class="playmain">
+      <div class="square" id="square">
+        <span class="glyph" id="glyph" lang="ja">あ</span>
+        <span class="maru" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <div class="dock">
+      <p class="feedback" id="feedback" role="status" aria-live="polite">Type the sound this character makes.</p>
+
+      <!-- typing -->
+      <div id="typeMode">
+        <div class="answer">
+          <input id="input" type="text" inputmode="latin" enterkeyhint="go" autocomplete="off"
+                 autocapitalize="off" autocorrect="off" spellcheck="false"
+                 placeholder="romaji…" aria-label="Type the romaji reading">
+          <button type="button" class="btn btn--primary" id="submitBtn">Check</button>
+        </div>
+        <div class="undertools">
+          <button type="button" class="link" id="revealBtn">Reveal answer</button>
+          <span class="hint hint--keys">Enter ↵ to check</span>
+        </div>
+      </div>
+
+      <!-- choosing -->
+      <div id="chooseMode" class="hidden">
+        <div class="choices" id="choices"></div>
+        <!-- height is reserved so the Continue button can't shift the layout -->
+        <div class="undertools undertools--choose" id="chooseTools">
+          <span class="hint hint--keys" id="chooseHint">Keys 1–4 also work</span>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="bar"><span id="barFill"></span></div>
+        <div class="metrics">
+          <div class="metric"><div class="metric__n" id="mProgress">0<small>/0</small></div><div class="metric__l">Card</div></div>
+          <div class="metric metric--streak"><div class="metric__n" id="mStreak">0</div><div class="metric__l">Streak</div></div>
+          <div class="metric"><div class="metric__n" id="mAcc">—</div><div class="metric__l">Accuracy</div></div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ───────────── END ───────────── -->
+  <section id="end" class="screen end hidden">
+    <div class="end__scroll">
+      <p class="eyebrow"><span class="mark" id="endMark" lang="ja">かな</span> <span id="endLabel">Deck complete</span></p>
+      <div class="end__scoreline">
+        <div class="end__score" id="endScore">—</div>
+        <!-- filled by app.js: "best 96% · 1:47" -->
+        <div class="end__chip hidden" id="endBestChip"></div>
+      </div>
+      <p class="end__sub" id="endSub"></p>
+      <p class="end__best hidden" id="endBest"></p>
+
+      <div id="missedBlock">
+        <p class="section-title">Review these</p>
+        <div class="missed" id="missedGrid"></div>
+      </div>
+    </div>
+
+    <div class="end__actions">
+      <button type="button" class="btn btn--ghost hidden" id="drillBtn"></button>
+      <button type="button" class="btn btn--primary" id="againBtn">Practice deck again</button>
+      <button type="button" class="link" id="endMenuBtn">← All decks</button>
+    </div>
+  </section>
+
+  <!-- ───────────── LOAD ERROR ───────────── -->
+  <section id="fatal" class="screen fatal hidden">
+    <p class="eyebrow"><span class="mark" lang="ja">かな</span> Can’t load the deck</p>
+    <p class="fatal__msg" id="fatalMsg"></p>
+    <p class="fatal__hint">Browsers block <code>fetch()</code> on <code>file://</code> pages, so
+      <code>kana.json</code> can’t be read by double-clicking this file. Serve the folder instead:</p>
+    <pre class="fatal__cmd"><code>python -m http.server 8000</code></pre>
+    <p class="fatal__hint">then open <code>http://localhost:8000</code>.</p>
+  </section>
+
+</main>
+
+<!-- ───────────── FONT PICKER ───────────── -->
+<dialog id="fontSheet" class="sheet" aria-labelledby="fontSheetTitle">
+  <div class="sheet__head">
+    <h2 class="sheet__title" id="fontSheetTitle">Character font</h2>
+    <button type="button" class="iconbtn" id="fontCloseBtn" aria-label="Close">✕</button>
+  </div>
+  <div class="sheet__body">
+    <div class="fonts" id="fontList" role="radiogroup" aria-labelledby="fontSheetTitle"></div>
+    <p class="sheet__note" id="fontNote"></p>
+  </div>
+</dialog>
+
+<!-- ───────────── CHARACTER CHART ───────────── -->
+<dialog id="chartSheet" class="sheet sheet--chart" data-script="hiragana"
+        aria-labelledby="chartSheetTitle">
+  <div class="sheet__head">
+    <h2 class="sheet__title" id="chartSheetTitle">All characters</h2>
+    <button type="button" class="iconbtn" id="chartCloseBtn" aria-label="Close">✕</button>
+  </div>
+
+  <div class="chart__switch" role="radiogroup" aria-label="Script">
+    <button type="button" class="hanko" data-chart="hiragana" role="radio" aria-checked="true">
+      <span class="hanko__glyph" lang="ja">あ</span>
+      <span class="hanko__label">Hiragana</span>
+    </button>
+    <button type="button" class="hanko" data-chart="katakana" role="radio" aria-checked="false">
+      <span class="hanko__glyph" lang="ja">ア</span>
+      <span class="hanko__label">Katakana</span>
+    </button>
+  </div>
+
+  <!-- masthead + tables are built by app.js from kana.json's `charts` -->
+  <div class="sheet__body chart__body" id="chartBody" tabindex="-1"></div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
