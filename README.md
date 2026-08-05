@@ -26,6 +26,9 @@ the only place the flick drills appear. On start-up it prints the address to use
 Wi-Fi. The trade-off is that anything else on that network can reach it too, over plain HTTP, so
 it belongs on a home network rather than a café one. `--host 127.0.0.1` keeps it to this machine.
 
+Repeated wrong passwords are throttled, so guessing at one is slow; getting your own password
+right clears the count, so normal use is never affected even after a few fumbled tries.
+
 **Without a backend**, the app is still four static files and works on its own:
 
 ```bash
