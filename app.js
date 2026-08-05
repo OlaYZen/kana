@@ -9,11 +9,14 @@
 
   const el = {
     menu: $("menu"), play: $("play"), end: $("end"), fatal: $("fatal"),
-    decks: $("decks"),
+    decks: $("decks"), menuScroll: document.querySelector(".menu__scroll"),
+    scriptSwitch: $("scriptSwitch"),
     playMark: $("playMark"), playLabel: $("playLabel"),
     square: $("square"), glyph: $("glyph"), feedback: $("feedback"),
-    typeMode: $("typeMode"), chooseMode: $("chooseMode"),
+    typeMode: $("typeMode"), chooseMode: $("chooseMode"), writeMode: $("writeMode"),
     input: $("input"), submitBtn: $("submitBtn"), revealBtn: $("revealBtn"),
+    kanaInput: $("kanaInput"), writeSubmitBtn: $("writeSubmitBtn"),
+    writeRevealBtn: $("writeRevealBtn"),
     choices: $("choices"), chooseTools: $("chooseTools"), chooseHint: $("chooseHint"),
     barFill: $("barFill"), mProgress: $("mProgress"), mStreak: $("mStreak"), mAcc: $("mAcc"),
     menuBtn: $("menuBtn"), restartBtn: $("restartBtn"),
@@ -153,7 +156,13 @@
     deck: null,        // active deck definition
     queue: [],         // shuffled cards for this run
     i: 0,
-    mode: ["type", "choose"].includes(store.read().mode)
+    // the menu lists one script at a time; this is which one
+    script: ["hiragana", "katakana"].includes(store.read().script)
+      ? store.read().script
+      : "hiragana",
+    // type: kana → romaji.  choose: kana → romaji, multiple choice.
+    // write: romaji → kana, which needs the device's Japanese keyboard.
+    mode: ["type", "choose", "write"].includes(store.read().mode)
       ? store.read().mode
       : (TOUCH ? "choose" : "type"),
     answered: 0, correct: 0, streak: 0, bestStreak: 0,
@@ -179,6 +188,28 @@
 
   const accepts = (card, value) =>
     [card.a].concat(card.alt || []).some((v) => norm(v) === value);
+
+  // Kana typed through an IME can arrive half-width (ｱ) or with the dakuten as a
+  // separate combining mark, both of which are the character the user meant.
+  // NFKC folds them to the composed full-width form the decks are written in;
+  // the ideographic space it produces is then stripped along with the rest.
+  const normKana = (s) => s.normalize("NFKC").replace(/\s/g, "");
+
+  // Writing runs the deck backwards, and backwards the mapping is many-to-one:
+  // じ and ぢ are both "ji", ず and づ are both "zu". The prompt is only the
+  // reading, so the user has no way to tell which of the pair is being asked —
+  // every kana in the deck sharing this reading has to be accepted. (The same
+  // collision, from the other side, is why choose-mode dedupes its distractors
+  // by reading rather than by card.)
+  const writeAccepts = (c, value) =>
+    state.deck.cards.some((x) => x.a === c.a && normKana(x.q) === value);
+
+  // typing and writing are one interaction with the prompt reversed, so they
+  // share a submit path — only the field and what counts as correct differ
+  const typedField = () =>
+    state.mode === "write"
+      ? { input: el.kanaInput, submit: el.writeSubmitBtn }
+      : { input: el.input, submit: el.submitBtn };
 
   /* ---------- clock ---------- */
   // The run is timed, but deliberately never shown while practising — a ticking
@@ -374,7 +405,8 @@
   }
 
   function openChartSheet() {
-    renderChart(el.chartSheet.dataset.script || "hiragana");
+    // opens on whichever script the menu is showing
+    renderChart(state.script);
     openSheet(el.chartSheet);
     el.chartBody.focus();     // so arrow keys / space scroll the tables
   }
@@ -382,7 +414,7 @@
   /* ---------- menu ---------- */
   function buildMenu() {
     el.decks.innerHTML = "";
-    state.decks.forEach((deck) => {
+    state.decks.filter((d) => d.script === state.script).forEach((deck) => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "deck" + (deck.sample.length > 1 ? " deck--combo" : "");
@@ -425,6 +457,18 @@
     if (!el.play.classList.contains("hidden")) render();
   }
 
+  // Which script's decks the menu is showing. The accent flips with it, the same
+  // vermilion/indigo pairing the chart sheet uses.
+  function setScript(id) {
+    state.script = id;
+    el.menu.dataset.script = id;
+    Array.from(el.scriptSwitch.children).forEach((b) =>
+      b.setAttribute("aria-checked", String(b.dataset.script === id)));
+    store.write({ script: id });
+    buildMenu();
+    el.menuScroll.scrollTop = 0;
+  }
+
   /* ---------- run ---------- */
   function start(deck, cards) {
     state.deck = deck;
@@ -448,31 +492,38 @@
     state.graded = false;
     clearTimeout(state.timer);
 
+    const writing = state.mode === "write";
+
     el.square.classList.remove("is-correct", "is-wrong", "is-graded");
-    el.glyph.textContent = c.q;
-    el.glyph.classList.toggle("is-pair", c.q.length > 1);
-    el.feedback.textContent = state.mode === "type"
-      ? "Type the sound this character makes."
-      : "Pick the sound this character makes.";
+    // writing asks the other way round: the romaji is the prompt, the kana the answer
+    el.glyph.textContent = writing ? c.a : c.q;
+    el.glyph.lang = writing ? "en" : "ja";
+    el.glyph.classList.toggle("is-pair", !writing && c.q.length > 1);
+    el.glyph.classList.toggle("is-romaji", writing);
+    el.feedback.textContent =
+      state.mode === "type"   ? "Type the sound this character makes." :
+      state.mode === "choose" ? "Pick the sound this character makes."
+                              : "Write the character for this sound.";
 
     el.mProgress.innerHTML = (state.i + 1) + "<small>/" + state.queue.length + "</small>";
     updateStats();
 
-    if (state.mode === "type") {
-      el.typeMode.classList.remove("hidden");
-      el.chooseMode.classList.add("hidden");
-      el.input.value = "";
-      el.submitBtn.textContent = "Check";
-      // Never disable or blur the field: on a phone that dismisses the
-      // keyboard between every card. state.graded gates input instead.
-      if (!TOUCH || document.activeElement === el.input) el.input.focus();
-    } else {
-      el.typeMode.classList.add("hidden");
-      el.chooseMode.classList.remove("hidden");
+    el.typeMode.classList.toggle("hidden", state.mode !== "type");
+    el.writeMode.classList.toggle("hidden", !writing);
+    el.chooseMode.classList.toggle("hidden", state.mode !== "choose");
+
+    if (state.mode === "choose") {
       const stale = el.chooseTools.querySelector(".btn");
       if (stale) stale.remove();
       el.chooseHint.classList.remove("hidden");
       buildChoices(c);
+    } else {
+      const f = typedField();
+      f.input.value = "";
+      f.submit.textContent = "Check";
+      // Never disable or blur the field: on a phone that dismisses the
+      // keyboard between every card. state.graded gates input instead.
+      if (!TOUCH || document.activeElement === f.input) f.input.focus();
     }
   }
 
@@ -514,12 +565,22 @@
   }
 
   /* ---------- answering ---------- */
-  function submitType() {
+  function submitTyped() {
     if (state.graded) { next(); return; }
+    const c = card();
+
+    if (state.mode === "write") {
+      const value = normKana(el.kanaInput.value);
+      if (!value) return;
+      if (writeAccepts(c, value)) markCorrect(value);
+      else markWrong(c, false);
+      return;
+    }
+
     const value = norm(el.input.value);
     if (!value) return;
-    if (accepts(card(), value)) markCorrect();
-    else markWrong(card(), false);
+    if (accepts(c, value)) markCorrect();
+    else markWrong(c, false);
   }
 
   function pick(btn, opt, c) {
@@ -541,15 +602,19 @@
     markWrong(card(), true);
   }
 
-  function markCorrect() {
+  function markCorrect(typed) {
     const c = card();
     state.answered++; state.correct++;
     state.streak++;
     state.bestStreak = Math.max(state.bestStreak, state.streak);
     state.graded = true;
 
+    // credit the character actually written when it is the deck's other reading
+    // of the same sound, so the confirmation isn't about a kana they didn't type
+    const shown = typed && typed !== normKana(c.q) ? typed : c.q;
+
     el.square.classList.add("is-correct", "is-graded");
-    el.feedback.innerHTML = '<span class="ok">Correct — <b lang="ja">' + c.q +
+    el.feedback.innerHTML = '<span class="ok">Correct — <b lang="ja">' + shown +
       '</b> is “' + c.a + '”.</span>';
     updateStats();
     state.timer = setTimeout(next, REVEAL_DELAY);
@@ -568,14 +633,17 @@
     el.feedback.innerHTML =
       (viaReveal ? "" : '<span class="no">Not quite. </span>') +
       '<b lang="ja">' + c.q + '</b> is “<span class="no">' + readings + '</span>”. ' +
-      (TOUCH ? "Tap to continue." : state.mode === "type" ? "Press Enter to continue." : "");
+      (TOUCH ? "Tap to continue." : state.mode !== "choose" ? "Press Enter to continue." : "");
 
     updateStats();
 
-    if (state.mode === "type") {
-      el.input.value = c.a;
-      if (!TOUCH) { el.input.focus(); el.input.select(); }
-      el.submitBtn.textContent = "Next →";
+    if (state.mode !== "choose") {
+      const f = typedField();
+      // show the answer in the field the user was answering in: the kana when
+      // writing, the romaji when typing
+      f.input.value = state.mode === "write" ? c.q : c.a;
+      if (!TOUCH) { f.input.focus(); f.input.select(); }
+      f.submit.textContent = "Next →";
     } else {
       el.chooseHint.classList.add("hidden");
       const b = document.createElement("button");
@@ -662,11 +730,22 @@
   // The square is the largest target on a phone: tap it to move on.
   el.square.addEventListener("click", () => { if (state.graded) next(); });
 
-  el.submitBtn.addEventListener("click", submitType);
+  el.submitBtn.addEventListener("click", submitTyped);
+  el.writeSubmitBtn.addEventListener("click", submitTyped);
   el.revealBtn.addEventListener("click", reveal);
-  el.input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); submitType(); }
-  });
+  el.writeRevealBtn.addEventListener("click", reveal);
+
+  // Enter must not grade while an IME is composing — that keypress belongs to
+  // the IME, which is confirming the kana being built. Without the guard the
+  // first Enter of every "ka"→か submits a half-finished romaji string.
+  // keyCode 229 is the same event on browsers that predate isComposing.
+  const enterSubmits = (e) => {
+    if (e.key !== "Enter" || e.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    submitTyped();
+  };
+  el.input.addEventListener("keydown", enterSubmits);
+  el.kanaInput.addEventListener("keydown", enterSubmits);
 
   el.playFontBtn.addEventListener("click", openFontSheet);
   el.menuFontBtn.addEventListener("click", openFontSheet);
@@ -701,6 +780,9 @@
   document.querySelectorAll(".seg__btn").forEach((b) =>
     b.addEventListener("click", () => setMode(b.dataset.mode)));
 
+  Array.from(el.scriptSwitch.children).forEach((b) =>
+    b.addEventListener("click", () => setScript(b.dataset.script)));
+
   el.menuBtn.addEventListener("click", toMenu);
   el.endMenuBtn.addEventListener("click", toMenu);
   el.restartBtn.addEventListener("click", () => start(state.deck));
@@ -722,6 +804,16 @@
       state.fontsMissing = fonts.missing;
       applyFont(store.read().font);
       setMode(state.mode);
+
+      // a script with no decks in kana.json gets no button, and never gets
+      // selected — otherwise the menu would open on an empty list
+      const hasDecks = (id) => state.decks.some((d) => d.script === id);
+      Array.from(el.scriptSwitch.children).forEach((b) =>
+        b.classList.toggle("hidden", !hasDecks(b.dataset.script)));
+      setScript(hasDecks(state.script)
+        ? state.script
+        : (state.decks[0] && state.decks[0].script) || state.script);
+
       toMenu();
     })
     .catch((err) => {

@@ -17,26 +17,36 @@
   <section id="menu" class="screen menu">
     <p class="eyebrow"><span class="mark" lang="ja">かな</span> Kana Practice</p>
 
+    <!-- the deck list below shows one script at a time, not all six decks -->
+    <div class="scriptbar" id="scriptSwitch" role="radiogroup" aria-label="Script">
+      <button type="button" class="hanko" data-script="hiragana" role="radio" aria-checked="true">
+        <span class="hanko__glyph" lang="ja">あ</span>
+        <span class="hanko__label">Hiragana</span>
+      </button>
+      <button type="button" class="hanko" data-script="katakana" role="radio" aria-checked="false">
+        <span class="hanko__glyph" lang="ja">ア</span>
+        <span class="hanko__label">Katakana</span>
+      </button>
+    </div>
+
     <div class="menu__scroll">
       <div class="decks" id="decks"></div>
     </div>
 
-    <div class="modebar">
+    <div class="modebar modebar--mode">
       <span class="modebar__label">Answer by</span>
       <div class="seg" role="radiogroup" aria-label="Answer mode">
         <button type="button" class="seg__btn" data-mode="type" role="radio" aria-checked="true">Typing</button>
         <button type="button" class="seg__btn" data-mode="choose" role="radio" aria-checked="false">Choosing</button>
+        <button type="button" class="seg__btn" data-mode="write" role="radio" aria-checked="false">Writing</button>
       </div>
     </div>
 
-    <div class="modebar modebar--font">
-      <span class="modebar__label">Character font</span>
-      <button type="button" class="fontpick" id="menuFontBtn">
-        <span class="fontpick__sample" lang="ja">あ</span>
-        <span class="fontpick__name" id="menuFontName">Mincho</span>
-        <span aria-hidden="true">▾</span>
-      </button>
-    </div>
+    <button type="button" class="wide" id="menuFontBtn">
+      <span class="wide__mark wide__mark--kana" lang="ja">あ</span>
+      <span class="wide__label">Character font · <span id="menuFontName">Mincho</span></span>
+      <span class="wide__go" aria-hidden="true">▸</span>
+    </button>
 
     <button type="button" class="wide" id="chartBtn">
       <span class="wide__mark" lang="ja">五十音</span>
@@ -80,6 +90,20 @@
         <div class="undertools">
           <button type="button" class="link" id="revealBtn">Reveal answer</button>
           <span class="hint hint--keys">Enter ↵ to check</span>
+        </div>
+      </div>
+
+      <!-- writing: romaji is shown, the kana is typed (needs a Japanese IME) -->
+      <div id="writeMode" class="hidden">
+        <div class="answer">
+          <input id="kanaInput" type="text" inputmode="text" lang="ja" enterkeyhint="go"
+                 autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+                 placeholder="かな…" aria-label="Type the character">
+          <button type="button" class="btn btn--primary" id="writeSubmitBtn">Check</button>
+        </div>
+        <div class="undertools">
+          <button type="button" class="link" id="writeRevealBtn">Reveal answer</button>
+          <span class="hint hint--ime">Japanese keyboard</span>
         </div>
       </div>
 

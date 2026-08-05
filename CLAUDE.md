@@ -9,7 +9,7 @@ build step, no dependencies, no package manager, no test suite. Four files are t
 
 | File | Role |
 |---|---|
-| `index.html` | markup only — four screens (`#menu`, `#play`, `#end`, `#fatal`) plus two `<dialog>` sheets (`#fontSheet`, `#chartSheet`) |
+| `index.html` | markup only — four screens (`#menu`, `#play`, `#end`, `#fatal`) plus two `<dialog>` sheets (`#fontSheet`, `#chartSheet`); `#play` holds one answer block per mode (`#typeMode`, `#writeMode`, `#chooseMode`) |
 | `styles.css` | the entire stylesheet, mobile-first |
 | `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`. No kana or font names live in JS or CSS |
 | `app.js` | all logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
@@ -57,18 +57,41 @@ them. Keep them current when the shape they describe changes.
 **Colour** is washi paper throughout — cream ground, ink text, vermilion seal accent — defined
 once in `:root` (`--paper*`, `--c-ink*`, `--shu`, `--brass`, `--matcha`). The accents are
 deliberately darker than a dark theme's would be: the same red/gold/green at "glowing on indigo"
-lightness fails contrast on cream. The chart sheet only re-points `--accent`, flipping
-shu-red/indigo-blue via `[data-script]` on the dialog.
+lightness fails contrast on cream. Nothing re-themes wholesale — the chart sheet and the menu only
+re-point `--accent`, flipping shu-red/indigo-blue via `[data-script]`.
 
 Six decks: base / dakuten / combination × hiragana / katakana (46 / 25 / 36 cards each, 214
 total). Obsolete kana (ゐ ゑ ヰ ヱ, the archaic yi/ye/wu forms, polysyllabics) are excluded on
 purpose — do not "complete" the charts by adding them back.
 
+**Three answer modes**, chosen on the menu and held in `state.mode`:
+
+| mode | prompt | answer | graded by |
+|---|---|---|---|
+| `type` | kana | romaji, typed | `accepts()` — canonical `a` plus every `alt` |
+| `choose` | kana | romaji, 1 of 4 | exact match on `a` |
+| `write` | **romaji** | **kana, typed** | `writeAccepts()` — see the invariant below |
+
+`write` exists to build familiarity with the Japanese keyboard, so it needs a real IME; the
+`#kanaInput` field is separate from `#input` rather than an attribute swap, because changing
+`inputmode`/`lang` on a live field does not reliably re-trigger the on-screen keyboard. `type` and
+`write` are the same interaction reversed and share `submitTyped()` / `markWrong()` / the Enter
+handler, routed through `typedField()`.
+
+**The menu shows one script at a time.** The two seal-stamp buttons (`.hanko`, styled with the
+chart sheet and reused by `.scriptbar`) filter `#decks` to that script's three decks and flip
+`--accent` vermilion/indigo via `[data-script]` on `.menu`, mirroring the chart sheet. The chart
+opens on whatever the menu is showing.
+
 **Persistence** is one localStorage key, `hkk.v1` (`STORE` in `app.js`), holding
-`{mode, deck, font, best:{deckId:pct}, bestTime:{deckId:ms}}`. All writes go through the `store`
-helper, which merges patches — never `setItem` directly. **Do not rename the key to match the
-`kana` directory**: it is the only handle on a returning user's saved bests, and changing it
+`{mode, script, deck, font, best:{deckId:pct}, bestTime:{deckId:ms}}`. All writes go through the
+`store` helper, which merges patches — never `setItem` directly. **Do not rename the key to match
+the `kana` directory**: it is the only handle on a returning user's saved bests, and changing it
 silently wipes every record anyone has set.
+
+Records are per deck, not per mode — a `write` run and a `choose` run of the same deck compete for
+one best score. That is deliberate (it already applied to `type` vs `choose`), but it does mean
+`write` is scored against the easier modes.
 
 **Layout model.** `body` → `.stage` (width-capped, and height-bounded from `dvh`) → one `.screen`
 flex column per screen. `.play` is three bands: `.playbar` (fixed) / `.playmain` (flexes, holds
@@ -82,8 +105,17 @@ switching kana faces never reshuffles the numbers.
 
 These each cost a real bug once. Comments in the source mark most of them.
 
-- **Choose-mode distractors dedupe by *reading*, not by card.** じ/ぢ both read `ji` and ず/づ both
-  read `zu`, so sampling cards blindly renders two identical option buttons.
+- **Reading→kana is many-to-one, and both directions have to respect it.** じ/ぢ are both `ji`,
+  ず/づ are both `zu`. Choose-mode distractors therefore dedupe by *reading*, not by card, or two
+  identical option buttons get rendered. Write mode hits the same collision from the other side:
+  the prompt is only the reading, so the user cannot tell which of the pair is being asked and
+  `writeAccepts()` must accept **any** card in the deck whose `a` matches — grading against
+  `card().q` alone makes 4 of the 25 dakuten cards unanswerable.
+- **Enter must not grade while an IME is composing.** That keypress belongs to the IME, which is
+  confirming the kana being built; without the `e.isComposing || e.keyCode === 229` guard the
+  first Enter of every `ka`→か submits a half-finished romaji string as the answer.
+- **Kana arriving from an IME is normalised with NFKC before comparison** (`normKana`), so
+  half-width ｱ and a decomposed dakuten both count as the character the user meant.
 - **Never `disabled` the answer input after grading.** It blurs the field, which dismisses the
   on-screen keyboard between every card on a phone. Input is gated by `state.graded` instead.
 - **Clear the auto-advance timeout whenever the card changes** (`state.timer`). A stale timer from
@@ -127,6 +159,14 @@ installed, so `mincho`, `textbook` and `rounded` are commonly absent.
 
 There is no test runner. Verification means driving the real DOM in the browser and asserting on
 geometry and state — `read_page`, then `javascript_tool` to script a run and measure.
+
+**When no browser is available**, `app.js` runs fine under jsdom, which is enough to drive an
+entire run end to end (script switching, all three modes, grading, records) — install jsdom in a
+scratch directory, not the project, and stub four things: `fetch` returning `kana.json`,
+`HTMLDialogElement.prototype.showModal`/`close` (jsdom implements neither), and `matchMedia`.
+Canvas is absent, so font probing takes its documented privacy-mode path and offers everything
+unverified. **jsdom has no layout engine** — it proves logic, never geometry, so anything about
+size, overflow or collision still needs a real browser.
 
 Two environment quirks worth knowing:
 
