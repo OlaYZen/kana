@@ -130,9 +130,10 @@ account screen.
 
 **Your progress** is kept per deck. Pick a deck at the top and you get that deck's runs — mode,
 score and time — from the very first one. Below that, once there's enough of them, it works out
-where the effort actually is: which characters you hesitate on, which you get wrong, and what you
-reach for instead — つ answered as た, say. That second part is deliberately cautious about what
-counts as data:
+where the effort actually is: which characters you hesitate on, which are already automatic, which
+you get wrong, and what you reach for instead — つ answered as た, say. Each run is listed with its
+exact time down to the millisecond, so two attempts at the same deck are actually comparable. The
+analysis is deliberately cautious about what counts as data:
 
 - **Each of the six decks is its own dataset.** Katakana tells you nothing about hiragana, and the
   base gojūon tells you nothing about dakuten or yōon — they're separate material. Nothing is ever

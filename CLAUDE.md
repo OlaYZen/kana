@@ -246,6 +246,10 @@ The rules exist because raw timings from a practice app are mostly noise. All fo
   different physical acts. Every figure belongs to one bucket; the client sends `device` from the
   same `TOUCH` test the rest of the app uses.
 
+**`slowest` and `fastest` are two ends of one ranking and can never overlap.** Each takes at most
+half the tracked cards, so a deck with only a handful does not report the same character as both
+your slowest and your fastest — which is what naive top-N slicing on each end produces.
+
 Medians, not means, throughout — with a hard cap at one end and real hesitation at the other, one
 slow card must not move the number. Confusions are cross-referenced through `kana.json` so a wrong
 answer is reported as the character the user reached for ("つ → た"), and a pair needs to appear

@@ -1378,6 +1378,17 @@
 
   const fmtMs = (ms) => (ms == null ? "—" : (ms / 1000).toFixed(1) + "s");
 
+  // A run's exact length, milliseconds and all. fmtTime rounds to the second,
+  // which is right on the results screen but hides the difference between two
+  // runs of the same deck when you are chasing your own time.
+  function fmtExact(ms) {
+    const total = Math.max(0, Math.round(ms));
+    const mins = Math.floor(total / 60000);
+    const secs = Math.floor(total % 60000 / 1000);
+    return mins + ":" + (secs < 10 ? "0" : "") + secs +
+           "." + String(total % 1000).padStart(3, "0");
+  }
+
   function deckLabel(id) {
     const deck = state.decks.concat(FLICK_DECKS).find((d) => d.id === id);
     return deck ? deck.label : id;
@@ -1412,7 +1423,7 @@
       statRow(b, [
         { text: MODE_LABEL[r.mode] || r.mode, cls: "srow__r srow__r--wide" },
         { text: r.correct + "/" + r.total, cls: "srow__s" },
-        { text: fmtTime(r.duration_ms), cls: "srow__s" },
+        { text: fmtExact(r.duration_ms), cls: "srow__s srow__s--time" },
         { text: pct + "%", cls: "srow__v" + (pct < 70 ? " srow__v--bad" : "") }
       ]);
     });
@@ -1512,6 +1523,16 @@
         { text: c.q, cls: "srow__k", lang: "ja" },
         { text: c.a, cls: "srow__r" },
         { text: fmtMs(c.median_ms), cls: "srow__v" },
+        { text: c.accuracy + "%", cls: "srow__s" }
+      ]));
+    }
+
+    if (report.fastest.length) {
+      const b = statBlock("Fastest to recall", "These ones are automatic.");
+      report.fastest.forEach((c) => statRow(b, [
+        { text: c.q, cls: "srow__k", lang: "ja" },
+        { text: c.a, cls: "srow__r" },
+        { text: fmtMs(c.median_ms), cls: "srow__v srow__v--good" },
         { text: c.accuracy + "%", cls: "srow__s" }
       ]));
     }
