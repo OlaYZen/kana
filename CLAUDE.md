@@ -106,6 +106,9 @@ chart. Three things that fall out of that and are easy to get wrong by hand:
   the T key, ふ "fu" is the H key. Only the grid row is authoritative. Vowels are the opposite
   case — the reading's last letter is always right, which is how yōon (きゃ→a) resolve, since
   ゃゅょ aren't in the grids.
+- **Key prompts are the bare row letter** (`keyLabel()`, just an uppercase). The H key was briefly
+  labelled "H/F" to flag ふ; that hands over the exact association the drill exists to build, so
+  it is deliberately not signposted. Don't reintroduce it.
 - **ん is deliberately excluded** from both drills: it has no vowel, and which key it sits on
   differs between keyboards, so drilling it would teach a guess. `kanaInfo()` returns null for it.
 

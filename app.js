@@ -480,9 +480,9 @@
   // for "which key is it on" they fold back onto the base row.
   const BASE_KEY = { g: "k", z: "s", d: "t", b: "h", p: "h" };
 
-  // ふ is "fu" but lives on the は key, which is worth spelling out on the prompt
-  const KEY_LABEL = { a: "A", k: "K", s: "S", t: "T", n: "N",
-                      h: "H/F", m: "M", y: "Y", r: "R", w: "W" };
+  // The prompt is the row letter, plain. ふ is spelt "fu" but is the H key, and
+  // labelling it "H/F" would hand over the one association the drill is for.
+  const keyLabel = (k) => (k || "?").toUpperCase();
 
   const flickIndex = { vowel: new Map(), key: new Map(), reading: new Map() };
 
@@ -544,7 +544,7 @@
 
   function flickCard(kind, group) {
     return {
-      q: kind === "vowel" ? group.toUpperCase() : KEY_LABEL[group] || group.toUpperCase(),
+      q: kind === "vowel" ? group.toUpperCase() : keyLabel(group),
       a: flickExamples(kind, group).join(" "),
       flick: { kind: kind, group: group }
     };
@@ -916,7 +916,7 @@
         : '<b lang="ja">' + typed + '</b> is <span class="no">' +
           (state.flick === "vowel"
             ? (info.vowel || "?").toUpperCase()
-            : KEY_LABEL[info.key] || "?") + "</span>, not " + c.q + ". ";
+            : keyLabel(info.key)) + "</span>, not " + c.q + ". ";
       el.feedback.innerHTML =
         (viaReveal ? "" : '<span class="no">Not quite. </span>') + got +
         "Try " + '<b lang="ja">' + c.a + "</b>. " + tail;

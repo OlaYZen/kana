@@ -52,10 +52,11 @@ there's no flicking to practise with a physical keyboard.
 - **Flick directions** shows a vowel — A, I, U, E or O — and takes *any* character with that
   vowel. Prompted with O, everything from お to こ そ と の ほ も よ ろ counts; つ counts for U and
   め for E. Only the ending matters, so you're practising the swipe, not recalling a character.
-- **Flick keys** is the reverse: it shows a key — A, K, S, T, N, H/F, M, Y, R, W — and takes any
+- **Flick keys** is the reverse: it shows a key — A, K, S, T, N, H, M, Y, R, W — and takes any
   character from that row, so K takes か き く け こ. Voiced characters live on their base key, so
-  が also counts for K, and ぱ for H. Watch the spelling traps: し is on the **S** key despite
-  "shi", ち and つ are on **T**, ふ is on **H** despite "fu".
+  が also counts for K, and ぱ for H. The keys are named for the row, not for how the characters
+  are spelt in romaji, which is the point: ふ is on **H** even though it's written "fu", し is on
+  **S** despite "shi", and ち and つ are on **T**.
 
 Each drill keeps its own best score and time, separate from the decks and from each other. ん
 isn't drilled: it has no vowel, and which key it sits on varies between keyboards.
