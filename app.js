@@ -52,7 +52,30 @@
     deviceSwitch: document.querySelector(".seg--device")
   };
 
-  const STORE = "hkk.v1";
+  /* ---------- localStorage keys ----------
+     Both were prefixed `hkk.` — the old name of the project directory — until
+     they were renamed to match it; renameKeys() below moves anything still
+     under the old names. */
+  const STORE = "kana.v1";         // prefs + records, the blob an account syncs
+  const TOKEN_KEY = "kana.token";  // session token: deliberately outside the
+                                   // blob, which is uploaded, and a token has no
+                                   // business making that round trip
+
+  // Renaming a key silently wipes every record anyone has set, so nothing is
+  // renamed without moving what was there. Runs immediately rather than at boot:
+  // `state` and `api` both read their key while this file is still evaluating.
+  // Idempotent — after the first load there is nothing left to find.
+  (function renameKeys() {
+    try {
+      [["hkk.v1", STORE], ["hkk.token", TOKEN_KEY]].forEach(([was, now]) => {
+        const val = localStorage.getItem(was);
+        if (val === null) return;
+        if (localStorage.getItem(now) === null) localStorage.setItem(now, val);
+        localStorage.removeItem(was);
+      });
+    } catch (e) { /* private mode — there is nothing stored to move */ }
+  })();
+
   const REVEAL_DELAY = 620;   // ms the 〇 stamp stays before advancing
 
   // Phones and tablets: typing romaji on a virtual keyboard is slow and the
@@ -84,8 +107,9 @@
     // Records were once keyed by deck alone, from when all modes shared one
     // score. Those are moved to whichever mode was last selected — the only
     // evidence there is of which mode earned them — rather than being thrown
-    // away. `rev` tracks the *shape*; the localStorage key itself must not be
-    // renamed, since that would orphan every record anyone has set.
+    // away. `rev` tracks the *shape* inside the key, which is how a shape
+    // change ships without touching the key's name; renaming that is a
+    // separate and much more dangerous act, handled once by renameKeys().
     migrate() {
       const data = store.read();
       if (data.rev >= 2) return;
@@ -1225,10 +1249,10 @@
 
      An account does not replace localStorage so much as outrank it: the local
      copy stays as the offline cache, and the server holds the copy that
-     follows you between devices.
+     follows you between devices. The session token is held back from that trip
+     and lives under a key of its own; it is declared and explained at the top
+     of this file.
      ========================================================================== */
-  const TOKEN_KEY = "hkk.token";   // deliberately outside the synced blob
-
   const api = {
     up: false,
     user: null,
