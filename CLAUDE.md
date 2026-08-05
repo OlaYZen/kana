@@ -4,6 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
+> The front end is still four static files that work on their own. The backend
+> in `backend/` is **optional**: it adds accounts, server-side saves and the
+> progress report, and if nothing answers `/api/health` the app hides all of
+> that and runs exactly as it always did. Don't make it a hard dependency.
+
 `kana` — a Japanese kana (hiragana/katakana) recognition drill. Pure client-side: no backend, no
 build step, no dependencies, no package manager, no test suite. Four files are the app:
 
@@ -29,8 +34,13 @@ Must be served over HTTP. `fetch("kana.json")` is blocked on `file://`, so doubl
 `index.html` shows the `#fatal` screen instead of the app.
 
 ```bash
-python -m http.server 8000
+./start.sh              # venv, deps, git pull, uvicorn — the whole backend
+python -m http.server 8000   # front end only, no accounts
 ```
+
+`start.sh` is idempotent: it only pulls when the tree is clean, only reinstalls when
+`requirements.txt`'s hash changed, and FastAPI serves the four static files itself, so there is
+one origin and no CORS.
 
 Kana glyphs need a CJK-capable font installed on the host to render at all.
 
@@ -152,6 +162,45 @@ change per mode, since the IME reminder must survive on touch where `.hint--keys
 glyph on screen uses. `--mincho` is kept separate for the Latin numerals (score, streak) so
 switching kana faces never reshuffles the numbers.
 
+## The backend
+
+`backend/app/` — `db.py` (SQLite, no ORM), `auth.py`, `analytics.py`, `main.py` (routes + static).
+Three pure dependencies; passwords are stdlib PBKDF2 rather than bcrypt so `pip install` needs no
+compiler. Sessions are opaque tokens stored only as their SHA-256.
+
+**There are no admin routes and no admin flag.** Every query is scoped to the authenticated user.
+Keep it that way — a "just for debugging" cross-user read is the whole security model gone.
+
+**The account outranks localStorage, it doesn't replace it.** The local copy stays as the offline
+cache and the app still works signed out; the server holds the copy that follows you between
+devices. `store.write()` mirrors up on an 800 ms debounce, and signing in pulls the server's blob
+down — **through `applyStoredPrefs()`, never by writing localStorage alone.** `state.mode`,
+`state.script` and the font were read at boot from the old copy, so every one has to go back
+through its setter or the screen keeps showing the previous device's settings.
+
+### What the analytics deliberately throw away
+
+The rules exist because raw timings from a practice app are mostly noise. All four are enforced in
+`analytics.py`, and each one costs data on purpose:
+
+- **Under `MIN_RUNS` (3) complete runs on a device, nothing is reported at all** — not even a
+  partial figure, because a number on that screen reads as a finding.
+- **Over `MAX_CARD_MS` (10 s) on one card, the time is discarded.** That is someone looking away,
+  not someone thinking. The answer still counts towards *accuracy* — they did eventually answer —
+  so the two are tracked separately by the `timed` column.
+- **Reveals are never timed** either, for the same reason: nothing was recalled.
+- **Drills are excluded from every figure**, not just from the run count. A drill re-tests what the
+  results screen just showed you, seconds earlier, on a deliberately hard subset — its speed is
+  fresh recall and its card mix is skewed.
+- **Mobile and desktop are never pooled.** Typing romaji on a keyboard and flicking on glass are
+  different physical acts. Every figure belongs to one bucket; the client sends `device` from the
+  same `TOUCH` test the rest of the app uses.
+
+Medians, not means, throughout — with a hard cap at one end and real hesitation at the other, one
+slow card must not move the number. Confusions are cross-referenced through `kana.json` so a wrong
+answer is reported as the character the user reached for ("つ → た"), and a pair needs to appear
+twice before it is called a pattern rather than a slip.
+
 ## Invariants that are easy to break
 
 These each cost a real bug once. Comments in the source mark most of them.
@@ -203,6 +252,15 @@ These each cost a real bug once. Comments in the source mark most of them.
   together (this bit `.deck__name`/`.deck__meta` and `.font__name`/`.font__note`).
 - **The run is timed but the clock is never shown while practising** — deliberate, a visible
   ticking counter turns practice into a race. Total appears once, on the results screen.
+- **Never select `.seg__btn` document-wide.** The answer-mode switch and the progress screen's
+  device switch share the class. A global query wires `setMode(undefined)` onto the device buttons
+  and blanks their `aria-checked` on every mode change. Go through `el.modeSwitch` /
+  `el.deviceSwitch`.
+- **`store.migrate()` is called from boot, not at the `store` literal.** It writes, a write reaches
+  `schedulePush()`, and that touches the `api` const declared further down — running it early hits
+  that binding's temporal dead zone and the whole IIFE throws.
+- **Runs are posted whole, at the end.** A run abandoned halfway is not evidence of anything, and
+  per-card posting would put a network call between every card.
 - **Flick prompts are dealt out evenly, then shuffled** — never sampled at random. Over only 20
   prompts, random sampling can leave a whole direction out of the run, which is the one thing a
   drill whose entire purpose is covering all five directions must not do.

@@ -33,7 +33,20 @@
     endBestChip: $("endBestChip"),
     missedBlock: $("missedBlock"), missedGrid: $("missedGrid"),
     drillBtn: $("drillBtn"), againBtn: $("againBtn"), endMenuBtn: $("endMenuBtn"),
-    fatalMsg: $("fatalMsg")
+    fatalMsg: $("fatalMsg"),
+    auth: $("auth"), authTitle: $("authTitle"), authBlurb: $("authBlurb"),
+    authForm: $("authForm"), authUser: $("authUser"), authPass: $("authPass"),
+    authMsg: $("authMsg"), authSubmit: $("authSubmit"), authSwap: $("authSwap"),
+    authSignedIn: $("authSignedIn"), authWho: $("authWho"), authBackBtn: $("authBackBtn"),
+    logoutBtn: $("logoutBtn"), deleteBtn: $("deleteBtn"),
+    accountBtn: $("accountBtn"), accountName: $("accountName"),
+    stats: $("stats"), statsBtn: $("statsBtn"), statsBody: $("statsBody"),
+    statsBackBtn: $("statsBackBtn"),
+    // Both switches are .seg__btn. Never select that class document-wide: the
+    // device switch has no data-mode, so a global query wires setMode(undefined)
+    // onto it and blanks its aria-checked every time the answer mode changes.
+    modeSwitch: document.querySelector(".modebar--mode .seg"),
+    deviceSwitch: document.querySelector(".seg--device")
   };
 
   const STORE = "hkk.v1";
@@ -62,6 +75,7 @@
     write(patch) {
       try { localStorage.setItem(STORE, JSON.stringify(Object.assign(store.read(), patch))); }
       catch (e) { /* private mode — preferences just don't persist */ }
+      schedulePush();   // mirror to the account, if there is one
     },
 
     // Records were once keyed by deck alone, from when all modes shared one
@@ -103,7 +117,9 @@
       return false;
     }
   };
-  store.migrate();
+  // migrate() is called from boot, not here: it writes, and a write reaches
+  // schedulePush(), which touches the `api` const declared further down. Doing
+  // it at this point would hit that binding's temporal dead zone and throw.
 
   /* ==========================================================================
      Fonts
@@ -207,6 +223,8 @@
     flick: null,       // "vowel" | "key" while a flick drill is running
     isDrill: false,
     timer: 0,          // pending auto-advance, cleared whenever the card changes
+    answers: [],       // per-card log for this run, posted at the end
+    cardAt: 0,         // performance.now() when the current card was shown
     startedAt: 0,      // performance.now() when the run began
     finishedMs: 0      // frozen elapsed time once the deck is done
   };
@@ -277,9 +295,15 @@
   }
 
   const show = (screen) => {
-    [el.menu, el.play, el.end, el.fatal].forEach((s) => s.classList.add("hidden"));
+    [el.menu, el.play, el.end, el.fatal, el.auth, el.stats]
+      .forEach((s) => s.classList.add("hidden"));
     screen.classList.remove("hidden");
   };
+
+  // Which pool this run's timings belong to. Typing romaji on a keyboard and
+  // flicking on glass are different physical acts, so the server never pools
+  // them; see backend/app/analytics.py.
+  const DEVICE = TOUCH ? "mobile" : "desktop";
 
   const card = () => state.queue[state.i];
 
@@ -649,7 +673,7 @@
 
   function setMode(mode) {
     state.mode = mode;
-    document.querySelectorAll(".seg__btn").forEach((b) =>
+    Array.from(el.modeSwitch.children).forEach((b) =>
       b.setAttribute("aria-checked", String(b.dataset.mode === mode)));
     store.write({ mode: mode });
     // the deck list shows this mode's records, so it has to be rebuilt too
@@ -683,6 +707,7 @@
     state.answered = 0; state.correct = 0;
     state.streak = 0; state.bestStreak = 0;
     state.missed = [];
+    state.answers = [];
     state.kbDismissed = false;   // a fresh run always offers the keyboard
     store.write({ deck: deck.id });
 
@@ -693,10 +718,24 @@
     render();
   }
 
+  // Every graded answer, with how long the card was on screen. The server
+  // decides what to do with an implausible time; the client just reports it.
+  function logAnswer(c, given, correct, revealed) {
+    state.answers.push({
+      q: String(c.q).slice(0, 16),
+      a: String(c.a).slice(0, 64),
+      given: given == null ? null : String(given).slice(0, 64),
+      correct: Boolean(correct),
+      revealed: Boolean(revealed),
+      ms: Math.round(Math.max(0, performance.now() - state.cardAt))
+    });
+  }
+
   function render() {
     const c = card();
     state.graded = false;
     clearTimeout(state.timer);
+    state.cardAt = performance.now();
 
     // Latin prompt in three of the four cases: writing asks with romaji, and
     // both flick drills ask with a bare letter.
@@ -836,7 +875,9 @@
     if (state.flick) {
       const value = normKana(el.kanaInput.value);
       if (!value) return;
-      if (flickAccepts(c, value)) markCorrect(value);
+      const right = flickAccepts(c, value);
+      logAnswer(c, value, right, false);
+      if (right) markCorrect(value);
       else markWrong(c, false, value);
       return;
     }
@@ -844,20 +885,25 @@
     if (state.mode === "write") {
       const value = normKana(el.kanaInput.value);
       if (!value) return;
-      if (writeAccepts(c, value)) markCorrect(value);
+      const right = writeAccepts(c, value);
+      logAnswer(c, value, right, false);
+      if (right) markCorrect(value);
       else markWrong(c, false);
       return;
     }
 
     const value = norm(el.input.value);
     if (!value) return;
-    if (accepts(c, value)) markCorrect();
+    const right = accepts(c, value);
+    logAnswer(c, value, right, false);
+    if (right) markCorrect();
     else markWrong(c, false);
   }
 
   function pick(btn, opt, c) {
     if (state.graded) return;
     Array.from(el.choices.children).forEach((b) => { b.disabled = true; });
+    logAnswer(c, opt.a, opt.a === c.a, false);
     if (opt.a === c.a) {
       btn.classList.add("is-picked-ok");
       markCorrect();
@@ -871,6 +917,7 @@
 
   function reveal() {
     if (state.graded) return;
+    logAnswer(card(), null, false, true);
     markWrong(card(), true);
   }
 
@@ -963,6 +1010,7 @@
   /* ---------- end ---------- */
   function finish() {
     stopClock(true);
+    reportRun();
     const took = elapsed();
     const pct = state.answered ? Math.round(state.correct / state.answered * 100) : 0;
     const mode = activeMode();
@@ -1094,7 +1142,7 @@
     }
   });
 
-  document.querySelectorAll(".seg__btn").forEach((b) =>
+  Array.from(el.modeSwitch.children).forEach((b) =>
     b.addEventListener("click", () => setMode(b.dataset.mode)));
 
   Array.from(el.scriptSwitch.children).forEach((b) =>
@@ -1104,7 +1152,349 @@
   el.endMenuBtn.addEventListener("click", toMenu);
   el.restartBtn.addEventListener("click", () => start(state.deck));
 
+  /* account + progress */
+  el.accountBtn.addEventListener("click", () => {
+    authError("");
+    paintAccount();
+    show(el.auth);
+    if (!api.user) el.authUser.focus();
+  });
+  el.authBackBtn.addEventListener("click", toMenu);
+  el.statsBackBtn.addEventListener("click", toMenu);
+  el.authForm.addEventListener("submit", submitAuth);
+  el.authSwap.addEventListener("click", () =>
+    setAuthMode(authMode === "login" ? "signup" : "login"));
+
+  el.logoutBtn.addEventListener("click", () => {
+    api.call("POST", "/api/logout").catch(() => {}).then(() => {
+      signedOut();
+      setAuthMode("login");
+      toMenu();
+    });
+  });
+
+  el.deleteBtn.addEventListener("click", () => {
+    if (!window.confirm(
+      "Delete your account? Every run, record and setting stored on the server " +
+      "is removed and cannot be recovered.")) return;
+    api.call("DELETE", "/api/me").then(() => {
+      signedOut();
+      setAuthMode("login");
+      toMenu();
+    }).catch((err) => authError(err.message));
+  });
+
+  el.statsBtn.addEventListener("click", openStats);
+  Array.from(el.deviceSwitch.children).forEach((b) =>
+    b.addEventListener("click", () => { statsDevice = b.dataset.device; openStats(); }));
+
+  /* ==========================================================================
+     Backend
+
+     Entirely optional. The app is still the four static files it always was:
+     if nothing answers /api/health — opened from a plain file server, or the
+     server is down — `api.up` stays false, the account and progress buttons
+     never appear, and everything runs on localStorage exactly as before.
+
+     An account does not replace localStorage so much as outrank it: the local
+     copy stays as the offline cache, and the server holds the copy that
+     follows you between devices.
+     ========================================================================== */
+  const TOKEN_KEY = "hkk.token";   // deliberately outside the synced blob
+
+  const api = {
+    up: false,
+    user: null,
+    token: (function () {
+      try { return localStorage.getItem(TOKEN_KEY) || null; } catch (e) { return null; }
+    })(),
+
+    setToken(t) {
+      api.token = t;
+      try {
+        if (t) localStorage.setItem(TOKEN_KEY, t);
+        else localStorage.removeItem(TOKEN_KEY);
+      } catch (e) { /* private mode — the session just won't outlive the tab */ }
+    },
+
+    call(method, path, body) {
+      const opts = { method: method, headers: {} };
+      if (body !== undefined) {
+        opts.headers["Content-Type"] = "application/json";
+        opts.body = JSON.stringify(body);
+      }
+      if (api.token) opts.headers.Authorization = "Bearer " + api.token;
+      return fetch(path, opts).then((r) =>
+        r.json().catch(() => ({})).then((data) => {
+          if (r.status === 401 && api.token) signedOut();   // session expired
+          if (!r.ok) throw new Error(data.error || "HTTP " + r.status);
+          return data;
+        }));
+    }
+  };
+
+  /* ---------- account ---------- */
+  let authMode = "login";
+  let pushTimer = 0;
+
+  function signedOut() {
+    api.setToken(null);
+    api.user = null;
+    paintAccount();
+  }
+
+  function paintAccount() {
+    el.accountBtn.classList.toggle("hidden", !api.up);
+    el.statsBtn.classList.toggle("hidden", !api.up || !api.user);
+    el.accountName.textContent = api.user || "Sign in";
+    el.authSignedIn.classList.toggle("hidden", !api.user);
+    el.authForm.classList.toggle("hidden", Boolean(api.user));
+    el.authSwap.classList.toggle("hidden", Boolean(api.user));
+    el.authBlurb.classList.toggle("hidden", Boolean(api.user));
+    if (api.user) el.authWho.textContent = api.user;
+    el.authTitle.textContent = api.user ? "Account"
+      : authMode === "login" ? "Sign in" : "Create account";
+  }
+
+  function authError(msg) {
+    el.authMsg.textContent = msg || "";
+    el.authMsg.classList.toggle("hidden", !msg);
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    authError("");
+    el.authSubmit.textContent = mode === "login" ? "Sign in" : "Create account";
+    el.authSwap.textContent = mode === "login"
+      ? "No account yet? Create one"
+      : "Already have an account? Sign in";
+    el.authPass.autocomplete = mode === "login" ? "current-password" : "new-password";
+    paintAccount();
+  }
+
+  // The server's copy wins on sign-in, except when it has nothing yet — then
+  // this device seeds it, so signing up doesn't throw away existing progress.
+  function pullState() {
+    return api.call("GET", "/api/state").then((data) => {
+      const prefs = data.prefs || {};
+      if (Object.keys(prefs).length) {
+        try { localStorage.setItem(STORE, JSON.stringify(prefs)); } catch (e) { /* ignore */ }
+        store.migrate();
+      } else {
+        return pushState();
+      }
+    });
+  }
+
+  function pushState() {
+    if (!api.user) return Promise.resolve();
+    return api.call("PUT", "/api/state", { prefs: store.read() }).catch(() => {});
+  }
+
+  // store.write fires on every setting change and every record; batch them.
+  function schedulePush() {
+    if (!api.user) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(pushState, 800);
+  }
+
+  // Pulling prefs rewrites localStorage, but `state` was read from the old copy
+  // at boot — every one of them has to be pushed back through its setter or the
+  // screen keeps showing the previous device's settings.
+  function applyStoredPrefs() {
+    const saved = store.read();
+    applyFont(saved.font);
+    if (MODES.includes(saved.mode)) setMode(saved.mode);
+    const known = ["hiragana", "katakana"].indexOf(saved.script) > -1;
+    const hasDecks = state.decks.some((d) => d.script === saved.script);
+    if (known && hasDecks) setScript(saved.script);
+    else buildMenu();     // records changed even if the script didn't
+  }
+
+  function afterSignIn(data) {
+    api.setToken(data.token);
+    api.user = data.username;
+    authError("");
+    el.authPass.value = "";
+    return pullState().then(() => {
+      applyStoredPrefs();
+      paintAccount();
+      toMenu();
+    });
+  }
+
+  function submitAuth(e) {
+    if (e) e.preventDefault();
+    const username = el.authUser.value.trim();
+    const password = el.authPass.value;
+    if (!username || !password) { authError("Fill in both fields."); return; }
+    el.authSubmit.disabled = true;
+    authError("");
+    api.call("POST", authMode === "login" ? "/api/login" : "/api/signup",
+             { username: username, password: password })
+      .then(afterSignIn)
+      .catch((err) => authError(err.message))
+      .then(() => { el.authSubmit.disabled = false; });
+  }
+
+  /* ---------- run reporting ---------- */
+  // Posted whole, once, at the end of a run rather than card by card: a run
+  // that was abandoned halfway is not evidence of anything.
+  function reportRun() {
+    if (!api.user || !state.answers.length) return;
+    api.call("POST", "/api/runs", {
+      deck_id: state.deck.id,
+      mode: activeMode(),
+      script: state.deck.script || null,
+      device: DEVICE,
+      is_drill: state.isDrill,
+      duration_ms: Math.round(elapsed()),
+      answers: state.answers
+    }).catch(() => {});   // analytics are never worth interrupting practice for
+  }
+
+  /* ==========================================================================
+     Progress report
+     ========================================================================== */
+  let statsDevice = DEVICE;
+
+  const fmtMs = (ms) => (ms == null ? "—" : (ms / 1000).toFixed(1) + "s");
+
+  function statRow(parent, cells, cls) {
+    const row = add(parent, "div", "srow" + (cls ? " " + cls : ""));
+    cells.forEach((c) => {
+      const n = add(row, "span", c.cls || null, c.text);
+      if (c.lang) n.lang = c.lang;
+    });
+    return row;
+  }
+
+  function statBlock(title, note) {
+    const b = add(el.statsBody, "section", "sblock");
+    add(b, "h3", null, title);
+    if (note) add(b, "p", "sblock__note", note);
+    return b;
+  }
+
+  function renderStats(report) {
+    el.statsBody.innerHTML = "";
+    const label = statsDevice === "mobile" ? "phone" : "desktop";
+
+    if (!report.ready) {
+      const b = statBlock("Not enough yet");
+      add(b, "p", "sblock__note",
+        report.runs === 0
+          ? "No finished runs on " + label + " yet. " + report.min_runs +
+            " are needed before this can say anything useful."
+          : report.runs + " of " + report.min_runs + " runs done on " + label + ". " +
+            report.runs_needed + " more to go.");
+      add(b, "p", "sblock__note",
+        "One run can't tell a bad day from a weak character, so nothing is " +
+        "reported until there are enough of them. Drills don't count — they " +
+        "re-test what you just got shown.");
+      return;
+    }
+
+    const o = report.overall;
+    const head = statBlock("Overall", report.runs + " runs on " + label);
+    const grid = add(head, "div", "sgrid");
+    [["Accuracy", o.accuracy + "%"], ["Typical time", fmtMs(o.median_ms)],
+     ["Characters seen", String(report.cards_tracked)], ["Answers", String(o.attempts)]]
+      .forEach(([k, v]) => {
+        const cell = add(grid, "div", "sgrid__cell");
+        add(cell, "div", "sgrid__n", v);
+        add(cell, "div", "sgrid__l", k);
+      });
+    if (report.excluded_slow) {
+      add(head, "p", "sblock__note",
+        report.excluded_slow + " answer" + (report.excluded_slow === 1 ? "" : "s") +
+        " took over " + Math.round(report.max_card_ms / 1000) +
+        "s and were left out of the times — that's someone looking away, not " +
+        "someone thinking.");
+    }
+
+    if (report.slowest.length) {
+      const b = statBlock("Slowest to recall", "Where the hesitation is.");
+      report.slowest.forEach((c) => statRow(b, [
+        { text: c.q, cls: "srow__k", lang: "ja" },
+        { text: c.a, cls: "srow__r" },
+        { text: fmtMs(c.median_ms), cls: "srow__v" },
+        { text: c.accuracy + "%", cls: "srow__s" }
+      ]));
+    }
+
+    if (report.weakest.length) {
+      const b = statBlock("Least accurate", "Worth drilling.");
+      report.weakest.forEach((c) => statRow(b, [
+        { text: c.q, cls: "srow__k", lang: "ja" },
+        { text: c.a, cls: "srow__r" },
+        { text: c.accuracy + "%", cls: "srow__v srow__v--bad" },
+        { text: c.attempts + "×", cls: "srow__s" }
+      ]));
+    }
+
+    if (report.confusions.length) {
+      const b = statBlock("Mixed up with", "What you reach for instead.");
+      report.confusions.forEach((c) => statRow(b, [
+        { text: c.q, cls: "srow__k", lang: "ja" },
+        { text: "→ " + (c.mistaken_for || "?"), cls: "srow__k srow__k--bad", lang: "ja" },
+        { text: c.a, cls: "srow__r" },
+        { text: c.count + "×", cls: "srow__s" }
+      ]));
+    }
+
+    if (report.by_mode.length > 1 || report.by_deck.length > 1) {
+      const b = statBlock("By mode and deck");
+      report.by_mode.forEach((m) => statRow(b, [
+        { text: MODE_LABEL[m.mode] || m.mode, cls: "srow__r srow__r--wide" },
+        { text: fmtMs(m.median_ms), cls: "srow__v" },
+        { text: m.accuracy + "%", cls: "srow__s" }
+      ]));
+      report.by_deck.forEach((d) => statRow(b, [
+        { text: d.deck_id, cls: "srow__r srow__r--wide" },
+        { text: fmtMs(d.median_ms), cls: "srow__v" },
+        { text: d.accuracy + "%", cls: "srow__s" }
+      ], "srow--dim"));
+    }
+  }
+
+  function openStats() {
+    show(el.stats);
+    el.statsBody.innerHTML = "";
+    add(el.statsBody, "p", "sblock__note", "Loading…");
+    Array.from(el.deviceSwitch.children).forEach((b) =>
+      b.setAttribute("aria-checked", String(b.dataset.device === statsDevice)));
+    api.call("GET", "/api/analytics?device=" + statsDevice)
+      .then((data) => renderStats(data[statsDevice]))
+      .catch((err) => {
+        el.statsBody.innerHTML = "";
+        add(el.statsBody, "p", "sblock__note", "Couldn’t load: " + err.message);
+      });
+  }
+
   /* ---------- boot ---------- */
+  store.migrate();
+  setAuthMode("login");
+
+  // Is there a backend at all? Everything account-shaped stays hidden until
+  // this answers, and the app is fully usable if it never does.
+  function probeBackend() {
+    return fetch("api/health", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("no backend"))))
+      .then(() => {
+        api.up = true;
+        if (!api.token) { paintAccount(); return; }
+        return api.call("GET", "/api/me")
+          .then((me) => {
+            api.user = me.username;
+            return pullState().then(applyStoredPrefs);
+          })
+          .catch(() => signedOut())
+          .then(paintAccount);
+      })
+      .catch(() => { api.up = false; paintAccount(); });
+  }
+
   // no-cache (revalidate, don't blindly reuse) so edits to kana.json show up on
   // a plain reload instead of being masked by the HTTP cache
   fetch("kana.json", { cache: "no-cache" })
@@ -1117,6 +1507,7 @@
       state.charts = data.charts || [];
       el.chartBtn.classList.toggle("hidden", !state.charts.length);
       buildFlickIndex();   // needs both decks and charts
+      probeBackend();      // runs alongside; the app never waits on it
       const fonts = resolveFonts(data.fonts);
       state.fonts = fonts.list;
       state.fontsMissing = fonts.missing;
