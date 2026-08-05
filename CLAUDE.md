@@ -42,6 +42,12 @@ python -m http.server 8000   # front end only, no accounts
 `requirements.txt`'s hash changed, and FastAPI serves the four static files itself, so there is
 one origin and no CORS.
 
+It binds **0.0.0.0** by default and prints the LAN address, because the flick drills only exist on
+a touch device — testing them means opening the app on a phone, and a loopback-only bind makes
+that impossible. The cost is that the whole network can reach it over plain HTTP; `--host
+127.0.0.1` is the way back. There is no rate limiting on `/api/login`, which is worth knowing
+before this is pointed at anything less friendly than a home network.
+
 Kana glyphs need a CJK-capable font installed on the host to render at all.
 
 ## Architecture

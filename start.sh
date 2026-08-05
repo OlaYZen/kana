@@ -2,10 +2,17 @@
 #
 # Install, update and run Kana Practice.
 #
-#   ./start.sh                 update, install if needed, serve on :5556
-#   ./start.sh --port 9000     a different port
-#   ./start.sh --no-pull       skip git pull
-#   ./start.sh --reload        auto-reload on source changes (development)
+#   ./start.sh                    update, install if needed, serve on :5556
+#   ./start.sh --port 9000        a different port
+#   ./start.sh --host 127.0.0.1   this machine only
+#   ./start.sh --no-pull          skip git pull
+#   ./start.sh --reload           auto-reload on source changes (development)
+#
+# Listens on 0.0.0.0 by default so a phone on the same network can reach it —
+# which the flick drills need, since they only appear on a touch device. That
+# does mean anything on the network can reach it, over plain HTTP: fine on a
+# home network, not something to expose to one you don't trust. --host
+# 127.0.0.1 puts it back to this machine only.
 #
 # Safe to run repeatedly: everything it does is conditional on actually being
 # out of date.
@@ -17,7 +24,7 @@ REQS="$ROOT/backend/requirements.txt"
 STAMP="$ROOT/backend/.requirements.sha"
 
 PORT=5556
-HOST=127.0.0.1
+HOST=0.0.0.0
 PULL=1
 RELOAD=0
 
@@ -27,7 +34,7 @@ while [ $# -gt 0 ]; do
     --host)    HOST="${2:?--host needs a value}"; shift 2 ;;
     --no-pull) PULL=0; shift ;;
     --reload)  RELOAD=1; shift ;;
-    -h|--help) sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown option: $1 (try --help)" >&2; exit 2 ;;
   esac
 done
@@ -86,7 +93,33 @@ else
 fi
 
 # ---------------------------------------------------------------- run
-say "Serving on http://$HOST:$PORT  (Ctrl-C to stop)"
+# Printing "0.0.0.0" is no use to someone trying to reach this from a phone,
+# so work out the address that actually routes there.
+if [ "$HOST" = "0.0.0.0" ]; then
+  LAN="$("$PY" - <<'EOF' 2>/dev/null || true
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+try:
+    # TEST-NET-1. UDP connect only picks the outbound interface; nothing is sent.
+    s.connect(("192.0.2.1", 1))
+    print(s.getsockname()[0])
+except OSError:
+    pass
+finally:
+    s.close()
+EOF
+)"
+  say "Serving on:"
+  printf '      http://localhost:%s\n' "$PORT"
+  if [ -n "$LAN" ]; then
+    printf '      http://%s:%s   ← phones and other devices on this network\n' "$LAN" "$PORT"
+  else
+    warn "Could not work out this machine's network address — try 'hostname -I'."
+  fi
+  printf '    Ctrl-C to stop.\n'
+else
+  say "Serving on http://$HOST:$PORT  (Ctrl-C to stop)"
+fi
 cd "$ROOT"
 ARGS=(-m uvicorn backend.app.main:app --host "$HOST" --port "$PORT")
 [ "$RELOAD" = 1 ] && ARGS+=(--reload)
