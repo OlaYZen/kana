@@ -90,6 +90,12 @@ own `#flickDecks` section, and scored under the reserved mode `"flick"` so their
 with a deck's. `state.flick` holds `"vowel"`/`"key"` while one is running and `activeMode()` is
 what everything records against.
 
+**They are offered on touch devices only** (`TOUCH &&` in `buildMenu()`) — flicking is a phone
+keyboard gesture, so there is nothing to practise with a physical keyboard. Records already set
+survive, they just aren't shown. This is the one part of the app whose *existence* depends on the
+device, so it cannot be exercised by resizing an iframe: `hover`/`pointer` come from the host, and
+`window.matchMedia` has to be patched before `app.js` runs to reach it at all.
+
 Both mappings are **derived from the chart grids, never listed in JS**: a grid row already knows
 its consonant and a grid column already knows its vowel, so the drills cannot disagree with the
 chart. Three things that fall out of that and are easy to get wrong by hand:
