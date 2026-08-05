@@ -1401,7 +1401,8 @@
 
   // Your own runs, listed from the first one. What you scored is a fact; the
   // analysis below the gate is an inference, which is the part that needs
-  // several runs before it means anything.
+  // several runs before it means anything. Drills never appear here — the
+  // server leaves them out of recent_runs entirely.
   function renderRuns(runs) {
     if (!runs || !runs.length) return;
     const b = statBlock("Runs", runs.length >= 25 ? "Most recent 25." : null);
@@ -1409,12 +1410,11 @@
       const pct = r.total ? Math.round(r.correct / r.total * 100) : 0;
       // the deck is already the heading here, so the row names the mode instead
       statRow(b, [
-        { text: (MODE_LABEL[r.mode] || r.mode) + (r.is_drill ? " · drill" : ""),
-          cls: "srow__r srow__r--wide" },
+        { text: MODE_LABEL[r.mode] || r.mode, cls: "srow__r srow__r--wide" },
         { text: r.correct + "/" + r.total, cls: "srow__s" },
         { text: fmtTime(r.duration_ms), cls: "srow__s" },
         { text: pct + "%", cls: "srow__v" + (pct < 70 ? " srow__v--bad" : "") }
-      ], r.is_drill ? "srow--dim" : null);
+      ]);
     });
   }
 

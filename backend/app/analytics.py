@@ -126,12 +126,17 @@ def report(conn: sqlite3.Connection, user_id: int, device: str, deck_id: str) ->
     # What you scored on a run you actually finished is a fact, and it is yours
     # to look at from the first one — including for the flick drills, which are
     # never analysed. The gate below is on *inference*: calling a character weak,
-    # or a time typical. Drills are listed too, flagged as drills.
+    # or a time typical.
+    #
+    # Drills are stored but never listed. A drill is a handful of cards you just
+    # got shown the answers to, so "18/20, 0:31" sitting in the history next to
+    # a full 46-card run reads as a result when it isn't one.
     out["recent_runs"] = [
         dict(r) for r in conn.execute(
-            """SELECT id, deck_id, mode, total, correct, duration_ms, created_at, is_drill
-                 FROM runs WHERE user_id = ? AND device = ? AND deck_id = ?
-                ORDER BY id DESC LIMIT 25""",
+            """SELECT id, deck_id, mode, total, correct, duration_ms, created_at
+                 FROM runs
+                WHERE user_id = ? AND device = ? AND deck_id = ? AND is_drill = 0
+             ORDER BY id DESC LIMIT 25""",
             (user_id, device, deck_id),
         ).fetchall()
     ]
