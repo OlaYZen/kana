@@ -1203,7 +1203,7 @@
     b.addEventListener("click", () => {
       statsDevice = b.dataset.device;
       statsDeck = null;          // the other device may not have run this deck
-      openStats();
+      loadStats();               // not openStats: keep the chosen script
     }));
 
   Array.from(el.statsScriptSwitch.children).forEach((b) =>
@@ -1212,7 +1212,7 @@
       statsDeck = null;          // this script has a different set of decks
       // already have the payload — this is a filter, not a fetch
       if (lastReport) renderStats(lastReport);
-      else openStats();
+      else loadStats();
     }));
 
   /* ==========================================================================
@@ -1385,7 +1385,7 @@
      ========================================================================== */
   let statsDevice = DEVICE;
   let statsDeck = null;      // which deck's report is on screen
-  let statsScript = null;    // set from the menu the first time this opens
+  let statsScript = null;    // re-synced from the menu on every openStats()
 
   const fmtMs = (ms) => (ms == null ? "—" : (ms / 1000).toFixed(1) + "s");
 
@@ -1474,6 +1474,8 @@
     return true;
   }
 
+  // Only ever writes the progress screen's own state. The menu's `state.script`
+  // is deliberately untouched — see openStats() for why the sync is one way.
   function setStatsScript(id) {
     statsScript = id;
     el.stats.dataset.script = id;      // flips the accent, as on the menu
@@ -1615,10 +1617,10 @@
     renderRuns(report.recent_runs);
   }
 
-  function openStats() {
+  // Fetch and draw, keeping whatever is currently selected. Used by the device
+  // switch, which must not disturb the chosen script.
+  function loadStats() {
     show(el.stats);
-    // opens on the script the menu is showing, then keeps its own selection
-    if (!statsScript) setStatsScript(state.script);
     el.statsBody.innerHTML = "";
     el.deckPick.innerHTML = "";
     add(el.statsBody, "p", "sblock__note", "Loading…");
@@ -1630,6 +1632,21 @@
         el.statsBody.innerHTML = "";
         add(el.statsBody, "p", "sblock__note", "Couldn’t load: " + err.message);
       });
+  }
+
+  // Entering from the menu. The script follows the menu **every time**, not just
+  // the first: practising katakana and then opening progress on hiragana is
+  // never what was meant.
+  //
+  // The sync is one-way on purpose. Flipping the stamp in here is a question
+  // about your history — "how am I doing on the other script" — not a decision
+  // to go and practise it, so it must not reach back and retarget the menu you
+  // are about to return to. That is why setStatsScript() never writes
+  // `state.script`, and why this is the only place the two are connected.
+  function openStats() {
+    setStatsScript(state.script);
+    statsDeck = null;          // the other script has a different set of decks
+    loadStats();
   }
 
   /* ---------- boot ---------- */

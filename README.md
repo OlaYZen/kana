@@ -135,7 +135,9 @@ account screen.
 
 **Your progress** is kept per deck. Phone or desktop sits at the very top — you set that once —
 and under it the same hiragana/katakana stamps as the menu, which stay stuck to the top as the
-report scrolls so you can switch scripts without scrolling back up. The decks for that script
+report scrolls so you can switch scripts without scrolling back up. It opens on whichever script
+the menu is showing, so practising katakana and then checking your progress lands on katakana.
+Switching the stamps in here only changes what you're reading; the menu stays where you left it. The decks for that script
 follow, unless there's only one, in which case there's nothing to pick and the heading says which
 it is. Pick a deck and you get that deck's runs — mode, score and time — from the very first one. Below that, once there's enough of them, it works out
 where the effort actually is: which characters you hesitate on, which are already automatic, which
@@ -326,7 +328,9 @@ python -m http.server 8000
 
 **進捗レポートはデッキごとです。** いちばん上はスマートフォンかデスクトップかの切り替えで、これは
 一度選ぶだけです。その下にメニューと同じひらがな・カタカナの印があり、レポートをスクロールしても
-上に貼り付いたままなので、戻らずに文字種を切り替えられます。さらに下にその文字種のデッキが並び
+上に貼り付いたままなので、戻らずに文字種を切り替えられます。開いたときはメニューで選んでいる
+文字種になるので、カタカナを練習してから進捗を見ればカタカナが出ます。ここで印を切り替えても
+変わるのは見ている内容だけで、メニュー側はそのままです。さらに下にその文字種のデッキが並び
 ます（1 つしかないときは選ぶものがないので出ません。見出しにデッキ名が出ます）。デッキを選ぶと、
 そのデッキのラン（答え方、スコア、タイム）が最初の 1 回から並びます。その下には、十分な数がたまってから、実際に手間取っている場所が出ます。
 どの文字で迷うか、どれがもう自動で出るか、どれを間違えるか、そして代わりに何を打っているか —
