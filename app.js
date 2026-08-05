@@ -14,9 +14,10 @@
     playMark: $("playMark"), playLabel: $("playLabel"),
     square: $("square"), glyph: $("glyph"), feedback: $("feedback"),
     typeMode: $("typeMode"), chooseMode: $("chooseMode"), writeMode: $("writeMode"),
-    input: $("input"), submitBtn: $("submitBtn"), revealBtn: $("revealBtn"),
+    input: $("input"), submitBtn: $("submitBtn"),
     kanaInput: $("kanaInput"), writeSubmitBtn: $("writeSubmitBtn"),
-    writeRevealBtn: $("writeRevealBtn"),
+    revealBtn: $("revealBtn"), revealBtnTop: $("revealBtnTop"), revealBar: $("revealBar"),
+    typedTools: $("typedTools"), typedHint: $("typedHint"),
     choices: $("choices"), chooseTools: $("chooseTools"), chooseHint: $("chooseHint"),
     barFill: $("barFill"), mProgress: $("mProgress"), mStreak: $("mStreak"), mAcc: $("mAcc"),
     menuBtn: $("menuBtn"), restartBtn: $("restartBtn"),
@@ -545,23 +546,42 @@
     el.mProgress.innerHTML = (state.i + 1) + "<small>/" + state.queue.length + "</small>";
     updateStats();
 
+    const choosing = state.mode === "choose";
     el.typeMode.classList.toggle("hidden", state.mode !== "type");
     el.writeMode.classList.toggle("hidden", !writing);
-    el.chooseMode.classList.toggle("hidden", state.mode !== "choose");
+    el.chooseMode.classList.toggle("hidden", !choosing);
+    // reveal and the hint row belong to the two typing modes only
+    el.typedTools.classList.toggle("hidden", choosing);
+    el.revealBar.classList.toggle("hidden", choosing);
 
-    if (state.mode === "choose") {
+    if (choosing) {
       const stale = el.chooseTools.querySelector(".btn");
       if (stale) stale.remove();
       el.chooseHint.classList.remove("hidden");
       buildChoices(c);
     } else {
+      // the IME reminder has to survive on touch, where the keyboard hint is
+      // deliberately suppressed — hence the different class
+      el.typedHint.textContent = writing ? "Japanese keyboard" : "Enter ↵ to check";
+      el.typedHint.className = writing ? "hint hint--ime" : "hint hint--keys";
+
       const f = typedField();
       f.input.value = "";
       f.submit.textContent = "Check";
       // Never disable or blur the field: on a phone that dismisses the
       // keyboard between every card. state.graded gates input instead.
-      if (!TOUCH || document.activeElement === f.input) f.input.focus();
+      // Focus every card unconditionally — only refocusing when focus happened
+      // to still be in the box meant tapping the box again for every single
+      // character on a phone.
+      focusField(f.input);
     }
+  }
+
+  // preventScroll: the stage is height-capped, so a focus that scrolls the page
+  // drags the dock out from under the keyboard
+  function focusField(input) {
+    try { input.focus({ preventScroll: true }); }
+    catch (e) { input.focus(); }
   }
 
   function buildChoices(c) {
@@ -679,7 +699,10 @@
       // show the answer in the field the user was answering in: the kana when
       // writing, the romaji when typing
       f.input.value = state.mode === "write" ? c.q : c.a;
-      if (!TOUCH) { f.input.focus(); f.input.select(); }
+      focusField(f.input);
+      // selecting shows drag handles on a phone, which reads as an invitation
+      // to edit an answer that is already graded
+      if (!TOUCH) f.input.select();
       f.submit.textContent = "Next →";
     } else {
       el.chooseHint.classList.add("hidden");
@@ -774,7 +797,7 @@
   el.submitBtn.addEventListener("click", submitTyped);
   el.writeSubmitBtn.addEventListener("click", submitTyped);
   el.revealBtn.addEventListener("click", reveal);
-  el.writeRevealBtn.addEventListener("click", reveal);
+  el.revealBtnTop.addEventListener("click", reveal);
 
   // Enter must not grade while an IME is composing — that keypress belongs to
   // the IME, which is confirming the kana being built. Without the guard the

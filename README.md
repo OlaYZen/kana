@@ -43,8 +43,10 @@ in modern Japanese.
   phone, or a Japanese input method on a desktop. Both readings of an ambiguous sound are
   accepted — `ji` takes じ or ぢ, `zu` takes ず or づ.
 
-Reveal is always available and counts as a miss. Anything you got wrong is listed at the end and
-can be drilled on its own.
+In the two typing modes the answer box takes focus on every card, so you can type straight through
+a deck without tapping it again each time. Reveal is always available and counts as a miss — on a
+phone it sits above the character, clear of the on-screen keyboard, and under the answer box
+everywhere else. Anything you got wrong is listed at the end and can be drilled on its own.
 
 **Records are kept separately for each mode.** Recognising a character, picking it from four
 options, and writing it from its sound are three different skills, so each deck keeps a separate

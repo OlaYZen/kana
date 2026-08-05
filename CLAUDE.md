@@ -105,8 +105,15 @@ the easiest mode set a score the hardest could never beat. Every `store.best`/`s
   evidence of which mode earned them. It runs once at boot and is idempotent.
 
 **Layout model.** `body` → `.stage` (width-capped, and height-bounded from `dvh`) → one `.screen`
-flex column per screen. `.play` is three bands: `.playbar` (fixed) / `.playmain` (flexes, holds
-the writing square) / `.dock` (fixed, holds feedback + answer controls + stats).
+flex column per screen. `.play` is four bands: `.playbar` (fixed) / `.revealbar` (fixed, touch
+only) / `.playmain` (flexes, holds the writing square) / `.dock` (fixed, holds feedback + answer
+controls + stats).
+
+**Reveal exists twice**, once in `.revealbar` above the square and once in `#typedTools` below the
+answer, with exactly one shown: the dock is under the on-screen keyboard on a phone, and a single
+node cannot be moved between the two by CSS because they are in different flex containers. Both
+call `reveal()`. `#typedTools` is shared by `type` and `write` — only its hint text and class
+change per mode, since the IME reminder must survive on touch where `.hint--keys` is suppressed.
 
 **Font selection** writes a stack into the `--kana` CSS custom property, which every Japanese
 glyph on screen uses. `--mincho` is kept separate for the Latin numerals (score, streak) so
@@ -129,6 +136,15 @@ These each cost a real bug once. Comments in the source mark most of them.
   half-width ｱ and a decomposed dakuten both count as the character the user meant.
 - **Never `disabled` the answer input after grading.** It blurs the field, which dismisses the
   on-screen keyboard between every card on a phone. Input is gated by `state.graded` instead.
+- **The answer field is refocused on *every* card**, unconditionally, via `focusField()`. Guarding
+  it with `document.activeElement === input` (i.e. "only refocus if focus is still here") looks
+  tidier and means tapping the box again for every single character on a phone, because tapping
+  the square to advance moves focus off the input. `preventScroll` matters: `.stage` is
+  height-capped, so a focus that scrolls drags the dock out from under the keyboard.
+- **Any new direct child of `.play` needs a `grid-area` in the landscape block, or hiding there.**
+  That media query re-declares `.play` as a two-column grid with named areas; an unplaced child is
+  auto-placed into a row of its own and shoves the square out of its cell. `.revealbar` is hidden
+  there, which is also where it belongs — that layout has room for reveal in the dock.
 - **Clear the auto-advance timeout whenever the card changes** (`state.timer`). A stale timer from
   card N will skip card N+1 the moment it is graded.
 - **A portrait phone with the keyboard open reports `orientation: landscape`** — the layout
