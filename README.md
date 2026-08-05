@@ -16,7 +16,7 @@ It has to be served over HTTP. Browsers block `fetch()` on `file://` pages, so d
 ```
 
 That is the whole setup. It creates the virtualenv, installs the three dependencies, pulls the
-latest commit if the checkout is clean, and serves everything on <http://localhost:8000>. Run it
+latest commit if the checkout is clean, and serves everything on <http://localhost:5556>. Run it
 again any time — it only reinstalls when the requirements actually changed, and only pulls when
 you have no local edits. `--port 9000`, `--host 0.0.0.0`, `--no-pull` and `--reload` are there if
 you need them.
