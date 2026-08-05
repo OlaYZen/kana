@@ -319,6 +319,16 @@ enforced in `analytics.py`, and each one costs data on purpose:
   that key is accepted — so there is nothing to call slow and a wrong answer can't be traced to a
   character. `enough` and `ready` are separate fields for exactly this: a flick deck can have
   plenty of runs and still never report.
+- **The per-character findings read the last `RECENT_RUNS` (5) runs, not all of history.**
+  `slowest`, `fastest` and `confusions` are about how you are doing *now* — a character you
+  struggled with in week one and have since drilled flat would otherwise head that list forever,
+  long after it stopped being true, and the list exists to say what to practise next. `overall`
+  and `cards_tracked` deliberately still span everything; they are the long view, and a lifetime
+  accuracy that moved on every run would be a different figure. **`weakest` also stays on all
+  history** — over five runs of a 46-card deck a character is seen five times, so accuracy moves
+  in 20% steps and one slip reads as a collapse. The window is one `SELECT` of run ids that
+  `recent_rows` filters against; `recent_window` reports what it actually came to, which is fewer
+  than 5 early on, and the UI prints that number rather than claiming "last 5" over three.
 - **Under `MIN_RUNS` (3) complete runs of that deck, no *aggregate* is reported** — no median, no
   "weakest character", not even a partial one, because a number on that screen reads as a finding.
   **`recent_runs` is exempt and always returned.** The distinction is fact versus inference: what
@@ -341,6 +351,10 @@ enforced in `analytics.py`, and each one costs data on purpose:
 - **Mobile and desktop are never pooled.** Typing romaji on a keyboard and flicking on glass are
   different physical acts. Every figure belongs to one bucket; the client sends `device` from the
   same `TOUCH` test the rest of the app uses.
+
+Blocks whose scope isn't "everything" say so in their own subtitle — an unqualified "Slowest to
+recall" is a claim about every run ever, and that is no longer the figure being shown. Change the
+window and those strings have to move with it.
 
 **`slowest` and `fastest` are two ends of one ranking and can never overlap.** Each takes at most
 half the tracked cards, so a deck with only a handful does not report the same character as both

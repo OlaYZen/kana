@@ -46,6 +46,7 @@ MIN_RUNS = 3           # complete, non-drill runs of one deck before reporting
 MAX_CARD_MS = 10_000   # over this, the timing is discarded as "distracted"
 MIN_ATTEMPTS = 3       # per-character minimum before it can be called slow/weak
 TOP_N = 8
+RECENT_RUNS = 5        # runs behind the per-character findings — see report()
 
 DEVICES = ("mobile", "desktop")
 
@@ -161,17 +162,47 @@ def report(conn: sqlite3.Connection, user_id: int, device: str, deck_id: str) ->
         1 for r in rows if not r["timed"] and not r["revealed"] and r["ms"] > MAX_CARD_MS
     )
 
-    # ---- per character ----
-    by_card: dict[tuple[str, str], list[sqlite3.Row]] = {}
-    for r in rows:
-        by_card.setdefault((r["q"], r["a"]), []).append(r)
+    # The findings about individual characters — slowest, fastest, and what you
+    # reach for instead — are drawn from the last RECENT_RUNS runs only, not from
+    # all of history. "Which character is slow" is a question about how you are
+    # doing *now*: a character you struggled with in your first week and have
+    # since drilled flat would otherwise sit at the top of that list forever,
+    # long after it stopped being true, and the list is meant to tell you what
+    # to practise next.
+    #
+    # `overall` and "characters seen" deliberately still span everything. They
+    # are the long view, which is the whole point of them, and a lifetime
+    # accuracy that moved every time you finished a run would be a different
+    # figure entirely. Least accurate stays on all history too — see below.
+    recent_ids = {
+        r["id"] for r in conn.execute(
+            """SELECT id FROM runs
+                WHERE user_id = ? AND device = ? AND deck_id = ? AND is_drill = 0
+             ORDER BY id DESC LIMIT ?""",
+            (user_id, device, deck_id, RECENT_RUNS),
+        ).fetchall()
+    }
+    recent_rows = [r for r in rows if r["run_id"] in recent_ids]
+    # what the window actually came to — fewer than RECENT_RUNS early on, and the
+    # UI says which, so "your last 5 runs" is never claimed over three
+    out["recent_window"] = len(recent_ids)
+    out["recent_runs_max"] = RECENT_RUNS
 
-    cards = []
-    for (q, a), group in by_card.items():
-        s = _summarise(group)
-        if s["attempts"] < MIN_ATTEMPTS:
-            continue
-        cards.append({"q": q, "a": a, **s})
+    # ---- per character ----
+    def rank_cards(source: list[sqlite3.Row]) -> list[dict]:
+        by_card: dict[tuple[str, str], list[sqlite3.Row]] = {}
+        for r in source:
+            by_card.setdefault((r["q"], r["a"]), []).append(r)
+        out_cards = []
+        for (q, a), group in by_card.items():
+            s = _summarise(group)
+            if s["attempts"] < MIN_ATTEMPTS:
+                continue
+            out_cards.append({"q": q, "a": a, **s})
+        return out_cards
+
+    cards = rank_cards(rows)                  # all history: overall + weakest
+    recent_cards = rank_cards(recent_rows)    # the window: slowest + fastest
 
     out["cards_tracked"] = len(cards)
     out["min_attempts"] = MIN_ATTEMPTS
@@ -181,18 +212,24 @@ def report(conn: sqlite3.Connection, user_id: int, device: str, deck_id: str) ->
     # taking the top N of each would put the same character in both lists, and
     # "つ is your slowest" next to "つ is your fastest" is nonsense. Each side
     # gets at most half, so a card can only ever be in one.
-    timed_cards = [c for c in cards if c["median_ms"] is not None and c["timed"] >= MIN_ATTEMPTS]
+    timed_cards = [
+        c for c in recent_cards if c["median_ms"] is not None and c["timed"] >= MIN_ATTEMPTS
+    ]
     ranked = sorted(timed_cards, key=lambda c: c["median_ms"])
     n = min(TOP_N, len(ranked) // 2)
     out["fastest"] = ranked[:n]
     out["slowest"] = list(reversed(ranked[-n:])) if n else []
+    # Least accurate is the one per-character list still drawn from everything.
+    # Accuracy over five runs of a 46-card deck is five attempts a card, so it
+    # moves in steps of 20% and a single slip reads as a collapse; the figure
+    # needs the longer base to mean anything.
     out["weakest"] = sorted(
         [c for c in cards if c["accuracy"] < 100], key=lambda c: (c["accuracy"], -c["attempts"])
     )[:TOP_N]
 
     # ---- what they answer instead ----
     pairs: dict[tuple[str, str, str], int] = {}
-    for r in rows:
+    for r in recent_rows:
         if r["correct"] or not r["given"] or r["revealed"]:
             continue
         got = _mistaken_for(r["given"], r["mode"])
