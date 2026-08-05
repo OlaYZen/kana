@@ -294,6 +294,27 @@ created at all). Behind a reverse proxy every request appears to come from the p
 collapses per-IP into one global bucket; that needs uvicorn's `--proxy-headers` and
 `--forwarded-allow-ips`, and never blind trust in `X-Forwarded-For`.
 
+**Changing a password is not resetting one.** There is no email on file and no recovery flow, so
+knowing the current password is the entire proof — `POST /api/password` asks for it even though the
+caller already holds a valid session, because the case it exists for is a borrowed unlocked phone.
+Four things about it are load-bearing:
+
+- **A wrong current password is a 400, never a 401.** `api.call()` signs the client out on any 401,
+  so returning one here would log someone out for a typo.
+- **Every session dies and the caller gets a fresh token in the reply.** You change a password
+  because someone might know the old one; leaving the sessions it already opened alive defeats it.
+  The client must store the returned token or it logs *itself* out on the next request.
+- **It is throttled on its own bucket**, keyed by user id rather than IP (`ratelimit.password_user`).
+  A session is needed to reach the endpoint at all, so the attacker worth stopping is at an
+  already-signed-in device; keying it to the account also caps the CPU. Deliberately *not*
+  `login_user` — fumbling this must not be what stops you signing in on your phone.
+- **The confirm field never reaches the server.** Two boxes exist to catch a typo before it becomes
+  a password nobody knows, which is a fact about what was typed on that screen; the API takes
+  `{current_password, new_password}` and the client compares.
+
+The rule for the new password comes from `auth.validate_password()`, which signup calls too — two
+copies would drift, and the looser one would be the one that mattered.
+
 **There are no admin routes and no admin flag.** Every query is scoped to the authenticated user.
 Keep it that way — a "just for debugging" cross-user read is the whole security model gone.
 

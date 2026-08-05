@@ -39,6 +39,9 @@
     authMsg: $("authMsg"), authSubmit: $("authSubmit"), authSwap: $("authSwap"),
     authSignedIn: $("authSignedIn"), authWho: $("authWho"), authBackBtn: $("authBackBtn"),
     logoutBtn: $("logoutBtn"), deleteBtn: $("deleteBtn"),
+    pwToggle: $("pwToggle"), pwForm: $("pwForm"), pwMsg: $("pwMsg"),
+    pwCurrent: $("pwCurrent"), pwNew: $("pwNew"), pwConfirm: $("pwConfirm"),
+    pwSubmit: $("pwSubmit"), pwCancel: $("pwCancel"),
     accountBtn: $("accountBtn"), accountName: $("accountName"),
     moreBtn: $("moreBtn"), moreSheet: $("moreSheet"), moreCloseBtn: $("moreCloseBtn"),
     moreMode: $("moreMode"),
@@ -1269,6 +1272,10 @@
     });
   });
 
+  el.pwToggle.addEventListener("click", openPasswordForm);
+  el.pwCancel.addEventListener("click", () => { closePasswordForm(); pwMessage(""); });
+  el.pwForm.addEventListener("submit", submitPassword);
+
   el.deleteBtn.addEventListener("click", () => {
     if (!window.confirm(
       "Delete your account? Every run, record and setting stored on the server " +
@@ -1363,11 +1370,68 @@
     if (api.user) el.authWho.textContent = api.user;
     el.authTitle.textContent = api.user ? "Account"
       : authMode === "login" ? "Sign in" : "Create account";
+    // Half-typed passwords must not survive a sign-out and be sitting there for
+    // whoever signs in next.
+    if (!api.user) closePasswordForm();
   }
 
   function authError(msg) {
     el.authMsg.textContent = msg || "";
     el.authMsg.classList.toggle("hidden", !msg);
+  }
+
+  /* ---------- changing a password ----------
+     Changing one, not recovering one. There is no email on file and no reset
+     link, so knowing the current password is the whole of the proof — which is
+     why the endpoint asks for it even though the caller already holds a valid
+     session. A borrowed unlocked phone is exactly the case it is there for. */
+  function pwMessage(text, good) {
+    el.pwMsg.textContent = text || "";
+    el.pwMsg.classList.toggle("hidden", !text);
+    el.pwMsg.classList.toggle("auth__msg--ok", Boolean(good));
+  }
+
+  function openPasswordForm() {
+    el.pwForm.reset();
+    pwMessage("");
+    el.pwForm.classList.remove("hidden");
+    el.pwToggle.classList.add("hidden");
+    el.pwCurrent.focus();
+  }
+
+  // Deliberately leaves the message alone: the confirmation is shown *by*
+  // closing the form, so clearing it here would erase what just happened.
+  function closePasswordForm() {
+    el.pwForm.reset();
+    el.pwForm.classList.add("hidden");
+    el.pwToggle.classList.remove("hidden");
+  }
+
+  function submitPassword(e) {
+    if (e) e.preventDefault();
+    const current = el.pwCurrent.value;
+    const next = el.pwNew.value;
+    const again = el.pwConfirm.value;
+
+    if (!current || !next || !again) { pwMessage("Fill in all three fields."); return; }
+    // Caught here rather than at the server: the second box exists to stop a
+    // typo becoming a password nobody knows, which is a question about what was
+    // typed on this screen and nothing the server can answer.
+    if (next !== again) { pwMessage("The new passwords don't match."); return; }
+
+    el.pwSubmit.disabled = true;
+    pwMessage("");
+    api.call("POST", "/api/password",
+             { current_password: current, new_password: next })
+      .then((data) => {
+        // The change dropped every session this account had, including the one
+        // this device was using; the reply carries its replacement.
+        api.setToken(data.token);
+        closePasswordForm();
+        pwMessage("Password changed. Every other device has been signed out.", true);
+      })
+      .catch((err) => pwMessage(err.message))
+      .then(() => { el.pwSubmit.disabled = false; });
   }
 
   function setAuthMode(mode) {

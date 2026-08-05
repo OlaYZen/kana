@@ -33,6 +33,12 @@ USER_LIMIT, USER_WINDOW = 25, 15 * 60
 # signups count successes too, not just failures — the limit is on how fast
 # accounts can be created at all, so one address can't fill the database
 SIGNUP_LIMIT, SIGNUP_WINDOW = 20, 60 * 60
+# Changing a password also verifies one, so it is guessable and it costs the
+# same 600k rounds. Keyed by account rather than by IP: you need a live session
+# to reach the endpoint at all, so the attacker worth stopping is someone at an
+# already-signed-in device trying to guess their way into owning the account.
+# That also caps the CPU, since the key they'd be hammering is the one bucket.
+PASSWORD_LIMIT, PASSWORD_WINDOW = 10, 15 * 60
 
 
 class AttemptLimiter:
@@ -78,6 +84,9 @@ class AttemptLimiter:
 login_ip = AttemptLimiter(IP_LIMIT, IP_WINDOW)
 login_user = AttemptLimiter(USER_LIMIT, USER_WINDOW)
 signup_ip = AttemptLimiter(SIGNUP_LIMIT, SIGNUP_WINDOW)
+# deliberately its own bucket, not login_user's: a fumbled password change must
+# not be what stops you signing in on your phone
+password_user = AttemptLimiter(PASSWORD_LIMIT, PASSWORD_WINDOW)
 
 
 def client_ip(request) -> str:

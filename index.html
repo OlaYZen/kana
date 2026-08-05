@@ -103,6 +103,36 @@
         <p class="auth__blurb">
           Signed in as <b id="authWho"></b>. Settings and records sync automatically.
         </p>
+
+        <!-- Kept folded away: three password boxes sitting open on a screen you
+             came to for something else is a form asking to be filled in. -->
+        <button type="button" class="btn btn--ghost" id="pwToggle">Change password</button>
+
+        <form class="auth__form auth__pw hidden" id="pwForm" autocomplete="on">
+          <label class="field">
+            <span class="field__label">Current password</span>
+            <input id="pwCurrent" type="password" name="current-password"
+                   autocomplete="current-password" required>
+          </label>
+          <label class="field">
+            <span class="field__label">New password</span>
+            <input id="pwNew" type="password" name="new-password"
+                   autocomplete="new-password" required>
+          </label>
+          <label class="field">
+            <span class="field__label">Confirm new password</span>
+            <input id="pwConfirm" type="password" name="confirm-password"
+                   autocomplete="new-password" required>
+          </label>
+
+          <button type="submit" class="btn btn--primary auth__go" id="pwSubmit">Change password</button>
+          <button type="button" class="link auth__swap" id="pwCancel">Cancel</button>
+        </form>
+
+        <!-- Outside the form on purpose: it carries the confirmation too, and
+             that has to survive the form folding itself away. -->
+        <p class="auth__msg hidden" id="pwMsg" role="status" aria-live="polite"></p>
+
         <button type="button" class="btn btn--ghost" id="logoutBtn">Sign out</button>
         <button type="button" class="link auth__danger" id="deleteBtn">Delete account and all data</button>
       </div>

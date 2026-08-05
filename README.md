@@ -142,6 +142,12 @@ stays as an offline cache, so the app keeps working signed out — an account ou
 rather than replacing it. You can delete the account, and everything stored with it, from the
 account screen.
 
+**Changing your password** is on that screen too: current password, new password, and the new one
+again. It's a change, not a reset — there's no email on file and no recovery link, so knowing the
+current password is the only way in, and asking for it is what stops someone who finds your phone
+unlocked from taking the account. Changing it signs you out everywhere else; the device you changed
+it on stays signed in.
+
 **Your progress** is kept per deck. Phone or desktop sits at the very top — you set that once —
 and under it the same hiragana/katakana stamps as the menu, which stay stuck to the top as the
 report scrolls so you can switch scripts without scrolling back up. It opens on whichever script
@@ -349,6 +355,12 @@ Dark は固定です。ダークは色を反転したものではなく、同じ
 オフライン用にそのまま残るので、サインアウトしていてもアプリは動きます。アカウントは localStorage
 を置き換えるのではなく、上に立つ関係です。アカウントと、そこに保存されたものすべては、アカウント
 画面から削除できます。
+
+**パスワードの変更**も同じ画面にあります。今のパスワード、新しいパスワード、そしてもう一度
+新しいパスワード。再設定ではなく変更です。メールアドレスは預かっておらず復旧リンクもないので、
+今のパスワードを知っていることだけが唯一の入り口であり、それを訊くことが、開いたままの端末を
+拾った人にアカウントを奪われないための備えになっています。変更すると他の端末はすべて
+サインアウトされ、変更した端末だけがそのまま残ります。
 
 **進捗レポートはデッキごとです。** いちばん上はスマートフォンかデスクトップかの切り替えで、これは
 一度選ぶだけです。その下にメニューと同じひらがな・カタカナの印があり、レポートをスクロールしても

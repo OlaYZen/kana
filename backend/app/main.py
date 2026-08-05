@@ -39,6 +39,14 @@ class StatePatch(BaseModel):
     prefs: dict[str, Any]
 
 
+class PasswordChange(BaseModel):
+    # The confirm field is a UI concern and stays there — the two boxes exist to
+    # catch a typo before it becomes a password nobody knows, and the server has
+    # nothing to add to that.
+    current_password: str = Field(max_length=auth.MAX_PASSWORD)
+    new_password: str = Field(max_length=auth.MAX_PASSWORD)
+
+
 class AnswerIn(BaseModel):
     q: str = Field(max_length=16)
     a: str = Field(max_length=64)
@@ -159,6 +167,46 @@ def logout(token: Annotated[str, Depends(bearer)]) -> dict:
         with db.session() as conn:
             auth.destroy_session(conn, token)
     return {"ok": True}
+
+
+@app.post("/api/password")
+def change_password(body: PasswordChange, user: User) -> dict:
+    """Change a known password. This is not a reset — there is no recovery flow
+    and no email on file, so proving you already know the current one is the
+    only thing standing between a borrowed session and a stolen account."""
+    key = str(user["id"])
+    # Before the verify, exactly as sign-in does: a throttled attempt should
+    # cost no PBKDF2 work, so the limit protects the CPU as well as the account.
+    _throttle(ratelimit.password_user, key, "password attempts for this account")
+
+    err = auth.validate_password(body.new_password)
+    if err:
+        raise HTTPException(400, err)
+
+    with db.session() as conn:
+        row = conn.execute(
+            "SELECT password_hash FROM users WHERE id = ?", (user["id"],)
+        ).fetchone()
+        if not row or not auth.verify_password(body.current_password, row["password_hash"]):
+            ratelimit.password_user.record(key)
+            # 400 and not 401 on purpose: the client signs itself out on a 401,
+            # so returning one here would log you out for a typo.
+            raise HTTPException(400, "That isn't your current password.")
+        if body.current_password == body.new_password:
+            raise HTTPException(400, "That's the password you already have.")
+
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (auth.hash_password(body.new_password), user["id"]),
+        )
+        # Every session dies, including this one, and a fresh one is issued for
+        # the device that made the change — so the caller stays signed in and
+        # everywhere else has to log in again with the new password.
+        auth.destroy_user_sessions(conn, user["id"])
+        new_token = auth.create_session(conn, user["id"])
+
+    ratelimit.password_user.clear(key)
+    return {"token": new_token, "username": user["username"]}
 
 
 @app.get("/api/me")

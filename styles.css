@@ -49,6 +49,7 @@
   --shu-2:    #9A2F1D;
   --shu-3:    #7E2717;  /* the seal's label colour, one step past shu-2 */
   --matcha:   #4F6B22;  /* correct green */
+  --matcha-2: #455C1D;  /* its text companion, as shu-2 is to shu */
   --brass:    #8A6410;  /* record gold */
   --brass-2:  #B8892A;  /* lighter end of the progress gradient */
   --ai:       #2B4570;  /* indigo — the katakana accent */
@@ -133,6 +134,7 @@
   --shu-2:    #F07D66;
   --shu-3:    #F2907A;
   --matcha:   #93B94E;
+  --matcha-2: #A6C863;
   --brass:    #D8AC58;
   --brass-2:  #F0CE8C;
   --ai:       #7E9CD8;
@@ -492,7 +494,29 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   font-size:13.5px; line-height:1.45;
 }
 
+/* The same panel in the affirmative — it reports a success, not a problem.
+   The text is --matcha-2 and not --matcha for the same reason the error panel
+   uses --shu-2: the base accent is the *wash* here, and a colour cannot sit
+   legibly on 12% of itself. On cream it lands at 4.30:1, just under the bar. */
+.auth__msg--ok{
+  background:color-mix(in srgb, var(--matcha) 12%, transparent);
+  border-color:color-mix(in srgb, var(--matcha) 38%, transparent);
+  color:var(--matcha-2);
+}
+
 .auth__signedin{ display:flex; flex-direction:column; gap:10px; align-items:stretch; }
+
+/* Its own box inside the signed-in stack, so the three fields read as one
+   thing rather than as more buttons in the column. */
+.auth__pw{
+  gap:10px;
+  padding:13px;
+  border:1px solid var(--hairline);
+  border-radius:var(--r-lg);
+  background:var(--paper-card);
+}
+.auth__pw .auth__go{ margin-top:2px; }
+.auth__pw .auth__swap{ margin-top:0; }
 .auth__danger{ justify-content:center; color:var(--shu); }
 @media (hover:hover){ .auth__danger:hover{ color:var(--shu-2); } }
 

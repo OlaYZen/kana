@@ -49,6 +49,20 @@ def verify_password(password: str, stored: str) -> bool:
     return hmac.compare_digest(dk.hex(), want_hex)
 
 
+def validate_password(password: str) -> str | None:
+    """Returns an error message, or None when acceptable.
+
+    Split out from validate_credentials so changing a password enforces exactly
+    the same rule signing up does — two copies would drift, and the one that
+    drifted looser would be the one that mattered.
+    """
+    if len(password or "") < MIN_PASSWORD:
+        return f"Password must be at least {MIN_PASSWORD} characters."
+    if len(password) > MAX_PASSWORD:
+        return f"Password must be at most {MAX_PASSWORD} characters."
+    return None
+
+
 def validate_credentials(username: str, password: str) -> str | None:
     """Returns an error message, or None when acceptable."""
     username = (username or "").strip()
@@ -56,11 +70,7 @@ def validate_credentials(username: str, password: str) -> str | None:
         return f"Username must be 3–{MAX_USERNAME} characters."
     if not all(c.isalnum() or c in "_-." for c in username):
         return "Username can use letters, numbers, and _ - . only."
-    if len(password or "") < MIN_PASSWORD:
-        return f"Password must be at least {MIN_PASSWORD} characters."
-    if len(password) > MAX_PASSWORD:
-        return f"Password must be at most {MAX_PASSWORD} characters."
-    return None
+    return validate_password(password)
 
 
 # ---------- sessions ----------
@@ -97,6 +107,13 @@ def user_for_token(conn: sqlite3.Connection, token: str) -> sqlite3.Row | None:
 
 def destroy_session(conn: sqlite3.Connection, token: str) -> None:
     conn.execute("DELETE FROM sessions WHERE token_hash = ?", (_token_hash(token),))
+
+
+def destroy_user_sessions(conn: sqlite3.Connection, user_id: int) -> None:
+    """Sign this account out everywhere. Used when the password changes: the
+    usual reason to change one is that someone else might know it, and leaving
+    the sessions it already opened alive would defeat the whole point."""
+    conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
 
 
 def purge_expired(conn: sqlite3.Connection) -> None:
