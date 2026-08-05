@@ -397,18 +397,35 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .auth__danger{ justify-content:center; color:var(--shu); }
 @media (hover:hover){ .auth__danger:hover{ color:var(--shu-2); } }
 
+/* The progress screen's selectors — script, device, deck — all sit above
+   .stats__scroll as flex:0 0 auto, so they stay put while the report scrolls
+   under them. Pinned rather than position:sticky: sticky inside the scroller
+   would need a background matched to the page gradient behind it, and this
+   gets the same result with nothing to mismatch. */
+.stats .scriptbar{ margin-bottom:10px; }
+
+/* katakana carries the indigo accent here too, exactly as on the menu */
+.stats[data-script="katakana"]{
+  --accent:var(--ai);
+  --accent-dark:#1B2C47;
+}
+
 /* the phone/desktop split — figures from one are never comparable to the other */
-.seg--device{ flex:0 0 auto; display:flex; margin-bottom:14px; }
+.seg--device{ flex:0 0 auto; display:flex; margin-bottom:10px; }
 .seg--device .seg__btn{ flex:1 1 0; }
 
-/* One deck at a time: each is its own dataset, so they never share a figure. */
+/* One deck at a time: each is its own dataset, so they never share a figure.
+   Scrolls sideways on its own so a long deck list never pushes the report down. */
 .deckpick{
+  flex:0 0 auto;
   display:flex; gap:7px;
   overflow-x:auto; -webkit-overflow-scrolling:touch;
   margin-inline:calc(var(--pad) * -1);
   padding:0 var(--pad) 4px;
+  margin-bottom:12px;
   scrollbar-width:none;
 }
+.deckpick:empty{ display:none; }
 .deckpick::-webkit-scrollbar{ display:none; }
 .deckpick__btn{
   flex:0 0 auto;
@@ -432,7 +449,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
               color:var(--c-ink-mute); white-space:nowrap; }
 
 .sdeck{
-  margin:16px 0 14px;
+  margin:0 0 14px;
   font-size:19px; font-weight:600; line-height:1.2;
   color:var(--c-ink);
 }

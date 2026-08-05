@@ -43,7 +43,8 @@
     moreBtn: $("moreBtn"), moreSheet: $("moreSheet"), moreCloseBtn: $("moreCloseBtn"),
     moreMode: $("moreMode"),
     stats: $("stats"), statsBtn: $("statsBtn"), statsBody: $("statsBody"),
-    statsBackBtn: $("statsBackBtn"),
+    statsBackBtn: $("statsBackBtn"), deckPick: $("deckPick"),
+    statsScriptSwitch: $("statsScriptSwitch"),
     // Both switches are .seg__btn. Never select that class document-wide: the
     // device switch has no data-mode, so a global query wires setMode(undefined)
     // onto it and blanks its aria-checked every time the answer mode changes.
@@ -1205,6 +1206,15 @@
       openStats();
     }));
 
+  Array.from(el.statsScriptSwitch.children).forEach((b) =>
+    b.addEventListener("click", () => {
+      setStatsScript(b.dataset.script);
+      statsDeck = null;          // this script has a different set of decks
+      // already have the payload — this is a filter, not a fetch
+      if (lastReport) renderStats(lastReport);
+      else openStats();
+    }));
+
   /* ==========================================================================
      Backend
 
@@ -1375,6 +1385,7 @@
      ========================================================================== */
   let statsDevice = DEVICE;
   let statsDeck = null;      // which deck's report is on screen
+  let statsScript = null;    // set from the menu the first time this opens
 
   const fmtMs = (ms) => (ms == null ? "—" : (ms / 1000).toFixed(1) + "s");
 
@@ -1429,13 +1440,23 @@
     });
   }
 
+  // Flick drills belong to neither script, so they stay in the picker whichever
+  // stamp is selected — they are the one thing here that isn't hiragana or
+  // katakana material.
+  function forScript(decks) {
+    return decks.filter((r) => {
+      const deck = state.decks.find((d) => d.id === r.deck_id);
+      return !deck || deck.script === statsScript;
+    });
+  }
+
   // Each deck is its own dataset — katakana is not evidence about hiragana, and
   // the base gojūon is not evidence about dakuten. The picker chooses which one
   // is on screen; nothing is ever summed across them.
   function renderDeckPicker(decks) {
-    const bar = add(el.statsBody, "div", "deckpick");
+    el.deckPick.innerHTML = "";
     decks.forEach((r) => {
-      const b = add(bar, "button", "deckpick__btn");
+      const b = add(el.deckPick, "button", "deckpick__btn");
       b.type = "button";
       b.setAttribute("role", "radio");
       b.setAttribute("aria-checked", String(r.deck_id === statsDeck));
@@ -1448,17 +1469,29 @@
     });
   }
 
+  function setStatsScript(id) {
+    statsScript = id;
+    el.stats.dataset.script = id;      // flips the accent, as on the menu
+    Array.from(el.statsScriptSwitch.children).forEach((b) =>
+      b.setAttribute("aria-checked", String(b.dataset.script === id)));
+  }
+
   let lastReport = null;
 
   function renderStats(payload) {
     lastReport = payload;
     el.statsBody.innerHTML = "";
+    el.deckPick.innerHTML = "";
     const label = statsDevice === "mobile" ? "phone" : "desktop";
-    const decks = (payload && payload.decks) || [];
+    const all = (payload && payload.decks) || [];
+    const decks = forScript(all);
 
     if (!decks.length) {
       const b = statBlock("Nothing here yet");
-      add(b, "p", "sblock__note", "No finished runs on " + label + " yet.");
+      add(b, "p", "sblock__note", all.length
+        ? "No finished " + statsScript + " runs on " + label + " yet — though " +
+          "there are runs under the other stamp."
+        : "No finished runs on " + label + " yet.");
       add(b, "p", "sblock__note",
         "Phone and desktop are kept apart — typing on a keyboard and flicking " +
         "on glass aren't comparable — so each has its own figures.");
@@ -1571,7 +1604,10 @@
 
   function openStats() {
     show(el.stats);
+    // opens on the script the menu is showing, then keeps its own selection
+    if (!statsScript) setStatsScript(state.script);
     el.statsBody.innerHTML = "";
+    el.deckPick.innerHTML = "";
     add(el.statsBody, "p", "sblock__note", "Loading…");
     Array.from(el.deviceSwitch.children).forEach((b) =>
       b.setAttribute("aria-checked", String(b.dataset.device === statsDevice)));

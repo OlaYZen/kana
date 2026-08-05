@@ -133,8 +133,10 @@ stays as an offline cache, so the app keeps working signed out — an account ou
 rather than replacing it. You can delete the account, and everything stored with it, from the
 account screen.
 
-**Your progress** is kept per deck. Pick a deck at the top and you get that deck's runs — mode,
-score and time — from the very first one. Below that, once there's enough of them, it works out
+**Your progress** is kept per deck. The same hiragana/katakana stamps as the menu sit at the top,
+with the decks for that script beside them; all of it stays put while the report scrolls, so you
+can switch without scrolling back up. Pick a deck and you get that deck's runs — mode, score and
+time — from the very first one. Below that, once there's enough of them, it works out
 where the effort actually is: which characters you hesitate on, which are already automatic, which
 you get wrong, and what you reach for instead — つ answered as た, say. Each run is listed with its
 exact time down to the millisecond, so two attempts at the same deck are actually comparable. The
@@ -321,8 +323,9 @@ python -m http.server 8000
 を置き換えるのではなく、上に立つ関係です。アカウントと、そこに保存されたものすべては、アカウント
 画面から削除できます。
 
-**進捗レポートはデッキごとです。** 上でデッキを選ぶと、そのデッキのラン（答え方、スコア、タイム）
-が最初の 1 回から並びます。その下には、十分な数がたまってから、実際に手間取っている場所が出ます。
+**進捗レポートはデッキごとです。** 上部にはメニューと同じひらがな・カタカナの印があり、その横に
+その文字種のデッキが並びます。レポートをスクロールしても上部は動かないので、戻らずに切り替え
+られます。デッキを選ぶと、そのデッキのラン（答え方、スコア、タイム）が最初の 1 回から並びます。その下には、十分な数がたまってから、実際に手間取っている場所が出ます。
 どの文字で迷うか、どれがもう自動で出るか、どれを間違えるか、そして代わりに何を打っているか —
 たとえば つ を た と答えている、といったことです。ランのタイムはミリ秒まで表示されるので、同じ
 デッキの 2 回を実際に比べられます。分析の部分は、何をデータとして数えるかについて慎重です。
