@@ -139,11 +139,19 @@ picker rather than the deck list. It opens on the menu's script and then keeps i
 since you may well be practising one script and reading about the other. The flick drills are the
 one thing that survives both filters — they belong to neither script.
 
-**Everything above `.stats__scroll` is pinned.** The script stamps, the device switch and the deck
-picker are `flex:0 0 auto` siblings of the scroller, so they stay put while the report scrolls
-under them. That is deliberately *not* `position:sticky` inside the scroller: sticky would need a
-background matched to the page's radial gradient behind it, and a pinned sibling gets the same
-result with nothing to mismatch.
+**Only the script stamps are sticky.** The whole progress screen scrolls inside `#statsScroll`, in
+the order device → stamps → deck picker → report. The device switch is the coarsest split and you
+set it once, so it scrolls away; the stamps are what you actually flip between, so they stick to
+the top of the scroller.
+
+A sticky element has page showing through behind it, and the page ground is a *gradient* with
+`background-attachment: fixed` — so a solid `--paper` bar would sit a shade off wherever the
+gradient hasn't faded out. `.stats .scriptbar` instead repaints `--page-bg` with the same fixed
+attachment, which resolves against the viewport and therefore lines up exactly. `--page-bg` exists
+in `:root` for that reason and is used by `body` too; keep them one declaration, or they drift.
+
+**The deck picker is dropped when it would hold one chip.** A picker with a single option isn't a
+choice, and the deck it would name is already the `.sdeck` heading right below it.
 
 **Persistence** is localStorage key `hkk.v1` (`STORE` in `app.js`), holding
 `{rev, mode, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which

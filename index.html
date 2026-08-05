@@ -97,27 +97,31 @@
   <section id="stats" class="screen stats hidden" data-script="hiragana">
     <p class="eyebrow"><span class="mark" lang="ja">記録</span> Your progress</p>
 
-    <!-- The same seal stamps as the menu, and pinned: everything above
-         .stats__scroll stays put while the report scrolls under it. -->
-    <div class="scriptbar" id="statsScriptSwitch" role="radiogroup" aria-label="Script">
-      <button type="button" class="hanko" data-script="hiragana" role="radio" aria-checked="true">
-        <span class="hanko__glyph" lang="ja">あ</span>
-        <span class="hanko__label">Hiragana</span>
-      </button>
-      <button type="button" class="hanko" data-script="katakana" role="radio" aria-checked="false">
-        <span class="hanko__glyph" lang="ja">ア</span>
-        <span class="hanko__label">Katakana</span>
-      </button>
+    <div class="stats__scroll" id="statsScroll">
+      <!-- Device first and scrolling: you pick it once and it is the coarsest
+           split there is. The script stamps below it are sticky, so the thing
+           you actually switch between stays reachable. -->
+      <div class="seg seg--device" role="radiogroup" aria-label="Device">
+        <button type="button" class="seg__btn" data-device="mobile" role="radio" aria-checked="false">Phone</button>
+        <button type="button" class="seg__btn" data-device="desktop" role="radio" aria-checked="true">Desktop</button>
+      </div>
+
+      <div class="scriptbar" id="statsScriptSwitch" role="radiogroup" aria-label="Script">
+        <button type="button" class="hanko" data-script="hiragana" role="radio" aria-checked="true">
+          <span class="hanko__glyph" lang="ja">あ</span>
+          <span class="hanko__label">Hiragana</span>
+        </button>
+        <button type="button" class="hanko" data-script="katakana" role="radio" aria-checked="false">
+          <span class="hanko__glyph" lang="ja">ア</span>
+          <span class="hanko__label">Katakana</span>
+        </button>
+      </div>
+
+      <!-- hidden when there is only one deck to pick — see renderDeckPicker -->
+      <div class="deckpick" id="deckPick" role="radiogroup" aria-label="Deck"></div>
+
+      <div id="statsBody"></div>
     </div>
-
-    <div class="seg seg--device" role="radiogroup" aria-label="Device">
-      <button type="button" class="seg__btn" data-device="mobile" role="radio" aria-checked="false">Phone</button>
-      <button type="button" class="seg__btn" data-device="desktop" role="radio" aria-checked="true">Desktop</button>
-    </div>
-
-    <div class="deckpick" id="deckPick" role="radiogroup" aria-label="Deck"></div>
-
-    <div class="stats__scroll" id="statsBody"></div>
 
     <button type="button" class="link" id="statsBackBtn">← Back</button>
   </section>
