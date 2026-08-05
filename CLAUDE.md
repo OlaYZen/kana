@@ -27,11 +27,11 @@ the drill and the chart — were deleted; they are in git history at `3ece9c6` i
 needed. Don't reintroduce a second copy of the game: they drifted out of sync with the real app
 the moment they stopped being loaded.
 
-The project directory used to be called `hkk`, and both localStorage keys carried that prefix long
-after. They are now `kana.*`, and `renameKeys()` in `app.js` moves anything still found under the
-old names at boot. **Don't delete it** — it is the only thing standing between a returning user and
-a silently wiped set of records, and it costs one pass over two keys on a load that finds nothing.
-See **Persistence** below.
+The project directory used to be called `hkk`, and its three localStorage keys carried that prefix
+long after. They are now `kana.*`, and `renameKeys()` in `app.js` moves anything still found under
+the old names at boot. **Don't delete it** — it is the only thing standing between a returning user
+and a silently wiped set of records, and it costs one pass over three keys on a load that finds
+nothing. See **Persistence** below.
 
 ## Running it
 
@@ -80,6 +80,26 @@ once in `:root` (`--paper*`, `--c-ink*`, `--shu`, `--brass`, `--matcha`). The ac
 deliberately darker than a dark theme's would be: the same red/gold/green at "glowing on indigo"
 lightness fails contrast on cream. Nothing re-themes wholesale — the chart sheet and the menu only
 re-point `--accent`, flipping shu-red/indigo-blue via `[data-script]`.
+
+**The dark theme is one more block of custom properties**, `:root[data-theme="dark"]`, and nothing
+else. It re-declares the palette rather than inverting it — the same paper at night, sumi ground
+and warm off-white ink, with every accent opened up in lightness because the sentence above cuts
+both ways. Three rules follow from that and are what keep it to one block:
+
+- **No literal colour may appear below the two `:root` blocks.** A literal can only be right in one
+  theme. That includes the translucent ones, which is what `--press`, `--backdrop`, `--on-fill`,
+  `--paper-lift`, `--square-bg` and the three `--shadow-*` values exist for. Shu-derived washes use
+  `color-mix(in srgb, var(--shu) N%, transparent)` instead and need no dark twin at all.
+- **`--accent-dark` is the accent's *label* colour, not "the dark theme's accent"** — `--shu-3` in
+  light, a lighter tint in dark. Same for `--ai-2`, its katakana counterpart. The three
+  `[data-script="katakana"]` blocks point at the variable, never at a hex.
+- **`auto` is resolved in JS, never in CSS.** `data-theme` on `<html>` is only ever `light` or
+  `dark`, so no rule in the stylesheet tests `prefers-color-scheme` and there is one code path to
+  reason about instead of two overlapping ones.
+
+`--c-ink-mute`'s floor is 4.5:1 against **`--paper-card`**, not against the page ground: labels and
+hints sit on cards more often than not, and the card is the lighter surface. A value that clears
+the ground and fails the card is the trap here, and it is where the first pass landed.
 
 Six decks: base / dakuten / combination × hiragana / katakana (46 / 25 / 36 cards each, 214
 total). Obsolete kana (ゐ ゑ ヰ ヱ, the archaic yi/ye/wu forms, polysyllabics) are excluded on
@@ -182,8 +202,27 @@ was only safe because `renameKeys()` moves the old value across first, and any f
 the same treatment. `rev` versions the *shape* inside the key, which is how a shape change ships
 without touching the name at all; reach for that first.
 
-The session token is kept in a key of its own, **`kana.token`**, deliberately outside the synced
-blob: the blob is uploaded to the server, and a token has no business making that round trip.
+Two things are kept in keys of their own, both deliberately outside the synced blob:
+
+- **`kana.token`**, the session token — the blob is uploaded to the server, and a token has no
+  business making that round trip.
+- **`kana.theme`**, `auto`/`light`/`dark` — see the theme rules below. It is read and written
+  directly, never through `store`, which is precisely what stops it syncing.
+
+**The theme is the one setting that must not follow the user between devices.** Which theme is
+right is a fact about the screen in front of them — a phone in a dark room, a laptop under office
+lights — so an account carrying it across is wrong more often than right. Moving it into `store`
+would sync it, silently and immediately: that is the whole mechanism. `paintTheme()` resolves
+`auto` against `prefers-color-scheme` and listens for OS changes while the page is open, and it
+also owns the `theme-color` meta, whose two values have to match the two `--paper` grounds.
+
+**The theme is applied twice, and that duplication is load-bearing.** An inline `<script>` in
+`<head>` sets `data-theme` before first paint; `app.js` is loaded at the end of `<body>`, so
+without it every load flashes light before the theme lands. The inline copy is deliberately the
+minimum — the key name and the two output values — and both copies have to change together.
+
+`<meta name="darkreader-lock">` is in `<head>` because the app has a real dark theme; Dark Reader's
+automatic inversion would fight the palette rather than add to it.
 
 **Records belong to a deck _and_ a mode**, keyed `deckId|mode` by `recordKey()` — reading kana,
 picking from four, and writing kana from a sound are three different skills, and pooling them let
@@ -199,8 +238,8 @@ the easiest mode set a score the hardest could never beat. Every `store.best`/`s
   evidence of which mode earned them. It runs once at boot and is idempotent.
 
 **The menu is deliberately shallow.** Only three things sit on it: the script switch, the deck
-list (which scrolls, and holds the flick drills), and one Options button. Answer mode, font, chart,
-progress and account all live in `#moreSheet` behind that button — stacked on the menu they took
+list (which scrolls, and holds the flick drills), and one Options button. Answer mode, theme, font,
+chart, progress and account all live in `#moreSheet` behind that button — stacked on the menu they took
 about a third of a phone screen away from the deck list, which is the thing you came to use. The
 mode is the one setting that is otherwise invisible from the menu, so `setMode()` writes it into
 the Options button's label. Anything opened from Options goes through `fromMore()`, which closes
@@ -369,10 +408,11 @@ These each cost a real bug once. Comments in the source mark most of them.
   together (this bit `.deck__name`/`.deck__meta` and `.font__name`/`.font__note`).
 - **The run is timed but the clock is never shown while practising** — deliberate, a visible
   ticking counter turns practice into a race. Total appears once, on the results screen.
-- **Never select `.seg__btn` document-wide.** The answer-mode switch and the progress screen's
-  device switch share the class. A global query wires `setMode(undefined)` onto the device buttons
-  and blanks their `aria-checked` on every mode change. Go through `el.modeSwitch` /
-  `el.deviceSwitch`.
+- **Never select `.seg__btn` document-wide.** Three switches share the class now — answer mode,
+  theme, and the progress screen's device switch. A global query wires `setMode(undefined)` onto
+  the others and blanks their `aria-checked` on every mode change. Each has an id of its own for
+  exactly this reason: go through `el.modeSwitch` / `el.themeSwitch` / `el.deviceSwitch`. The
+  shared *layout* is `.modebar--stack`, which is a layout modifier and not a handle on the mode.
 - **`store.migrate()` is called from boot, not at the `store` literal.** It writes, a write reaches
   `schedulePush()`, and that touches the `api` const declared further down — running it early hits
   that binding's temporal dead zone and the whole IIFE throws.
@@ -417,7 +457,10 @@ to end: script switching, all four modes, grading, records, the account flow, th
 Install jsdom in a scratch directory, never the project, and stub four things — `fetch` (return
 `kana.json`, and *reject* `/api/*` unless you are deliberately testing the backend path),
 `HTMLDialogElement.prototype.showModal`/`close` (jsdom implements neither), `matchMedia`, and
-`confirm`. Canvas is absent, so font probing takes its documented privacy-mode path and offers
+`confirm`. The `matchMedia` stub now needs `addEventListener`/`removeEventListener` as well as
+`matches`, since `paintTheme()` subscribes to `prefers-color-scheme`; and the inline theme script
+in `<head>` does not run under `runScripts: "outside-only"`, so a suite that cares about the
+pre-paint theme has to `eval` it by hand before `app.js`. Canvas is absent, so font probing takes its documented privacy-mode path and offers
 everything unverified. Two traps: **advance a graded card by clicking `#square`** rather than
 waiting out the 620 ms auto-advance, or a suite with several full runs in it takes minutes; and
 **`window.performance` has only a getter**, so it cannot be reassigned.

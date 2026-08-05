@@ -122,6 +122,15 @@ to an option already listed, is not offered. How many you get therefore varies b
 Windows ships no Japanese serif or textbook face unless the *Japanese Supplemental Fonts* optional
 feature is installed.
 
+**Light and dark.** Under **Options → Theme**: Auto follows your system and is the default, or pin
+Light or Dark. The dark theme is the same washi paper at night rather than an inversion — sumi
+ground, warm off-white ink, the seal red opened up to where it reads on a dark ground. Because the
+app ships its own, it asks Dark Reader to leave the page alone.
+
+The theme is the one setting that **never syncs**, even with an account. Which theme is right is a
+fact about the device in front of you — a phone in bed, a laptop under office lights — so each one
+keeps its own. Everything else follows you.
+
 Signed out, everything lives in your own browser's storage and nowhere else. Clearing site data
 resets it.
 
@@ -314,6 +323,15 @@ python -m http.server 8000
 候補をキャンバスに描画してピクセルを比較し、無いものや、すでにあるものと同じ見え方のものは出しま
 せん。そのため数は環境によります。Windows は *Japanese Supplemental Fonts* を入れない限り、明朝や
 教科書体が入っていません。
+
+**ライトとダーク。**「Options → Theme」から選べます。既定の Auto は端末の設定に従い、Light と
+Dark は固定です。ダークは色を反転したものではなく、同じ和紙の夜の姿です — 墨の地、温かみのある
+生成りの文字、暗い地でも読める明るさまで開いた朱。アプリ自身がダークを持っているので、Dark Reader
+には手を出さないよう伝えてあります。
+
+テーマは**同期しない唯一の設定**です。アカウントがあっても同期しません。どちらが正しいかは目の前
+の端末の事情 — 寝室のスマートフォン、明るい部屋のノート PC — なので、端末ごとに別々に持ちます。
+それ以外の設定は端末をまたいで付いてきます。
 
 サインインしていなければ、データはブラウザの中だけに残ります。サイトデータを消すとリセットされ
 ます。

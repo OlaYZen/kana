@@ -4,13 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="color-scheme" content="light">
-<meta name="theme-color" content="#EFE9DC">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#EFE9DC" id="themeColor">
+<!-- The app ships its own dark theme, so Dark Reader must keep its hands off:
+     its automatic inversion would fight the palette rather than add to it. -->
+<meta name="darkreader-lock">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>かな — Kana Practice</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="styles.css">
+<!-- Theme, before first paint. The stylesheet keys off data-theme, and app.js
+     is loaded at the end of <body> — setting it there would show a light flash
+     on every load for anyone using the dark theme. Deliberately duplicated and
+     deliberately tiny; paintTheme() in app.js is the real one, and the key name
+     and the two choices have to stay in step with it. -->
+<script>
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem("kana.theme"); } catch (e) { /* private mode */ }
+    if (t !== "light" && t !== "dark") {
+      t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
 </head>
 <body>
 <main class="stage">
@@ -247,12 +265,22 @@
     <button type="button" class="iconbtn" id="moreCloseBtn" aria-label="Close">✕</button>
   </div>
   <div class="sheet__body">
-    <div class="modebar modebar--mode">
+    <div class="modebar modebar--stack">
       <span class="modebar__label">Answer by</span>
-      <div class="seg" role="radiogroup" aria-label="Answer mode">
+      <div class="seg" id="modeSwitch" role="radiogroup" aria-label="Answer mode">
         <button type="button" class="seg__btn" data-mode="type" role="radio" aria-checked="true">Typing</button>
         <button type="button" class="seg__btn" data-mode="choose" role="radio" aria-checked="false">Choosing</button>
         <button type="button" class="seg__btn" data-mode="write" role="radio" aria-checked="false">Writing</button>
+      </div>
+    </div>
+
+    <!-- Theme is this device's alone — it is never synced to an account. -->
+    <div class="modebar modebar--stack">
+      <span class="modebar__label">Theme</span>
+      <div class="seg" id="themeSwitch" role="radiogroup" aria-label="Theme">
+        <button type="button" class="seg__btn" data-theme="auto" role="radio" aria-checked="true">Auto</button>
+        <button type="button" class="seg__btn" data-theme="light" role="radio" aria-checked="false">Light</button>
+        <button type="button" class="seg__btn" data-theme="dark" role="radio" aria-checked="false">Dark</button>
       </div>
     </div>
 
