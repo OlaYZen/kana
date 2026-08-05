@@ -43,6 +43,22 @@ in modern Japanese.
   phone, or a Japanese input method on a desktop. Both readings of an ambiguous sound are
   accepted — `ji` takes じ or ぢ, `zu` takes ず or づ.
 
+**Flick keyboard drills.** Below the decks are two drills for the Japanese phone keyboard itself,
+which has ten keys — one per gojūon row — where the vowel comes from the direction you swipe:
+middle **a**, left **i**, up **u**, right **e**, down **o**. Each drill is 20 prompts and needs a
+Japanese keyboard.
+
+- **Flick directions** shows a vowel — A, I, U, E or O — and takes *any* character with that
+  vowel. Prompted with O, everything from お to こ そ と の ほ も よ ろ counts; つ counts for U and
+  め for E. Only the ending matters, so you're practising the swipe, not recalling a character.
+- **Flick keys** is the reverse: it shows a key — A, K, S, T, N, H/F, M, Y, R, W — and takes any
+  character from that row, so K takes か き く け こ. Voiced characters live on their base key, so
+  が also counts for K, and ぱ for H. Watch the spelling traps: し is on the **S** key despite
+  "shi", ち and つ are on **T**, ふ is on **H** despite "fu".
+
+Each drill keeps its own best score and time, separate from the decks and from each other. ん
+isn't drilled: it has no vowel, and which key it sits on varies between keyboards.
+
 In the two typing modes the answer box takes focus on every card, so you can type straight through
 a deck without tapping it again each time. On a phone the keyboard stays up for the whole run —
 tapping Check, Reveal or the character to continue won't dismiss it. If you close it yourself it

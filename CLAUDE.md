@@ -73,11 +73,35 @@ purpose — do not "complete" the charts by adding them back.
 | `choose` | kana | romaji, 1 of 4 | exact match on `a` |
 | `write` | **romaji** | **kana, typed** | `writeAccepts()` — see the invariant below |
 
+Plus `flick`, which is not selectable here — see the flick drills below.
+
 `write` exists to build familiarity with the Japanese keyboard, so it needs a real IME; the
 `#kanaInput` field is separate from `#input` rather than an attribute swap, because changing
 `inputmode`/`lang` on a live field does not reliably re-trigger the on-screen keyboard. `type` and
 `write` are the same interaction reversed and share `submitTyped()` / `markWrong()` / the Enter
 handler, routed through `typedField()`.
+
+**Two flick drills** train the phone keyboard rather than a deck. A Japanese flick keyboard has
+ten keys, one per gojūon row, and the vowel comes from the swipe direction (middle a, left i, up
+u, right e, down o). `flick-vowel` asks for a direction and accepts any character with that vowel;
+`flick-key` asks for a key and accepts any character from its row. They are **runs, not modes** —
+generated `FLICK_LEN` (20) prompts long, unaffected by the deck or answer mode, listed in their
+own `#flickDecks` section, and scored under the reserved mode `"flick"` so their records never mix
+with a deck's. `state.flick` holds `"vowel"`/`"key"` while one is running and `activeMode()` is
+what everything records against.
+
+Both mappings are **derived from the chart grids, never listed in JS**: a grid row already knows
+its consonant and a grid column already knows its vowel, so the drills cannot disagree with the
+chart. Three things that fall out of that and are easy to get wrong by hand:
+
+- **Dakuten rows are not their own keys.** が is the か key plus the ゛mark, so `BASE_KEY` folds
+  `g z d b p` onto `k s t h h`. Skip this and が is unanswerable for `K`.
+- **Romaji spelling cannot decide the key.** し is "shi" but the S key, ち "chi" and つ "tsu" are
+  the T key, ふ "fu" is the H key. Only the grid row is authoritative. Vowels are the opposite
+  case — the reading's last letter is always right, which is how yōon (きゃ→a) resolve, since
+  ゃゅょ aren't in the grids.
+- **ん is deliberately excluded** from both drills: it has no vowel, and which key it sits on
+  differs between keyboards, so drilling it would teach a guess. `kanaInfo()` returns null for it.
 
 **The menu shows one script at a time.** The two seal-stamp buttons (`.hanko`, styled with the
 chart sheet and reused by `.scriptbar`) filter `#decks` to that script's three decks and flip
@@ -170,6 +194,9 @@ These each cost a real bug once. Comments in the source mark most of them.
   together (this bit `.deck__name`/`.deck__meta` and `.font__name`/`.font__note`).
 - **The run is timed but the clock is never shown while practising** — deliberate, a visible
   ticking counter turns practice into a race. Total appears once, on the results screen.
+- **Flick prompts are dealt out evenly, then shuffled** — never sampled at random. Over only 20
+  prompts, random sampling can leave a whole direction out of the run, which is the one thing a
+  drill whose entire purpose is covering all five directions must not do.
 - **Best *time* is only recorded for a flawless (100%) run.** Timing every run lets a rushed or
   revealed-answer run set an unbeatable record. Reveals count as misses.
 - **Never look a record up by deck alone.** `store.best(deckId)` without a mode silently returns
