@@ -478,7 +478,10 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .srow__r--wide{ font-size:13.5px; color:var(--c-ink); }
 .srow__v{ font-family:var(--mincho); font-size:16px; color:var(--brass); }
 .srow__v--bad{ color:var(--shu); }
+.srow__v--good{ color:var(--matcha); }
 .srow__s{ font-size:12px; color:var(--c-ink-mute); min-width:42px; text-align:right; }
+/* exact run length: tabular so the columns line up down the list */
+.srow__s--time{ font-variant-numeric:tabular-nums; min-width:64px; }
 
 @media (min-width:600px) and (min-height:600px){
   .sgrid__n{ font-size:27px; }

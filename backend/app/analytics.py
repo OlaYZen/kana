@@ -176,9 +176,16 @@ def report(conn: sqlite3.Connection, user_id: int, device: str, deck_id: str) ->
     out["cards_tracked"] = len(cards)
     out["min_attempts"] = MIN_ATTEMPTS
 
+    # Slowest and fastest are drawn from opposite ends of one ranking and are
+    # never allowed to meet in the middle: with only a handful of cards tracked,
+    # taking the top N of each would put the same character in both lists, and
+    # "つ is your slowest" next to "つ is your fastest" is nonsense. Each side
+    # gets at most half, so a card can only ever be in one.
     timed_cards = [c for c in cards if c["median_ms"] is not None and c["timed"] >= MIN_ATTEMPTS]
-    out["slowest"] = sorted(timed_cards, key=lambda c: -c["median_ms"])[:TOP_N]
-    out["fastest"] = sorted(timed_cards, key=lambda c: c["median_ms"])[:TOP_N]
+    ranked = sorted(timed_cards, key=lambda c: c["median_ms"])
+    n = min(TOP_N, len(ranked) // 2)
+    out["fastest"] = ranked[:n]
+    out["slowest"] = list(reversed(ranked[-n:])) if n else []
     out["weakest"] = sorted(
         [c for c in cards if c["accuracy"] < 100], key=lambda c: (c["accuracy"], -c["attempts"])
     )[:TOP_N]
