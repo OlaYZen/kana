@@ -150,8 +150,18 @@ gradient hasn't faded out. `.stats .scriptbar` instead repaints `--page-bg` with
 attachment, which resolves against the viewport and therefore lines up exactly. `--page-bg` exists
 in `:root` for that reason and is used by `body` too; keep them one declaration, or they drift.
 
-**The deck picker is dropped when it would hold one chip.** A picker with a single option isn't a
-choice, and the deck it would name is already the `.sdeck` heading right below it.
+**The deck is named exactly once, wherever that lands.** Three things could name it — the seal
+stamp, the selected picker chip, and the `.sdeck` heading — so each is suppressed when an earlier
+one already did the job:
+
+- the picker is dropped when it would hold **one** chip, because a single option isn't a choice;
+- the heading is dropped when there **is** a picker (the checked chip names it) **or** when the
+  deck label is just the script (`Hiragana` under the あ stamp says nothing new).
+
+What survives is the one case neither covers: a lone non-base deck, where the picker is gone and
+the stamp would give the *wrong* name — `Dakuten hiragana` and `Flick directions` both sit under
+the あ stamp. Don't simplify this to "never show the heading"; that case loses the deck's identity
+entirely.
 
 **Persistence** is localStorage key `hkk.v1` (`STORE` in `app.js`), holding
 `{rev, mode, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
