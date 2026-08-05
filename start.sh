@@ -2,7 +2,7 @@
 #
 # Install, update and run Kana Practice.
 #
-#   ./start.sh                 update, install if needed, serve on :8000
+#   ./start.sh                 update, install if needed, serve on :5556
 #   ./start.sh --port 9000     a different port
 #   ./start.sh --no-pull       skip git pull
 #   ./start.sh --reload        auto-reload on source changes (development)
@@ -16,7 +16,7 @@ VENV="$ROOT/backend/venv"
 REQS="$ROOT/backend/requirements.txt"
 STAMP="$ROOT/backend/.requirements.sha"
 
-PORT=8000
+PORT=5556
 HOST=127.0.0.1
 PULL=1
 RELOAD=0
