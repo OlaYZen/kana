@@ -154,6 +154,12 @@ you get wrong, and what you reach for instead — つ answered as た, say. Each
 time and date you finished it and its exact length down to the millisecond, so two attempts at the
 same deck are actually comparable. The analysis is deliberately cautious about what counts as data:
 
+- **Which characters are slow, fast, or mixed up is read from your last five runs**, not from
+  everything you've ever done. It's meant to tell you what to practise next, and a character you
+  struggled with in your first week and have long since fixed would otherwise sit at the top of
+  that list forever. Your overall accuracy, typical time and characters seen still cover every
+  run — that's the long view, and it's the point of them. Least accurate stays on all your runs
+  too: over five runs a character comes up five times, so one slip would read as a collapse.
 - **Each of the six decks is its own dataset.** Katakana tells you nothing about hiragana, and the
   base gojūon tells you nothing about dakuten or yōon — they're separate material. Nothing is ever
   averaged across decks, and three hiragana runs won't unlock the dakuten breakdown.
@@ -356,6 +362,12 @@ Dark は固定です。ダークは色を反転したものではなく、同じ
 出るので、同じデッキの 2 回を実際に比べられます。分析の部分は、何をデータとして数えるかについて
 慎重です。
 
+- **どの文字が遅い・速い・取り違えているかは、直近 5 ラン**だけから出します。これまで全部では
+  ありません。次に何を練習するかを示すためのもので、最初の週に苦労してとっくに直した文字が、
+  いつまでも上に居座ってしまうからです。全体の正答率・標準的なタイム・見た文字数は今までの
+  すべてのランが対象のままです。そちらは長い目で見るためのもので、それが存在意義です。
+  「正答率が低い順」も全ランのままにしてあります。5 ランでは 1 文字あたり 5 回しか出ないので、
+  1 回の取りこぼしが総崩れのように見えてしまうからです。
 - **6 つのデッキはそれぞれ別のデータです。** カタカナはひらがなの証拠になりませんし、五十音は
   濁音や拗音の証拠になりません。別の教材だからです。デッキをまたいで平均することはなく、
   ひらがなを 3 回やってもダクテンの分析は出ません。

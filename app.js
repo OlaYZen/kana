@@ -1671,8 +1671,14 @@
         "someone thinking.");
     }
 
+    // These three read the last few runs rather than all of history, so each
+    // says so — an unqualified "Slowest to recall" is a claim about everything
+    // you have ever done, and that is no longer the figure being shown.
+    const lately = "Your last " + report.recent_window + " run" +
+                   (report.recent_window === 1 ? "" : "s") + ".";
+
     if (report.slowest.length) {
-      const b = statBlock("Slowest to recall", "Where the hesitation is.");
+      const b = statBlock("Slowest to recall", "Where the hesitation is. " + lately);
       report.slowest.forEach((c) => statRow(b, [
         { text: c.q, cls: "srow__k", lang: "ja" },
         { text: c.a, cls: "srow__r" },
@@ -1682,7 +1688,7 @@
     }
 
     if (report.fastest.length) {
-      const b = statBlock("Fastest to recall", "These ones are automatic.");
+      const b = statBlock("Fastest to recall", "These ones are automatic. " + lately);
       report.fastest.forEach((c) => statRow(b, [
         { text: c.q, cls: "srow__k", lang: "ja" },
         { text: c.a, cls: "srow__r" },
@@ -1692,7 +1698,7 @@
     }
 
     if (report.weakest.length) {
-      const b = statBlock("Least accurate", "Worth drilling.");
+      const b = statBlock("Least accurate", "Worth drilling. Across every run.");
       report.weakest.forEach((c) => statRow(b, [
         { text: c.q, cls: "srow__k", lang: "ja" },
         { text: c.a, cls: "srow__r" },
@@ -1702,7 +1708,7 @@
     }
 
     if (report.confusions.length) {
-      const b = statBlock("Mixed up with", "What you reach for instead.");
+      const b = statBlock("Mixed up with", "What you reach for instead. " + lately);
       report.confusions.forEach((c) => statRow(b, [
         { text: c.q, cls: "srow__k", lang: "ja" },
         { text: "→ " + (c.mistaken_for || "?"), cls: "srow__k srow__k--bad", lang: "ja" },
