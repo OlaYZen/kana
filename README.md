@@ -194,7 +194,8 @@ index.html         six screens and three dialogs
 styles.css         the whole stylesheet, mobile-first
 kana.json          all content — decks, cards, chart layout, font options
 app.js             all front-end logic, one IIFE
-icon.svg           the app icon
+icon.svg           the app icon, and the source favicon.ico is built from
+favicon.ico        the same icon at six sizes, 16 to 256
 start.sh           install / update / run
 
 backend/
@@ -406,7 +407,8 @@ index.html         6 つの画面と 3 つのダイアログ
 styles.css         スタイル全部、モバイルファースト
 kana.json          内容全部 — デッキ、カード、表のレイアウト、フォント
 app.js             フロント側のロジック全部、IIFE 1 つ
-icon.svg           アプリのアイコン
+icon.svg           アプリのアイコン。favicon.ico の生成元でもあります
+favicon.ico        同じアイコンを 16〜256 の 6 サイズで収めたもの
 start.sh           導入・更新・起動
 
 backend/

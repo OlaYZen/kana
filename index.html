@@ -11,7 +11,13 @@
 <meta name="darkreader-lock">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>かな — Kana Practice</title>
-<link rel="icon" href="icon.svg" type="image/svg+xml">
+<!-- favicon.ico is the one the browser is told about, and it is also the path
+     every browser asks for unprompted when no link tag resolves. It carries six
+     sizes (16 → 256), each rendered from icon.svg at that exact size rather
+     than scaled down from one big raster — the 16px one has to survive on its
+     own, which is what the glyph's weight was chosen for. icon.svg stays: it is
+     the source the .ico is generated from. -->
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="stylesheet" href="styles.css">
 <!-- Theme, before first paint. The stylesheet keys off data-theme, and app.js
