@@ -134,10 +134,18 @@ chart sheet and reused by `.scriptbar`) filter `#decks` to that script's three d
 `--accent` vermilion/indigo via `[data-script]` on `.menu`, mirroring the chart sheet. The chart
 opens on whatever the menu is showing.
 
-The same `.scriptbar` markup appears a third time on the progress screen, filtering the deck
-picker rather than the deck list. It opens on the menu's script and then keeps its own selection,
-since you may well be practising one script and reading about the other. The flick drills are the
-one thing that survives both filters — they belong to neither script.
+The same `.scriptbar` markup appears a third time on the progress screen, filtering the deck picker
+rather than the deck list. The flick drills are the one thing that survives both filters — they
+belong to neither script.
+
+**That connection is one-way, and deliberately so.** `openStats()` copies `state.script` into
+`statsScript` on **every** open, not just the first: practising katakana and then finding the
+report on hiragana is never what was meant. Nothing goes back the other way — flipping the stamp
+inside progress is a question about your history ("how am I doing on the other script"), not a
+decision to go and practise it, so it must not retarget the menu you are about to return to.
+`setStatsScript()` therefore writes only `statsScript` and never `state.script` or the store, and
+`openStats()` is the single point where the two touch. The device switch calls `loadStats()`
+rather than `openStats()` for the same reason — re-fetching must not reset the chosen script.
 
 **Only the script stamps are sticky.** The whole progress screen scrolls inside `#statsScroll`, in
 the order device → stamps → deck picker → report. The device switch is the coarsest split and you
