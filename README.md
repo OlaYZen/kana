@@ -1,8 +1,8 @@
-# かな — Kana Practice
+# <img src="icon.svg" alt="Kana Practice icon — hiragana あ on a washi ground" width="40" height="40" style="border-radius: 9px; vertical-align: middle;"> かな — Kana Practice
 
 A Japanese kana recognition drill for hiragana and katakana. Open it, pick a deck, answer until
-the deck is done. The app itself is four static files with no build step and no dependencies, and
-works on its own with nothing installed.
+the deck is done. The app itself is four static files and a folder of fonts, with no build step
+and no dependencies, and works on its own with nothing installed.
 
 There is also an optional server. Run it and you get accounts — so your settings and records
 follow you between devices — and a progress report that tells you which characters you're actually
@@ -43,8 +43,8 @@ Any static file server works, and the folder can be dropped straight onto GitHub
 similar. The account and progress buttons simply don't appear; everything else is identical and
 your records live in the browser as before.
 
-You need a CJK-capable font installed for the kana to render at all — every desktop and mobile OS
-ships one by default.
+The Japanese faces come with the app, so nothing needs installing and nothing is fetched from
+Google or anyone else — it works with no internet connection at all. See **Character font** below.
 
 ## The drill
 
@@ -58,6 +58,20 @@ Six decks, 214 cards, in three tiers per script:
 
 Obsolete kana (ゐ ゑ ヰ ヱ and the archaic forms) are left out on purpose — you will not meet them
 in modern Japanese.
+
+**Mixed kana** sits at the bottom of the list, under both stamps: all 214 characters — both
+scripts, base, dakuten and yōon — in a single run, each one exactly once. It's the same deck in
+both places, so its score, records and progress report don't care which stamp you started it from.
+
+It isn't a plain shuffle of everything. Shuffling 214 cards together deals visible clumps — eight
+yōon in a row, then a long stretch of katakana — and a clump is just the deck it came from arriving
+again, which is the one thing a mixed run shouldn't do. Instead each of the six decks is shuffled
+on its own and they're dealt out together, never more than two cards in a row from the same one.
+You still see every character exactly once; only the order changes.
+
+One difference in **Writing**: since か and カ are both "ka", a mixed run says which script it wants
+("Write the katakana for this sound") and takes only that one. In every other deck there's nothing
+to disambiguate, so the prompt is unchanged.
 
 **Three ways to answer**, switchable under **Options**:
 
@@ -116,11 +130,32 @@ glance, and the deck rows are labelled with it too.
 way, including the extended katakana (ファ ティ ヴァ …) that are reference-only.
 
 **Character font.** Kana look quite different across faces, and recognising あ in only one of them
-isn't recognising あ. The font picker offers the Japanese faces actually installed on your device —
-it renders each candidate to a canvas and compares the pixels, so anything missing, or identical
-to an option already listed, is not offered. How many you get therefore varies by platform;
-Windows ships no Japanese serif or textbook face unless the *Japanese Supplemental Fonts* optional
-feature is installed.
+isn't recognising あ. Five Japanese faces ship with the app, so everyone gets the same five
+wherever they open it:
+
+| Style | Face | What it's for |
+|---|---|---|
+| Mincho 明朝 | Noto Serif JP | serif — books, newspapers, print |
+| Gothic ゴシック | Noto Sans JP | sans-serif — signs, screens, manga |
+| Textbook 教科書体 | Klee One | follows handwritten stroke shapes |
+| Rounded 丸ゴシック | Zen Maru Gothic | soft, rounded strokes |
+| High legibility UDフォント | BIZ UDPGothic | drawn for clarity at small sizes |
+
+They used to come from whatever your device had installed, which meant Windows showed barely half
+the list — it ships no Japanese serif or textbook face unless the *Japanese Supplemental Fonts*
+optional feature is added, and this is an app about what a character looks like.
+
+They're cut down to the characters this app actually draws, so each is 32–110 KB instead of the
+3.6–13 MB the full faces weigh, and only the one you've picked is ever loaded. Nothing is fetched
+from Google: the files are in `fonts/`, served by whatever is serving the app, so it all works
+offline. All five are under the SIL Open Font License 1.1 — `fonts/LICENSES.txt` has the full
+text, and `fonts/subset.py` regenerates them.
+
+Beyond those five, any Japanese faces your own device has are still offered — a monospaced option
+if it has one, and its default serif and sans. Those are detected by rendering each candidate to a
+canvas and comparing the pixels, so anything missing, or identical to an option already listed, is
+left out. Your own faces also fill in for anything the bundled subsets leave out, such as a kanji
+typed into the answer box by mistake.
 
 **Light and dark.** Under **Options → Theme**: Auto follows your system and is the default, or pin
 Light or Dark. The dark theme is the same washi paper at night rather than an inversion — sumi
@@ -166,9 +201,11 @@ same deck are actually comparable. The analysis is deliberately cautious about w
   that list forever. Your overall accuracy, typical time and characters seen still cover every
   run — that's the long view, and it's the point of them. Least accurate stays on all your runs
   too: over five runs a character comes up five times, so one slip would read as a collapse.
-- **Each of the six decks is its own dataset.** Katakana tells you nothing about hiragana, and the
-  base gojūon tells you nothing about dakuten or yōon — they're separate material. Nothing is ever
-  averaged across decks, and three hiragana runs won't unlock the dakuten breakdown.
+- **Each deck is its own dataset.** Katakana tells you nothing about hiragana, and the base gojūon
+  tells you nothing about dakuten or yōon — they're separate material. Nothing is ever averaged
+  across decks, and three hiragana runs won't unlock the dakuten breakdown. Mixed kana is a deck
+  like the others here: it has its own figures, drawn only from runs of it, and needs its own three
+  runs before they appear.
 - **Three complete runs of that deck before it draws any conclusions.** One run can't tell a bad
   day from a weak character, so until then there's no breakdown — only your runs, which are simply
   what happened.
@@ -198,6 +235,10 @@ icon.svg           the app icon, and the source favicon.ico is built from
 favicon.ico        the same icon at six sizes, 16 to 256
 start.sh           install / update / run
 
+fonts/             the five bundled Japanese faces, subset to kana
+  LICENSES.txt     SIL OFL 1.1, all five, in full
+  subset.py        regenerates the subsets; never runs to serve the app
+
 backend/
   requirements.txt three dependencies
   app/db.py        SQLite schema, no ORM
@@ -207,9 +248,10 @@ backend/
   app/main.py      routes, and serves the front end
 ```
 
-The four front-end files are the app; they need nothing installed and nothing built. `kana.json` is
-the only place content lives; `app.js` renders whatever deck it's handed. Adding a deck, accepting
-another romanisation, or changing the chart is a JSON edit, not a code change.
+The four front-end files and `fonts/` are the app; they need nothing installed and nothing built,
+and reach no other server. `kana.json` is the only place content lives; `app.js` renders whatever
+deck it's handed. Adding a deck, accepting another romanisation, or changing the chart is a JSON
+edit, not a code change.
 
 The backend is optional and stays out of the way — three pure-Python dependencies, one SQLite file,
 no admin accounts, and every query scoped to whoever is signed in.
@@ -224,7 +266,7 @@ Design notes and the invariants worth knowing before changing anything are in
 **かな — Kana Practice**
 
 ひらがなとカタカナの認識ドリルです。開いて、デッキを選び、終わるまで答えるだけ。アプリ本体は
-静的ファイル 4 つで、ビルドも依存ライブラリもなく、そのままで動きます。
+静的ファイル 4 つとフォント一式で、ビルドも依存ライブラリもなく、そのままで動きます。
 
 サーバーもありますが、必須ではありません。動かすとアカウントが使えるようになり、設定と記録が
 端末をまたいで引き継がれ、さらに「どの文字で実際につまずいているか」を出す進捗レポートが
@@ -255,7 +297,7 @@ HTTP 経由で配信する必要があります。ブラウザは `file://` ペ�
 パスワードを続けて間違えると制限がかかるので、総当たりは進みません。自分のパスワードが通れば
 カウントは消えるため、何度か打ち間違えた程度では影響しません。
 
-**サーバーなしの場合**、アプリは静的ファイル 4 つのままで動きます。
+**サーバーなしの場合**、アプリは静的ファイル 4 つとフォントのままで動きます。
 
 ```bash
 python -m http.server 8000
@@ -264,8 +306,9 @@ python -m http.server 8000
 静的ファイルサーバーなら何でも動き、フォルダごと GitHub Pages や Netlify に置けます。アカウント
 と進捗のボタンが出ないだけで、ほかはまったく同じです。
 
-かなを表示するには CJK 対応フォントが必要ですが、いまのデスクトップ・モバイル OS には標準で
-入っています。
+日本語の書体はアプリに同梱してあるので、何かを入れる必要はなく、Google などから取ってくることも
+ありません。インターネットに繋がっていなくてもそのまま動きます。詳しくは下の**文字のフォント**を
+ご覧ください。
 
 ## ドリルの内容
 
@@ -279,6 +322,19 @@ python -m http.server 8000
 
 使われなくなったかな（ゐ ゑ ヰ ヱ や古い字形）は意図的に外してあります。現代の日本語では出てきま
 せん。
+
+**ミックス（Mixed kana）** はリストのいちばん下にあり、ひらがな・カタカナどちらの印にも出ます。
+ひらがなとカタカナ、基本・濁点・拗音をすべて含む 214 文字を 1 回で、各文字ちょうど 1 回ずつ。
+どちらの印から始めても同じデッキなので、記録も進捗レポートも 1 つにまとまります。
+
+ただの全部シャッフルではありません。214 枚をまとめて混ぜると、拗音が 8 枚続いたあとにカタカナが
+延々と、といった偏りが目に見えて出ます。偏りは結局そのデッキが戻ってきただけで、ミックスの意味が
+なくなります。そこで 6 つのデッキをそれぞれ個別にシャッフルし、同じ種類が 3 枚以上続かないように
+配ります。出てくる文字は変わらず全 214 文字ちょうど 1 回ずつで、変わるのは順番だけです。
+
+**ライティング**だけ 1 点違います。か と カ はどちらも "ka" なので、ミックスでは「Write the
+katakana for this sound」のようにどちらの文字種かを示し、その文字種だけを正解とします。ほかの
+デッキは 1 文字種しかないため、表示はこれまでどおりです。
 
 **答え方は 3 種類**、「Options」から切り替えられます。
 
@@ -332,10 +388,30 @@ python -m http.server 8000
 （ファ ティ ヴァ など）も入っています。
 
 **文字のフォント。** かなは書体によって見え方がかなり違い、1 つの書体でだけ あ が分かっても、
-分かったことにはなりません。フォント選択では、端末に実際に入っている日本語書体だけを出します。
-候補をキャンバスに描画してピクセルを比較し、無いものや、すでにあるものと同じ見え方のものは出しま
-せん。そのため数は環境によります。Windows は *Japanese Supplemental Fonts* を入れない限り、明朝や
-教科書体が入っていません。
+分かったことにはなりません。日本語の書体は 5 つ同梱してあるので、どの環境で開いても同じ 5 つが
+使えます。
+
+| スタイル | 書体 | 用途 |
+|---|---|---|
+| 明朝 | Noto Serif JP | セリフ — 書籍・新聞・印刷物 |
+| ゴシック | Noto Sans JP | サンセリフ — 看板・画面・漫画 |
+| 教科書体 | Klee One | 手書きの筆運びに沿った形 |
+| 丸ゴシック | Zen Maru Gothic | 丸みのある柔らかい線 |
+| UDフォント | BIZ UDPGothic | 小さくても読みやすいよう設計 |
+
+以前は端末に入っている書体だけを使っていたため、Windows では一覧の半分ほどしか出ませんでした。
+*Japanese Supplemental Fonts* を入れない限り明朝も教科書体も入っておらず、文字の見え方こそが
+主題のアプリでは困ります。
+
+同梱の書体はこのアプリが実際に描く文字だけに絞ってあるので、元の 3.6〜13 MB に対して 1 つ
+32〜110 KB です。読み込まれるのは選んでいる 1 つだけで、`fonts/` に置いてあるものをアプリ自身の
+サーバーが配るため、Google などへの通信は発生せず、オフラインでも動きます。5 つとも SIL Open
+Font License 1.1 で、全文は `fonts/LICENSES.txt`、作り直す手順は `fonts/subset.py` にあります。
+
+この 5 つに加えて、端末に日本語書体があればそれも選べます（等幅のもの、既定の明朝系とゴシック系）。
+こちらは候補をキャンバスに描画してピクセルを比較して調べ、無いものや、すでにあるものと同じ見え方の
+ものは出しません。また、同梱の書体に含めていない文字（答え欄に間違えて漢字を打ったときなど）は、
+端末側の書体が補います。
 
 **ライトとダーク。**「Options → Theme」から選べます。既定の Auto は端末の設定に従い、Light と
 Dark は固定です。ダークは色を反転したものではなく、同じ和紙の夜の姿です — 墨の地、温かみのある
@@ -381,9 +457,10 @@ Dark は固定です。ダークは色を反転したものではなく、同じ
   すべてのランが対象のままです。そちらは長い目で見るためのもので、それが存在意義です。
   「正答率が低い順」も全ランのままにしてあります。5 ランでは 1 文字あたり 5 回しか出ないので、
   1 回の取りこぼしが総崩れのように見えてしまうからです。
-- **6 つのデッキはそれぞれ別のデータです。** カタカナはひらがなの証拠になりませんし、五十音は
+- **デッキはそれぞれ別のデータです。** カタカナはひらがなの証拠になりませんし、五十音は
   濁音や拗音の証拠になりません。別の教材だからです。デッキをまたいで平均することはなく、
-  ひらがなを 3 回やってもダクテンの分析は出ません。
+  ひらがなを 3 回やってもダクテンの分析は出ません。ミックスもここでは 1 つのデッキで、
+  その数字はミックスのランだけから作られ、分析にはミックス自体を 3 回やる必要があります。
 - **そのデッキを 3 回やり終えるまで、結論は出しません。** 1 回では調子の悪い日と苦手な文字を
   区別できないので、それまでは分析を出さず、実際に起きたことであるラン一覧だけを見せます。
 - **フリックのドリルは一覧には出ますが、分析はしません。** 方向やキーを訊くもので、その母音・
@@ -411,6 +488,10 @@ icon.svg           アプリのアイコン。favicon.ico の生成元でもあ�
 favicon.ico        同じアイコンを 16〜256 の 6 サイズで収めたもの
 start.sh           導入・更新・起動
 
+fonts/             同梱の日本語書体 5 つ（かなに絞ったサブセット）
+  LICENSES.txt     5 つ分の SIL OFL 1.1 全文
+  subset.py        サブセットを作り直すスクリプト（配信時には動きません）
+
 backend/
   requirements.txt 依存 3 つ
   app/db.py        SQLite のスキーマ、ORM なし
@@ -420,9 +501,10 @@ backend/
   app/main.py      ルーティングとフロントの配信
 ```
 
-フロント側の 4 ファイルがアプリ本体で、インストールするものもビルドも要りません。内容は
-`kana.json` だけにあり、`app.js` は渡されたデッキをそのまま表示します。デッキを増やす、別の綴りを
-受け付ける、表を変える — どれも JSON の編集であって、コードの変更ではありません。
+フロント側の 4 ファイルと `fonts/` がアプリ本体で、インストールするものもビルドも要らず、外部の
+サーバーにも一切アクセスしません。内容は `kana.json` だけにあり、`app.js` は渡されたデッキをその
+まま表示します。デッキを増やす、別の綴りを受け付ける、表を変える — どれも JSON の編集であって、
+コードの変更ではありません。
 
 バックエンドは任意で、出しゃばりません。純 Python の依存が 3 つ、SQLite ファイルが 1 つ、管理者
 アカウントはなく、すべてのクエリはサインインした本人に限定されています。

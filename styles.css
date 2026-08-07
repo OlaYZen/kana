@@ -31,6 +31,79 @@
    nothing here has to test prefers-color-scheme).
    ========================================================================== */
 
+/* ==========================================================================
+   Bundled faces
+
+   The five Japanese styles the font picker offers ship with the app, subset to
+   kana + eighteen kanji + Latin by fonts/subset.py. Before this they were
+   probed for on the device and quietly dropped when absent, which on a stock
+   Windows install meant most of the picker disappeared — Japanese serif and
+   textbook faces are behind an optional feature there.
+
+   Two things about these rules are load-bearing:
+
+   · **The `font-weight` *range* on the two variable faces.** Their default
+     instance is the thinnest one on the axis — Thin 100 for Noto Sans JP,
+     ExtraLight 200 for Noto Serif JP. Declare a single weight, or none, and
+     every kana on screen renders as that hairline, which at 16px is the grey
+     mush the app icon was drawn in SemiBold to avoid. The range is what lets
+     the browser pick 400 for body kana and 600/700 for the chart headings and
+     the feedback line's <b>.
+   · **`font-display: block`, not `swap`.** The glyph *is* the question here. A
+     swap shows the fallback first — tofu, on a device with no Japanese font,
+     which is the case this whole section exists for — and then changes the
+     character under the reader mid-answer. Block leaves the square empty until
+     the face lands instead. These are same-origin and 32-110 KB, so that is
+     imperceptible locally and honest over a slow link; only the face actually
+     selected is ever fetched.
+   ========================================================================== */
+@font-face{
+  font-family:"Noto Serif JP";
+  src:url("fonts/noto-serif-jp-var.woff2") format("woff2-variations"),
+      url("fonts/noto-serif-jp-var.woff2") format("woff2");
+  font-weight:200 900;          /* variable axis — NOT a single weight */
+  font-style:normal;
+  font-display:block;
+}
+@font-face{
+  font-family:"Noto Sans JP";
+  src:url("fonts/noto-sans-jp-var.woff2") format("woff2-variations"),
+      url("fonts/noto-sans-jp-var.woff2") format("woff2");
+  font-weight:100 900;
+  font-style:normal;
+  font-display:block;
+}
+@font-face{
+  font-family:"Klee One";
+  src:url("fonts/klee-one-400.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:block;
+}
+@font-face{
+  font-family:"Klee One";
+  src:url("fonts/klee-one-600.woff2") format("woff2");
+  font-weight:600; font-style:normal; font-display:block;
+}
+@font-face{
+  font-family:"Zen Maru Gothic";
+  src:url("fonts/zen-maru-gothic-400.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:block;
+}
+@font-face{
+  font-family:"Zen Maru Gothic";
+  src:url("fonts/zen-maru-gothic-700.woff2") format("woff2");
+  font-weight:700; font-style:normal; font-display:block;
+}
+@font-face{
+  font-family:"BIZ UDPGothic";
+  src:url("fonts/biz-udpgothic-400.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:block;
+}
+@font-face{
+  font-family:"BIZ UDPGothic";
+  src:url("fonts/biz-udpgothic-700.woff2") format("woff2");
+  font-weight:700; font-style:normal; font-display:block;
+}
+
 :root{
   --paper:      #EFE9DC;  /* page ground */
   --paper-card: #FBF8F1;  /* raised card / panel */
@@ -83,6 +156,10 @@
 
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* "Noto Serif JP" is bundled (see @font-face above), so this now resolves to
+     a real face everywhere rather than to whatever the device happened to have.
+     The installed names stay ahead of it: someone who owns Hiragino or Yu Mincho
+     should see their own, and they carry kanji the subset deliberately doesn't. */
   --mincho: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP",
             "MS PMincho", "Songti SC", serif;
 

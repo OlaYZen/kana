@@ -159,15 +159,29 @@
   /* ==========================================================================
      Fonts
 
-     There is no backend and no web fonts, so the only usable faces are the ones
-     already installed. Neither of the obvious availability tests works for kana:
-     document.fonts.check() answers true for names that don't exist, and every
-     CJK face is full-width so canvas text widths are identical across all of
-     them. So each candidate is rendered to a canvas and its pixels hashed —
-     which also settles the question that actually matters, "does this option
-     look any different?". Anything that renders like the last-resort font, or
-     like an option already on the list, is dropped instead of being offered as
-     a choice that does nothing.
+     Five of the styles are **bundled** — the face ships under fonts/, subset to
+     kana, and the @font-face rules at the top of the stylesheet load it. Those
+     are always offered: whether the device has them is not a question, and the
+     probe below could not answer it anyway, because web fonts load long after
+     this runs and probing one at boot always reports "missing". Before they
+     were bundled, a stock Windows install saw barely half the picker — Windows
+     ships no Japanese serif or textbook face unless an optional feature is
+     installed.
+
+     The probe is still here for the rest. For a device-only style the only
+     usable faces are the ones already installed, and neither obvious test works
+     for kana: document.fonts.check() answers true for names that don't exist,
+     and every CJK face is full-width so canvas text widths are identical across
+     all of them. So each candidate is rendered to a canvas and its pixels
+     hashed — which also settles the question that actually matters, "does this
+     option look any different?". Anything that renders like the last-resort
+     font, or like an option already on the list, is dropped instead of being
+     offered as a choice that does nothing.
+
+     A bundled option skips the dedupe as well as the presence check, and has
+     to: at boot none of the five have loaded, so all five hash to whatever
+     their generic falls back to — identical to one another — and a dedupe would
+     keep one and throw the other four away.
      ========================================================================== */
   const GENERIC = /^(serif|sans-serif|monospace|system-ui|cursive|fantasy)$/;
   const quoted = (f) => (GENERIC.test(f) ? f : '"' + f + '"');
@@ -197,36 +211,62 @@
     };
   })();
 
+  // The bundled face leads, so everyone sees the same one; the installed names
+  // sit behind it and only ever render what the subset deliberately leaves out
+  // — a kanji typed into the write field, mostly. The generic is last as always.
+  const stackFor = (def, families) =>
+    (def.bundled ? ['"' + def.bundled + '"'] : [])
+      .concat(families.map(quoted))
+      .concat(def.generic || "serif")
+      .join(", ");
+
+  const option = (def, stack) => ({
+    id: def.id, label: def.label, ja: def.ja || "",
+    note: def.note || "", bundled: Boolean(def.bundled), stack: stack
+  });
+
   function resolveFonts(defs) {
-    const all = (defs || []).map((d) => ({
-      id: d.id,
-      label: d.label,
-      ja: d.ja || "",
-      note: d.note || "",
-      stack: (d.families || []).map(quoted).concat(d.generic || "serif").join(", ")
-    }));
+    const all = (defs || []).map((d) => option(d, stackFor(d, d.families || [])));
 
     const probe = inkHash && inkHash('"__kana_probe_missing__", monospace') ? inkHash : null;
     if (!probe) return { list: all, missing: [] };   // can't verify — offer everything
 
     const lastResort = probe('"__kana_probe_missing__", monospace');
-    const seen = new Set();
+    // Seeded with the last-resort shape, so a style that renders identically to
+    // it is dropped by the same rule that drops a duplicate. That was always
+    // the intent — it is the one thing an option can be and still be worth
+    // nothing, since it is what you would get without the option existing —
+    // but the comparison was never actually made.
+    //
+    // Note this is *not* a tofu test and can't be one. A browser falls back
+    // per character, so on a Windows box with no Japanese font "serif" still
+    // renders real kana out of whatever face the engine finds; last-resort here
+    // means "indistinguishable from the default", not "boxes". Seeding it was
+    // only safe once five styles shipped with the app — before that, dropping
+    // an option that matched the default could have emptied the picker.
+    const seen = new Set([lastResort]);
     const list = [], missing = [];
 
-    (defs || []).forEach((def, idx) => {
+    (defs || []).forEach((def) => {
       const named = (def.families || []).filter(
         (f) => probe(quoted(f) + ", monospace") !== lastResort
       );
-      // A style with families listed but none installed would silently render as
-      // its generic twin, so it is not offered at all.
+
+      // A bundled style ships with the app: it is always offered, and it is
+      // never hashed. At this point its @font-face has not loaded, so the hash
+      // would be its generic's — the same for all five — and the dedupe below
+      // would throw four of them away.
+      if (def.bundled) { list.push(option(def, stackFor(def, named))); return; }
+
+      // A device-only style with families listed but none installed would
+      // silently render as its generic twin, so it is not offered at all.
       if ((def.families || []).length && !named.length) { missing.push(def.label); return; }
 
-      const stack = named.map(quoted).concat(def.generic || "serif").join(", ");
+      const stack = stackFor(def, named);
       const h = probe(stack);
       if (h && seen.has(h)) { missing.push(def.label); return; }
       if (h) seen.add(h);
-      list.push({ id: def.id, label: def.label, ja: def.ja || "",
-                  note: def.note || "", stack: stack });
+      list.push(option(def, stack));
     });
 
     return list.length ? { list: list, missing: missing } : { list: all, missing: [] };
@@ -239,6 +279,7 @@
     fonts: [],         // resolved, verified-distinct font options
     fontsMissing: [],  // styles this device can't show
     font: null,        // active option
+    mixed: null,       // the derived everything-deck; kept out of decks[] above
     deck: null,        // active deck definition
     queue: [],         // shuffled cards for this run
     i: 0,
@@ -285,14 +326,25 @@
   // the ideographic space it produces is then stripped along with the rest.
   const normKana = (s) => s.normalize("NFKC").replace(/\s/g, "");
 
+  // Which of the run's categories a card came from. Only the mixed deck has
+  // any — every other deck is one category, itself, which is what collapses
+  // both callers back to exactly what they did before it existed.
+  const cardGroup = (c) => (state.deck.groupOf && state.deck.groupOf.get(c)) || state.deck;
+
   // Writing runs the deck backwards, and backwards the mapping is many-to-one:
   // じ and ぢ are both "ji", ず and づ are both "zu". The prompt is only the
   // reading, so the user has no way to tell which of the pair is being asked —
   // every kana in the deck sharing this reading has to be accepted. (The same
   // collision, from the other side, is why choose-mode dedupes its distractors
   // by reading rather than by card.)
+  //
+  // Scoped to the card's own category rather than to the whole deck, which is
+  // the same thing everywhere except the mixed deck. There the collision runs
+  // across scripts too — か and カ are both "ka" — so the prompt names the
+  // script it wants (writeAsk) and the answer is held to it. Accept the whole
+  // deck there and every write answer in a mixed run could be typed in hiragana.
   const writeAccepts = (c, value) =>
-    state.deck.cards.some((x) => x.a === c.a && normKana(x.q) === value);
+    cardGroup(c).cards.some((x) => x.a === c.a && normKana(x.q) === value);
 
   // What the current run scores as. A flick drill ignores the answer mode.
   const activeMode = () => (state.flick ? "flick" : state.mode);
@@ -396,10 +448,15 @@
       el.fontList.appendChild(b);
     });
 
+    // The bundled styles are always here, so this is only ever about the extras
+    // that come from the device — which is why it no longer says that fonts in
+    // general have to be installed. Saying that with five faces shipping in the
+    // page would be untrue and would read as an apology for the whole picker.
     el.fontNote.textContent = state.fontsMissing.length
-      ? "Only fonts installed on this device can be used, so " +
-        state.fontsMissing.length + " more " +
-        (state.fontsMissing.length === 1 ? "style" : "styles") + " can’t be shown here: " +
+      ? state.fontsMissing.length + " further " +
+        (state.fontsMissing.length === 1 ? "style needs a font" : "styles need fonts") +
+        " this device doesn’t have, so " +
+        (state.fontsMissing.length === 1 ? "it isn’t" : "they aren’t") + " shown: " +
         state.fontsMissing.join(", ") + "."
       : "";
   }
@@ -692,10 +749,125 @@
 
   const deckSize = (deck) => (deck.flick ? FLICK_LEN : deck.cards.length);
 
+  /* ==========================================================================
+     The mixed deck
+
+     Everything at once — both scripts, base, dakuten and yōon, every character
+     exactly once in a run. It carries no cards in kana.json and is built here
+     from every deck in the file, holding the *same card objects* rather than
+     copies of them: identity is what `state.missed.includes(c)` and the
+     chart-order review on the results screen both rely on. The other side of
+     that is that nothing which walks every card in the app — chart readings,
+     the flick index — may ever be handed this deck, or it counts each character
+     twice; `state.decks` therefore stays the decks kana.json actually lists and
+     the mixed deck is kept beside it.
+
+     Ordering a run is the part that isn't a plain shuffle. Shuffling all 214
+     together deals visible clumps — eight hiragana yōon, then a stretch of
+     katakana base — and a clump is the deck it came from arriving again, which
+     is the one thing this deck exists not to do. So each source deck is a
+     category, each is shuffled on its own, and they are dealt out under a
+     single rule: never more than MIX_RUN in a row from the same category.
+     Nothing is sampled and nothing is dropped — this decides order alone.
+     ========================================================================== */
+  const MIX_RUN = 2;   // consecutive cards allowed from one category
+
+  function buildMixedDeck(def) {
+    if (!def || !state.decks.length) return null;
+    const groupOf = new Map();
+    const cards = [];
+    state.decks.forEach((d) => d.cards.forEach((c) => {
+      groupOf.set(c, d);
+      cards.push(c);
+    }));
+    return {
+      id: def.id || "mixed",
+      label: def.label || "Mixed kana",
+      sample: def.sample || "あア",
+      subtitle: def.subtitle || "",
+      note: def.note || "",
+      // No script of its own, which is what puts it under both seal stamps:
+      // the menu and the progress screen both read a missing script as "this
+      // one belongs to neither, so show it under either".
+      script: null,
+      mix: state.decks.slice(),   // one category per source deck, in file order
+      groupOf: groupOf,
+      cards: cards
+    };
+  }
+
+  // Every deck the menu can start, real and derived.
+  const allDecks = () => state.decks.concat(state.mixed ? [state.mixed] : []);
+
+  /* Can what is left in hand still be laid out under the run limit at all? m
+     cards of one category need the others as separators: r of them open r+1
+     gaps, each holding at most MIX_RUN, so m has to fit inside MIX_RUN × (r+1).
+     A run already under way has eaten into the first of those gaps.
+
+     Checked before every card is taken rather than repaired afterwards, and
+     that is what keeps the end of a run honest. Weighted choice empties the
+     piles at roughly the same rate but not exactly, and whichever pile is left
+     over at the end has nothing to alternate with — so without this the last
+     dozen cards of a run would all come from it. */
+  function mixFits(left, last, run) {
+    let total = 0;
+    left.forEach((n) => { total += n; });
+    return left.every((m, i) =>
+      !m || m <= MIX_RUN * (total - m + 1) - (i === last ? run : 0));
+  }
+
+  // Weighted by what each category has left, so the order stays unpredictable
+  // and the piles run down together instead of one of them outlasting the rest.
+  function mixPick(open, left) {
+    let total = 0;
+    open.forEach((i) => { total += left[i]; });
+    let r = Math.random() * total;
+    for (let k = 0; k < open.length; k++) {
+      r -= left[open[k]];
+      if (r < 0) return open[k];
+    }
+    return open[open.length - 1];
+  }
+
+  function mixedQueue(deck) {
+    const piles = deck.mix.map((g) => shuffle(g.cards));
+    const left = piles.map((p) => p.length);
+    const out = [];
+    let last = -1, run = 0;
+
+    while (out.length < deck.cards.length) {
+      const open = [];
+      left.forEach((n, i) => {
+        if (!n) return;
+        if (i === last && run >= MIX_RUN) return;   // would be three in a row
+        left[i]--;
+        if (mixFits(left, i, i === last ? run + 1 : 1)) open.push(i);
+        left[i]++;
+      });
+      // mixFits holds at every step and holds for the full deck, so there is
+      // nothing open only if kana.json grows a deck so much larger than the
+      // rest that no ordering can space it out. Deal the biggest pile rather
+      // than dropping cards: the run is still every character exactly once, it
+      // just bunches up.
+      const pick = open.length
+        ? mixPick(open, left)
+        : left.reduce((best, n, i) => (n > left[best] ? i : best), 0);
+      run = pick === last ? run + 1 : 1;
+      last = pick;
+      left[pick]--;
+      out.push(piles[pick].pop());
+    }
+    return out;
+  }
+
   /* ---------- menu ---------- */
   function buildMenu() {
     el.decks.innerHTML = "";
-    state.decks.filter((d) => d.script === state.script)
+    // A deck with no script of its own belongs to both stamps rather than to
+    // neither — that is how the mixed deck comes to be listed twice while
+    // recording once. It sorts last because it is built last: the three decks
+    // above it are what you practise on the way to it.
+    allDecks().filter((d) => !d.script || d.script === state.script)
       .forEach((deck) => el.decks.appendChild(deckRow(deck)));
 
     // Flick drills aren't decks and aren't script-specific, so they sit in
@@ -786,11 +958,16 @@
     state.deck = deck;
     state.flick = deck.flick || null;
     state.isDrill = Boolean(cards);
-    // a flick run is generated, not dealt from a deck; a drill of one narrows
-    // the generator to the groups that were missed
+    // A flick run is generated, not dealt from a deck; a drill of one narrows
+    // the generator to the groups that were missed. A drill is a plain shuffle
+    // whatever the deck: balancing a handful of cards says nothing, and a drill
+    // of five misses that all came from one category has no other category to
+    // interleave with.
     state.queue = state.flick
       ? flickQueue(state.flick, (cards || []).map((c) => c.flick.group))
-      : shuffle(cards && cards.length ? cards : deck.cards);
+      : cards && cards.length ? shuffle(cards)
+      : deck.mix ? mixedQueue(deck)
+      : shuffle(deck.cards);
     state.i = 0;
     state.answered = 0; state.correct = 0;
     state.streak = 0; state.bestStreak = 0;
@@ -843,7 +1020,7 @@
                     : "Any character from this key.") :
       state.mode === "type"   ? "Type the sound this character makes." :
       state.mode === "choose" ? "Pick the sound this character makes."
-                              : "Write the character for this sound.";
+                              : writeAsk();
 
     el.mProgress.innerHTML = (state.i + 1) + "<small>/" + state.queue.length + "</small>";
     updateStats();
@@ -877,6 +1054,17 @@
       // character on a phone.
       focusField(f.input);
     }
+  }
+
+  // Writing asks with the sound alone, and in the mixed deck a sound is not
+  // enough to identify a character: か and カ are both "ka". So the script is
+  // named rather than left to be guessed, and writeAccepts() holds the answer
+  // to the same scope. Every other deck is one script and says nothing.
+  function writeAsk() {
+    const g = cardGroup(card());
+    return state.deck.mix && g.script
+      ? "Write the " + g.script + " for this sound."
+      : "Write the character for this sound.";
   }
 
   // preventScroll: the stage is height-capped, so a focus that scrolls the page
@@ -921,13 +1109,25 @@
   function buildChoices(c) {
     // Distractors come from the same deck so the options stay plausible, and are
     // deduped by reading — じ and ぢ are both "ji", so picking cards blindly
-    // would render two identical buttons.
+    // would render two identical buttons. (The dedupe is also why the mixed
+    // deck needs nothing special for the other half of that collision: カ is
+    // dropped as a duplicate reading when the prompt is か.)
+    //
+    // "The same deck" is 214 cards across both scripts and every category once
+    // the mixed deck is running, and a one-mora prompt beside three yōon
+    // readings answers itself. So the draw starts inside the prompt's own
+    // category and widens to the rest of the deck only if that can't spare
+    // three distinct readings. Everywhere else the category is the deck, and
+    // nothing about this changes.
     const taken = new Set([c.a]);
     const pool = [];
-    shuffle(state.deck.cards).forEach((x) => {
-      if (!taken.has(x.a)) { taken.add(x.a); pool.push(x); }
+    const take = (from) => shuffle(from).forEach((x) => {
+      if (pool.length >= 3 || taken.has(x.a)) return;
+      taken.add(x.a); pool.push(x);
     });
-    const opts = shuffle(pool.slice(0, 3).concat(c));
+    take(cardGroup(c).cards);
+    if (pool.length < 3) take(state.deck.cards);
+    const opts = shuffle(pool.concat(c));
 
     el.choices.innerHTML = "";
     opts.forEach((o, idx) => {
@@ -1560,7 +1760,7 @@
   }
 
   function deckLabel(id) {
-    const deck = state.decks.concat(FLICK_DECKS).find((d) => d.id === id);
+    const deck = allDecks().concat(FLICK_DECKS).find((d) => d.id === id);
     return deck ? deck.label : id;
   }
 
@@ -1610,13 +1810,14 @@
     });
   }
 
-  // Flick drills belong to neither script, so they stay in the picker whichever
-  // stamp is selected — they are the one thing here that isn't hiragana or
-  // katakana material.
+  // Two things belong to neither script and so stay in the picker under either
+  // stamp: the flick drills, which aren't decks at all, and the mixed deck,
+  // which is both scripts at once. One deck id, one set of figures — finding it
+  // under あ or under ア is the same report.
   function forScript(decks) {
     return decks.filter((r) => {
-      const deck = state.decks.find((d) => d.id === r.deck_id);
-      return !deck || deck.script === statsScript;
+      const deck = allDecks().find((d) => d.id === r.deck_id);
+      return !deck || !deck.script || deck.script === statsScript;
     });
   }
 
@@ -1863,6 +2064,10 @@
       state.charts = data.charts || [];
       el.chartBtn.classList.toggle("hidden", !state.charts.length);
       buildFlickIndex();   // needs both decks and charts
+      // built from decks, and deliberately after everything that walks them:
+      // its cards are theirs, so anything counting characters must not meet
+      // this deck as well
+      state.mixed = buildMixedDeck(data.mixed);
       probeBackend();      // runs alongside; the app never waits on it
       const fonts = resolveFonts(data.fonts);
       state.fonts = fonts.list;

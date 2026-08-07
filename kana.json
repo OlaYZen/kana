@@ -1,15 +1,16 @@
 {
   "version": 1,
 
-  "//fonts": "Styles offered by the font picker. Only fonts already installed on the device can be used (there is no backend and no web fonts), so each option is probed at startup and hidden if none of its families are present or if it renders identically to an option already listed. Options without a `families` list are the device's own generic faces and are always available.",
+  "//fonts": "Styles offered by the font picker. Five of them are `bundled`: that face ships with the app under fonts/, so the option is always offered and always looks the same everywhere — it is never probed for, and it could not be, since web fonts load after the probe runs. `families` are faces already on the device that would also do; they sit *behind* the bundled name in the stack, so they only ever render what the subset deliberately leaves out (kanji, mostly, in the write-mode input). An option with no `bundled` is device-only: it is probed at startup and hidden if none of its families are present or if it renders identically to an option already listed. Options with neither are the device's own generic faces.",
   "fonts": [
     {
       "id": "mincho",
       "label": "Mincho",
       "ja": "明朝",
       "note": "Serif — books, newspapers, print",
+      "bundled": "Noto Serif JP",
       "families": ["Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho", "YuMincho",
-                   "Noto Serif JP", "Noto Serif CJK JP", "BIZ UDMincho", "MS PMincho", "MS Mincho"],
+                   "Noto Serif CJK JP", "BIZ UDMincho", "MS PMincho", "MS Mincho"],
       "generic": "serif"
     },
     {
@@ -17,8 +18,9 @@
       "label": "Textbook",
       "ja": "教科書体",
       "note": "Follows handwritten stroke shapes",
+      "bundled": "Klee One",
       "families": ["UD Digi Kyokasho N-R", "UD Digi Kyokasho NK-R", "UD Digi Kyokasho NP-R",
-                   "Yu Kyokasho", "YuKyokasho", "Klee One", "Klee", "Kyokasho ICA"],
+                   "Yu Kyokasho", "YuKyokasho", "Klee", "Kyokasho ICA"],
       "generic": "serif"
     },
     {
@@ -26,8 +28,9 @@
       "label": "Gothic",
       "ja": "ゴシック",
       "note": "Sans-serif — signs, screens, manga",
+      "bundled": "Noto Sans JP",
       "families": ["Hiragino Kaku Gothic ProN", "Hiragino Kaku Gothic Pro", "Yu Gothic", "YuGothic",
-                   "Noto Sans JP", "Noto Sans CJK JP", "Meiryo", "MS PGothic"],
+                   "Noto Sans CJK JP", "Meiryo", "MS PGothic"],
       "generic": "sans-serif"
     },
     {
@@ -35,8 +38,9 @@
       "label": "Rounded",
       "ja": "丸ゴシック",
       "note": "Soft, rounded strokes",
+      "bundled": "Zen Maru Gothic",
       "families": ["Hiragino Maru Gothic ProN", "Hiragino Maru Gothic Pro", "M PLUS Rounded 1c",
-                   "Zen Maru Gothic", "YuGothic Rounded"],
+                   "YuGothic Rounded"],
       "generic": "sans-serif"
     },
     {
@@ -44,7 +48,8 @@
       "label": "High legibility",
       "ja": "UDフォント",
       "note": "Drawn for clarity at small sizes",
-      "families": ["BIZ UDPGothic", "BIZ UDGothic", "UD Digi Kyokasho NP-R", "Yu Gothic UI"],
+      "bundled": "BIZ UDPGothic",
+      "families": ["BIZ UDGothic", "UD Digi Kyokasho NP-R", "Yu Gothic UI"],
       "generic": "sans-serif"
     },
     {
@@ -486,5 +491,14 @@
         { "q": "ピョ", "a": "pyo" }
       ]
     }
-  ]
+  ],
+
+  "//mixed": "The everything deck, and the one deck with no cards of its own: app.js builds it at boot from every deck above, so a card cannot be in the decks and missing from here. It also has no `script` — that is what lists it under both seal stamps, the same run and the same records whichever stamp you found it under. Each source deck is one *category* to the balanced deal that orders a run: the categories are shuffled independently and then dealt out so that no more than two consecutive cards come from the same one, which is why the deck cannot be replaced by listing all 214 cards and shuffling them.",
+  "mixed": {
+    "id": "mixed",
+    "label": "Mixed kana",
+    "sample": "あア",
+    "subtitle": "Both scripts, everything",
+    "note": "Everything above in one run — both scripts, base, dakuten and yōon — dealt so the categories stay interleaved rather than arriving in clumps."
+  }
 }
