@@ -493,12 +493,62 @@
     }
   ],
 
-  "//mixed": "The everything deck, and the one deck with no cards of its own: app.js builds it at boot from every deck above, so a card cannot be in the decks and missing from here. It also has no `script` — that is what lists it under both seal stamps, the same run and the same records whichever stamp you found it under. Each source deck is one *category* to the balanced deal that orders a run: the categories are shuffled independently and then dealt out so that no more than two consecutive cards come from the same one, which is why the deck cannot be replaced by listing all 214 cards and shuffling them.",
-  "mixed": {
-    "id": "mixed",
-    "label": "Mixed kana",
-    "sample": "あア",
-    "subtitle": "Both scripts, everything",
-    "note": "Everything above in one run — both scripts, base, dakuten and yōon — dealt so the categories stay interleaved rather than arriving in clumps."
-  }
+  "//derived": "Decks with no cards of their own: app.js builds each at boot from the `sources` it names, holding those decks' own card objects rather than copies, so a card cannot be in a source deck and missing from here. `script` places it under a seal stamp exactly as it does for a real deck — \"kana\" is the third stamp, the one for material that is both scripts at once. Each source deck is also one *category* to the balanced deal that orders a run: the categories are shuffled independently and then dealt out so that no more than two consecutive cards come from the same one, which is why these cannot be replaced by concatenating the sources and shuffling. Whether write mode has to name a script is derived from `sources` spanning more than one, never declared here.",
+  "derived": [
+    {
+      "id": "hiragana-mixed",
+      "label": "Mixed hiragana",
+      "script": "hiragana",
+      "sample": "あが",
+      "subtitle": "All three, interleaved",
+      "note": "The three hiragana decks in one run, dealt so base, dakuten and yōon stay mixed rather than arriving in clumps.",
+      "sources": ["hiragana", "hiragana-dakuten", "hiragana-combo"]
+    },
+    {
+      "id": "katakana-mixed",
+      "label": "Mixed katakana",
+      "script": "katakana",
+      "sample": "アガ",
+      "subtitle": "All three, interleaved",
+      "note": "The three katakana decks in one run, dealt so base, dakuten and yōon stay mixed rather than arriving in clumps.",
+      "sources": ["katakana", "katakana-dakuten", "katakana-combo"]
+    },
+    {
+      "id": "kana",
+      "label": "Kana",
+      "script": "kana",
+      "sample": "あア",
+      "subtitle": "Gojūon, both scripts",
+      "note": "The 46 base syllables in both scripts side by side — か and カ are the same sound written twice.",
+      "sources": ["hiragana", "katakana"]
+    },
+    {
+      "id": "kana-dakuten",
+      "label": "Dakuten kana",
+      "script": "kana",
+      "sample": "がガ",
+      "subtitle": "゛and ゜, both scripts",
+      "note": "Voiced and semi-voiced syllables in both scripts at once.",
+      "sources": ["hiragana-dakuten", "katakana-dakuten"]
+    },
+    {
+      "id": "kana-combo",
+      "label": "Combination kana",
+      "script": "kana",
+      "sample": "ゃャ",
+      "subtitle": "Yōon, both scripts",
+      "note": "The contracted sounds in both scripts at once.",
+      "sources": ["hiragana-combo", "katakana-combo"]
+    },
+    {
+      "id": "mixed",
+      "label": "Mixed kana",
+      "script": "kana",
+      "sample": "かな",
+      "subtitle": "Everything, both scripts",
+      "note": "Every character in the file in one run — both scripts, base, dakuten and yōon.",
+      "sources": ["hiragana", "hiragana-dakuten", "hiragana-combo",
+                  "katakana", "katakana-dakuten", "katakana-combo"]
+    }
+  ]
 }

@@ -43,7 +43,9 @@
   <section id="menu" class="screen menu">
     <p class="eyebrow"><span class="mark" lang="ja">かな</span> Kana Practice</p>
 
-    <!-- the deck list below shows one script at a time, not all six decks -->
+    <!-- The deck list below shows one stamp at a time. The third is not a
+         script anyone writes in — it is where the decks that span both scripts
+         live, so they are found in one place instead of twice. -->
     <div class="scriptbar" id="scriptSwitch" role="radiogroup" aria-label="Script">
       <button type="button" class="hanko" data-script="hiragana" role="radio" aria-checked="true">
         <span class="hanko__glyph" lang="ja">あ</span>
@@ -52,6 +54,10 @@
       <button type="button" class="hanko" data-script="katakana" role="radio" aria-checked="false">
         <span class="hanko__glyph" lang="ja">ア</span>
         <span class="hanko__label">Katakana</span>
+      </button>
+      <button type="button" class="hanko" data-script="kana" role="radio" aria-checked="false">
+        <span class="hanko__glyph hanko__glyph--pair" lang="ja">あア</span>
+        <span class="hanko__label">Kana</span>
       </button>
     </div>
 
@@ -168,6 +174,10 @@
         <button type="button" class="hanko" data-script="katakana" role="radio" aria-checked="false">
           <span class="hanko__glyph" lang="ja">ア</span>
           <span class="hanko__label">Katakana</span>
+        </button>
+        <button type="button" class="hanko" data-script="kana" role="radio" aria-checked="false">
+          <span class="hanko__glyph hanko__glyph--pair" lang="ja">あア</span>
+          <span class="hanko__label">Kana</span>
         </button>
       </div>
 
