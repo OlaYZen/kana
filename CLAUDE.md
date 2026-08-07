@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-> The front end is four static files that work on their own — no build step, no bundler, nothing
-> to install. The backend in `backend/` is **optional**: it adds accounts, server-side saves and
-> the progress report, and if nothing answers `/api/health` the app hides all of that and runs
-> exactly as it did before it existed. Don't make it a hard dependency.
+> The front end is four static files plus a folder of fonts, and works on its own — no build step,
+> no bundler, nothing to install, and nothing fetched from anyone else's server. The backend in
+> `backend/` is **optional**: it adds accounts, server-side saves and the progress report, and if
+> nothing answers `/api/health` the app hides all of that and runs exactly as it did before it
+> existed. Don't make it a hard dependency.
 
 `kana` — a Japanese kana (hiragana/katakana) recognition drill.
 
@@ -15,10 +16,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|
 | `index.html` | markup only — six screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`) plus three `<dialog>` sheets (`#moreSheet`, `#fontSheet`, `#chartSheet`); `#play` holds one answer block per mode (`#typeMode`, `#writeMode`, `#chooseMode`) |
 | `styles.css` | the entire stylesheet, mobile-first |
-| `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`. No kana or font names live in JS or CSS |
+| `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `mixed`. No kana or font names live in JS or CSS |
 | `app.js` | all front-end logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
 | `icon.svg` | the app icon, and the source the `.ico` is generated from — see **The icon** |
 | `favicon.ico` | six sizes rasterised from `icon.svg`; what `<link rel="icon">` points at |
+| `fonts/` | the five bundled Japanese faces, subset to kana, plus `LICENSES.txt` and the `subset.py` that regenerates them — see **Bundled fonts** |
 | `start.sh` | install / update / run, executable in git (mode `100755`) |
 | `backend/` | the optional FastAPI server |
 
@@ -53,15 +55,17 @@ a touch device — testing them means opening the app on a phone, and a loopback
 that impossible. The cost is that the whole network can reach it over plain HTTP; `--host
 127.0.0.1` is the way back.
 
-Kana glyphs need a CJK-capable font installed on the host to render at all.
+Kana glyphs no longer need a CJK-capable font on the host: five faces ship in `fonts/`. The
+device's own faces are still used where it has them, and are still what renders anything outside
+the subset — see **Bundled fonts**.
 
 ## Architecture
 
 **`kana.json` is the single source of content and `app.js` is script-agnostic** — it renders
 whatever deck it is handed. Adding or changing decks, cards, accepted romanisations, chart layout
-or font options is a JSON edit, never a code edit. Keys prefixed `//` (`"//fonts"`, `"//charts"`)
-are prose comments for the section that follows; JSON has no comment syntax and `app.js` ignores
-them. Keep them current when the shape they describe changes.
+or font options is a JSON edit, never a code edit. Keys prefixed `//` (`"//fonts"`, `"//charts"`,
+`"//mixed"`) are prose comments for the section that follows; JSON has no comment syntax and
+`app.js` ignores them. Keep them current when the shape they describe changes.
 
 - deck: `{id, label, script, sample, subtitle, note, cards[]}` — `script` is `"hiragana"`/`"katakana"`
 - card: `{q, a, alt?}` — `q` is the kana, `a` the canonical romaji, `alt` extra accepted spellings
@@ -75,6 +79,8 @@ them. Keep them current when the shape they describe changes.
   from the decks, so the chart and the quiz can never disagree. The exception is a flow item
   written `{q, a}`, used for the extended katakana (ファ ティ ヴァ …), which are reference-only and
   in no deck.
+- mixed: `{id, label, sample, subtitle, note}` — the everything-deck's identity only. It has **no
+  `cards` and no `script`**, both deliberately; see **The mixed deck** below.
 
 **Colour** is washi paper throughout — cream ground, ink text, vermilion seal accent — defined
 once in `:root` (`--paper*`, `--c-ink*`, `--shu`, `--brass`, `--matcha`). The accents are
@@ -112,6 +118,53 @@ paper catching light, which is what made the first version obvious.
 Six decks: base / dakuten / combination × hiragana / katakana (46 / 25 / 36 cards each, 214
 total). Obsolete kana (ゐ ゑ ヰ ヱ, the archaic yi/ye/wu forms, polysyllabics) are excluded on
 purpose — do not "complete" the charts by adding them back.
+
+**The mixed deck is a seventh deck built from those six**, not a seventh list of cards.
+`kana.json`'s `mixed` block carries its identity and nothing else; `buildMixedDeck()` fills in the
+cards at boot from every deck in the file, and holds **the same card objects**, not copies. That
+identity is load-bearing twice — `state.missed.includes(c)` and the chart-order review on the
+results screen are both `===` comparisons — and its cost is the rule that nothing walking every
+card in the app may ever be handed this deck, or each character is counted twice. `state.decks`
+therefore stays the six decks `kana.json` lists, `state.mixed` is kept beside it, and `allDecks()`
+is what the three places that mean "every deck the menu can start" use. Building it *after*
+`buildFlickIndex()` in boot is part of the same rule.
+
+Four things follow from it having no `script`:
+
+- **It is listed under both seal stamps** — `buildMenu()` and the progress screen's `forScript()`
+  both read a missing script as "belongs to neither, so show it under either", which is the rule
+  the flick drills were already using. It sorts last because it is appended last.
+- **It records once.** The deck id is `mixed` under either stamp, so `recordKey()` gives one
+  `mixed|type`, one report, one history. Listing it twice while recording once is the whole point;
+  a script-flavoured id would silently split the figures in half.
+- **Runs post with `script: null`.** The backend column is already nullable and nothing needs to
+  change there — see the analytics note below for why this isn't a hole in "every deck is its own
+  dataset".
+- **Writing has to name the script in the prompt.** か and カ are both "ka", so a romaji prompt is
+  ambiguous in a way it never is inside one script. `writeAsk()` says which, and `writeAccepts()`
+  is scoped to match — see the invariants.
+
+**The deal is balanced, not shuffled**, and that is why the deck can't be replaced by concatenating
+the six and calling `shuffle()`. Each source deck is a *category*; each is shuffled on its own, and
+`mixedQueue()` then deals from them under one rule — never more than `MIX_RUN` (2) consecutive
+cards from the same category. Every character still appears exactly once per run; this decides
+order alone, and nothing is sampled or dropped. Three parts of it are easy to get wrong:
+
+- **Which category to take from is drawn at random, weighted by what it has left** — not
+  round-robin, which turns the run into a visible rotation, and not "largest pile first", which is
+  the same rotation with extra steps.
+- **`mixFits()` is checked before every take, not repaired afterwards.** Weighted choice empties
+  the piles at roughly the same rate but not exactly, so whichever pile is left over at the end has
+  nothing to alternate with and the last dozen cards all come from it. The arithmetic: *m* cards of
+  one category need the other *r* as separators, which open *r+1* gaps of at most `MIX_RUN` each,
+  so *m* ≤ `MIX_RUN` × (*r*+1), less whatever a run already under way has eaten from the first gap.
+- **The no-candidates fallback deals the biggest pile anyway.** It is unreachable for the deck
+  sizes that ship (46 needs 168 others; it has them) and exists for a `kana.json` grown so lopsided
+  that no ordering can space it out. Bunching up is the right failure there — dropping cards would
+  break "every character exactly once", which is the invariant that actually matters.
+
+Drills of the mixed deck take the plain shuffle instead. Balancing a handful of cards says nothing,
+and five misses that all came from one category have nothing to interleave with.
 
 **Three answer modes**, chosen in the Options sheet and held in `state.mode`:
 
@@ -161,13 +214,14 @@ chart. Three things that fall out of that and are easy to get wrong by hand:
   differs between keyboards, so drilling it would teach a guess. `kanaInfo()` returns null for it.
 
 **The menu shows one script at a time.** The two seal-stamp buttons (`.hanko`, styled with the
-chart sheet and reused by `.scriptbar`) filter `#decks` to that script's three decks and flip
-`--accent` vermilion/indigo via `[data-script]` on `.menu`, mirroring the chart sheet. The chart
-opens on whatever the menu is showing.
+chart sheet and reused by `.scriptbar`) filter `#decks` to that script's three decks — plus the
+mixed deck, which has no script and so survives either filter — and flip `--accent`
+vermilion/indigo via `[data-script]` on `.menu`, mirroring the chart sheet. The chart opens on
+whatever the menu is showing.
 
 The same `.scriptbar` markup appears a third time on the progress screen, filtering the deck picker
-rather than the deck list. The flick drills are the one thing that survives both filters — they
-belong to neither script.
+rather than the deck list. Two things survive both filters: the flick drills, which belong to
+neither script, and the mixed deck, which belongs to both.
 
 **That connection is one-way, and deliberately so.** `openStats()` copies `state.script` into
 `statsScript` on **every** open, not just the first: practising katakana and then finding the
@@ -198,9 +252,9 @@ one already did the job:
   deck label is just the script (`Hiragana` under the あ stamp says nothing new).
 
 What survives is the one case neither covers: a lone non-base deck, where the picker is gone and
-the stamp would give the *wrong* name — `Dakuten hiragana` and `Flick directions` both sit under
-the あ stamp. Don't simplify this to "never show the heading"; that case loses the deck's identity
-entirely.
+the stamp would give the *wrong* name — `Dakuten hiragana`, `Flick directions` and `Mixed kana`
+all sit under the あ stamp. Don't simplify this to "never show the heading"; that case loses the
+deck's identity entirely.
 
 **Persistence** is localStorage key `kana.v1` (`STORE` in `app.js`), holding
 `{rev, mode, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
@@ -335,7 +389,11 @@ enforced in `analytics.py`, and each one costs data on purpose:
   across decks: katakana is not evidence about hiragana, and base gojūon is not evidence about
   dakuten or yōon. The three-run gate is **per deck**, so three hiragana runs do not unlock the
   dakuten report. There is no all-decks total, deliberately — it would be an average over
-  unrelated material.
+  unrelated material. **The mixed deck is not the exception it looks like**: `mixed` is a deck id
+  like any other, and its figures come only from runs of it. What is forbidden is *deriving* a
+  cross-deck figure from runs of separate decks; sitting down and practising all 214 in one go is
+  a thing you did, and its accuracy and times describe it. Nothing about it feeds the other six
+  reports, or is fed by them, and it needs its own three runs.
 - **Flick drills are listed but never analysed** (`analysable: false` for any `flick-` deck).
   Their prompt is a direction or a key, not a character, and any character with that vowel or on
   that key is accepted — so there is nothing to call slow and a wrong answer can't be traced to a
@@ -432,8 +490,16 @@ These each cost a real bug once. Comments in the source mark most of them.
   ず/づ are both `zu`. Choose-mode distractors therefore dedupe by *reading*, not by card, or two
   identical option buttons get rendered. Write mode hits the same collision from the other side:
   the prompt is only the reading, so the user cannot tell which of the pair is being asked and
-  `writeAccepts()` must accept **any** card in the deck whose `a` matches — grading against
-  `card().q` alone makes 4 of the 25 dakuten cards unanswerable.
+  `writeAccepts()` must accept **any** card whose `a` matches — grading against `card().q` alone
+  makes 4 of the 25 dakuten cards unanswerable.
+- **"Any card whose `a` matches" means within the card's own category, not the whole deck.** In
+  the mixed deck the collision also runs across scripts — か and カ are both `ka` — and every card
+  in it has a twin. Scoped to the deck, write mode there would accept hiragana for all 214 and
+  stop being a test of katakana at all; scoped to `card().q`, じ/ぢ break again. `cardGroup()` is
+  the single knob: it returns the source deck for a mixed card and `state.deck` for everything
+  else, so the other six decks grade exactly as they always did. The prompt has to say which
+  script it wants (`writeAsk()`) or the scoping is just an unwinnable guess — the two ship
+  together.
 - **Enter must not grade while an IME is composing.** That keypress belongs to the IME, which is
   confirming the kana being built; without the `e.isComposing || e.keyCode === 229` guard the
   first Enter of every `ka`→か submits a half-finished romaji string as the answer.
@@ -493,25 +559,102 @@ These each cost a real bug once. Comments in the source mark most of them.
 - **Never look a record up by deck alone.** `store.best(deckId)` without a mode silently returns
   `undefined`→`0`, which renders as "no attempts yet" rather than failing — a bug that reads as
   wiped records.
+- **Choose-mode distractors are drawn from the prompt's category first.** Over the mixed deck's
+  214 cards a plain draw puts three yōon readings beside a one-mora prompt, and the option answers
+  itself; the score stops measuring anything. The widen-to-the-whole-deck fallback is only reached
+  when a category can't spare three distinct readings, which no shipping deck hits.
+- **The mixed deck's cards are the other decks' card objects, not copies.** Put it in
+  `state.decks` and `chartReadings()`, `buildFlickIndex()` and every other full sweep sees all 214
+  twice. `allDecks()` is for the menu, `deckLabel()` and `forScript()`; `state.decks` is for
+  anything counting characters.
 - **`kana.json` is fetched with `cache: "no-cache"`.** Without it the HTTP cache silently serves a
   stale deck file and edits appear to do nothing.
 
-## Font availability detection
+## Bundled fonts
 
-`app.js` decides which font options to offer by rendering kana to a canvas and hashing the
-pixels. Both obvious alternatives are broken for this:
+Five of the eight font options ship with the app, in `fonts/`, declared by the `@font-face` block
+at the top of `styles.css` and marked `"bundled"` in `kana.json`:
+
+| Option | Face | Files |
+|---|---|---|
+| `mincho` 明朝 | Noto Serif JP | one variable, wght 200–900 |
+| `gothic` ゴシック | Noto Sans JP | one variable, wght 100–900 |
+| `textbook` 教科書体 | Klee One | 400 + 600 |
+| `rounded` 丸ゴシック | Zen Maru Gothic | 400 + 700 |
+| `ud` UDフォント | BIZ UDPGothic | 400 + 700 |
+
+They were bundled because the picker used to be mostly empty on Windows, which ships no Japanese
+serif or textbook face unless the *Japanese Supplemental Fonts* optional feature is installed —
+`mincho`, `textbook` and `rounded` were commonly all absent, and the app's entire subject is what
+a character looks like. Nothing is fetched from Google or anyone else at runtime: **the app must
+keep working with no network at all**, on a LAN, and from a folder on a static host.
+
+**They are subsets, and `fonts/subset.py` is how they are regenerated.** The upstream faces are
+3.6–13 MB each because they carry thousands of kanji; cut to what this app renders they are
+32–110 KB, 424 KB for all eight files. Three decisions there are load-bearing:
+
+- **The cut is defined by Unicode *ranges*, not by the current contents of `kana.json`.** Every
+  kana block is kept whole, so adding a card can never produce tofu — which would otherwise make
+  "adding a deck is a JSON edit" quietly false. The one enumerated part is the eighteen kanji of
+  interface chrome (設定 記録 五十音 …); `subset.py`'s `check()` re-derives them from the sources
+  and fails if the list has drifted, so that can't rot silently.
+- **No `vert`/`vrt2`/`palt`.** The app never sets `writing-mode` or `font-feature-settings`, and
+  dropping those prunes every vertical alternate glyph with them — 30% of the subset. `mark`/`mkmk`
+  stay, so a decomposed dakuten arriving from an IME is positioned rather than stacked on the origin.
+- **The two Notos stay variable; the other three ship as a regular/bold pair.** One variable file
+  is *smaller* than the two static instances the app would otherwise need, and the app does need
+  two: the chart headings are 600 and the feedback line's `<b>` is 700.
+
+Two things in the CSS will silently ruin the result:
+
+- **`font-weight` on a variable `@font-face` must be the *range*** (`200 900`, `100 900`). Their
+  default instance is the thinnest on the axis — Thin 100, ExtraLight 200 — so a single weight, or
+  none, renders every kana on screen as a hairline. That is the same grey mush the app icon is
+  drawn in SemiBold to avoid.
+- **`font-display: block`, not `swap`.** The glyph *is* the question. Swap paints a fallback first
+  and then changes the character under the reader mid-answer; block leaves the square empty until
+  the face lands. Same-origin and 32–110 KB, so it is imperceptible locally, and only the face
+  actually selected is ever fetched — 110 KB on a first load, nothing after.
+
+**The bundled face leads each stack; the device's own faces sit behind it.** That is what makes
+everyone see the same character, while still rendering anything the subset leaves out (a kanji
+typed into the write field) from a real installed font rather than as a box.
+
+### What is left of the probe
+
+`app.js` still decides which of the *other* three options to offer by rendering kana to a canvas
+and hashing the pixels. Both obvious alternatives remain broken:
 
 - `document.fonts.check('16px "Whatever"')` returns `true` for families that do not exist.
 - Canvas *width* comparison cannot work — every CJK face is full-width, so all candidates measure
   identically (e.g. 432px for a 5-glyph string at 56px).
 
-An option is dropped if none of its named families are installed, or if its stack renders
-identically to the last-resort font or to an option already listed. So every visible option is
-guaranteed to look different. If canvas is unavailable (privacy modes), all options are offered
-unverified. Eight options ship (`mincho`, `textbook`, `gothic`, `rounded`, `ud`, `mono`,
-`device-serif`, `device-sans`); how many survive is per-device. Note that Windows ships no
-Japanese serif/textbook font unless the *Japanese Supplemental Fonts* optional feature is
-installed, so `mincho`, `textbook` and `rounded` are commonly absent.
+A device-only option is dropped if none of its named families are installed, or if its stack
+renders identically to the last-resort font or to an option already listed, so every visible
+option is guaranteed to look different. If canvas is unavailable (privacy modes) all options are
+offered unverified.
+
+Three things about how bundling changed this:
+
+- **A bundled option is never probed, and cannot be.** Web fonts load long after boot, so probing
+  one there always reports "missing" — it would delete the very options that are guaranteed present.
+- **A bundled option skips the *dedupe* too.** At boot none of the five have loaded, so all five
+  hash to whatever their generic falls back to — identical to one another — and a dedupe would keep
+  one and throw the other four away.
+- **The last-resort hash now seeds `seen`.** That was always the documented rule and the comparison
+  was simply never made; it was only safe to start making it once five options shipped, because
+  before that it could have emptied the picker. It is **not** a tofu test and can't be made into
+  one: browsers fall back per character, so on a Windows box with no Japanese font `serif` still
+  renders real kana out of whatever face the engine finds. "Last resort" here means
+  "indistinguishable from the default", not "boxes".
+
+### Licensing
+
+All five are SIL Open Font License 1.1. `fonts/LICENSES.txt` carries all five licences verbatim,
+and `--name-IDs=*` keeps each font's own copyright and licence inside the file. Only one declares
+a Reserved Font Name — Noto Sans JP reserves `'Source'`, inherited from Source Han Sans, which is
+not a name used here — so these subsets keep the families' own names. **If a font is ever added
+whose RFN is its own name, the subset has to be renamed**, since subsetting is modification.
 
 ## Verifying changes
 
@@ -521,16 +664,32 @@ change is fine because it looks fine.
 
 **Front end — jsdom.** `app.js` runs under it unmodified, which is enough to drive whole runs end
 to end: script switching, all four modes, grading, records, the account flow, the progress screen.
-Install jsdom in a scratch directory, never the project, and stub four things — `fetch` (return
-`kana.json`, and *reject* `/api/*` unless you are deliberately testing the backend path),
+Install jsdom in a scratch directory, never the project. **Give the `JSDOM` an origin** — `url:
+"http://localhost:8000/"` or similar — or there is no `localStorage`, every write takes its
+private-mode path, and nothing about records or preferences can be asserted on. Then stub four
+things — `fetch` (return `kana.json`, and *reject* `/api/*` unless you are deliberately testing the
+backend path),
 `HTMLDialogElement.prototype.showModal`/`close` (jsdom implements neither), `matchMedia`, and
-`confirm`. The `matchMedia` stub now needs `addEventListener`/`removeEventListener` as well as
+`confirm`. To exercise the font picker's probe at all you have to stub
+`HTMLCanvasElement.prototype.getContext` as well, with a fake 2D context whose `getImageData`
+varies by the family in the assigned `ctx.font` — that is the only way to test "this device has
+Yu Mincho and nothing else" without the device. The `matchMedia` stub now needs `addEventListener`/`removeEventListener` as well as
 `matches`, since `paintTheme()` subscribes to `prefers-color-scheme`; and the inline theme script
 in `<head>` does not run under `runScripts: "outside-only"`, so a suite that cares about the
-pre-paint theme has to `eval` it by hand before `app.js`. Canvas is absent, so font probing takes its documented privacy-mode path and offers
-everything unverified. Two traps: **advance a graded card by clicking `#square`** rather than
-waiting out the 620 ms auto-advance, or a suite with several full runs in it takes minutes; and
-**`window.performance` has only a getter**, so it cannot be reassigned.
+pre-paint theme has to `eval` it by hand before `app.js`. Left unstubbed, canvas is absent and font
+probing takes its documented privacy-mode path, offering everything unverified. Three traps:
+**advance a graded card by clicking `#square`** rather than waiting out the 620 ms auto-advance, or
+a suite with several full runs in it takes minutes; **`window.performance` has only a getter**, so
+it cannot be reassigned; and each `JSDOM` has its own `localStorage`, so a "returning visitor" has
+to be seeded before `app.js` runs rather than carried over from a previous boot.
+
+**Fonts need a real browser, and so does anything about them.** jsdom neither loads a web font nor
+rasterises one, so the whole bundled path — that the eight `@font-face` rules parse, that the
+files are served, that the variable axis actually varies — is invisible to it. Serve the folder and
+hash a canvas in the page (the same five lines `inkHash` uses) to prove the five faces render
+*differently from each other and from the fallback*; measuring text width proves nothing, for the
+reason above. Check `performance.getEntriesByType("resource")` to confirm only the selected face
+was fetched.
 
 **Backend — a real server.** Start it on a random port and drive it with `urllib`; no HTTP client
 dependency is needed. It must be a **fresh process per suite run**: the rate limiter is in-memory
