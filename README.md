@@ -48,30 +48,44 @@ Google or anyone else — it works with no internet connection at all. See **Cha
 
 ## The drill
 
-Six decks, 214 cards, in three tiers per script:
+**Three seal stamps at the top of the menu**: あ hiragana, ア katakana, and あア Kana for the decks
+that are both scripts at once. Each shows four decks.
+
+Under あ and ア, the same three tiers plus a mix of them:
 
 | Deck | Cards | What's in it |
 |---|---|---|
 | Base | 46 | the gojūon — あ か さ た な は ま や ら わ ん |
 | Dakuten | 25 | voiced and semi-voiced — が ざ だ ば ぱ |
 | Combination | 36 | yōon, the contracted sounds — きゃ しゅ ちょ |
+| **Mixed hiragana** / **Mixed katakana** | 107 | all three of the above, interleaved |
 
 Obsolete kana (ゐ ゑ ヰ ヱ and the archaic forms) are left out on purpose — you will not meet them
 in modern Japanese.
 
-**Mixed kana** sits at the bottom of the list, under both stamps: all 214 characters — both
-scripts, base, dakuten and yōon — in a single run, each one exactly once. It's the same deck in
-both places, so its score, records and progress report don't care which stamp you started it from.
+Under **Kana**, the same tiers again but across both scripts at once — this is where you find out
+whether you actually know シ from ツ *and* し from つ:
 
-It isn't a plain shuffle of everything. Shuffling 214 cards together deals visible clumps — eight
+| Deck | Cards | What's in it |
+|---|---|---|
+| Kana | 92 | both base decks — か and カ side by side |
+| Dakuten kana | 50 | both dakuten decks |
+| Combination kana | 72 | both yōon decks |
+| Mixed kana | 214 | everything in the app, in one run |
+
+None of these is a plain shuffle. Shuffling a pile of cards together deals visible clumps — eight
 yōon in a row, then a long stretch of katakana — and a clump is just the deck it came from arriving
-again, which is the one thing a mixed run shouldn't do. Instead each of the six decks is shuffled
-on its own and they're dealt out together, never more than two cards in a row from the same one.
-You still see every character exactly once; only the order changes.
+again, which is the one thing a mixed run shouldn't do. Instead each source deck is shuffled on its
+own and they're dealt out together, never more than two cards in a row from the same one. You still
+see every character exactly once; only the order changes.
 
-One difference in **Writing**: since か and カ are both "ka", a mixed run says which script it wants
-("Write the katakana for this sound") and takes only that one. In every other deck there's nothing
-to disambiguate, so the prompt is unchanged.
+One difference in **Writing** on the Kana stamp: since か and カ are both "ka", those decks say
+which script they want ("Write the katakana for this sound") and take only that one. Anything
+inside a single script — Mixed hiragana included — has nothing to disambiguate, so the prompt is
+unchanged.
+
+Every deck keeps its own records and its own progress report, including the derived ones. A run of
+Mixed kana is not a run of the six decks it's built from, and doesn't count towards them.
 
 **Three ways to answer**, switchable under **Options**:
 
@@ -203,9 +217,9 @@ same deck are actually comparable. The analysis is deliberately cautious about w
   too: over five runs a character comes up five times, so one slip would read as a collapse.
 - **Each deck is its own dataset.** Katakana tells you nothing about hiragana, and the base gojūon
   tells you nothing about dakuten or yōon — they're separate material. Nothing is ever averaged
-  across decks, and three hiragana runs won't unlock the dakuten breakdown. Mixed kana is a deck
-  like the others here: it has its own figures, drawn only from runs of it, and needs its own three
-  runs before they appear.
+  across decks, and three hiragana runs won't unlock the dakuten breakdown. The mixed and Kana
+  decks are decks like any other here: each has its own figures, drawn only from runs of it, and
+  each needs its own three runs before they appear. That's twelve reports to fill, not six.
 - **Three complete runs of that deck before it draws any conclusions.** One run can't tell a bad
   day from a weak character, so until then there's no breakdown — only your runs, which are simply
   what happened.
@@ -312,29 +326,43 @@ python -m http.server 8000
 
 ## ドリルの内容
 
-デッキは 6 つ、カードは全部で 214 枚。文字種ごとに 3 段階あります。
+メニューの上には印が 3 つあります。あ（ひらがな）、ア（カタカナ）、そして あア（Kana）— 両方の
+文字種にまたがるデッキ用です。それぞれに 4 つのデッキがあります。
+
+あ と ア の下は、これまでの 3 段階と、その 3 つを混ぜたものです。
 
 | デッキ | カード | 内容 |
 |---|---|---|
 | 基本 | 46 | 五十音 — あ か さ た な は ま や ら わ ん |
 | 濁点 | 25 | 濁音と半濁音 — が ざ だ ば ぱ |
 | 拗音 | 36 | 小さいかなの組み合わせ — きゃ しゅ ちょ |
+| **Mixed hiragana** / **Mixed katakana** | 107 | 上の 3 つを混ぜたもの |
 
 使われなくなったかな（ゐ ゑ ヰ ヱ や古い字形）は意図的に外してあります。現代の日本語では出てきま
 せん。
 
-**ミックス（Mixed kana）** はリストのいちばん下にあり、ひらがな・カタカナどちらの印にも出ます。
-ひらがなとカタカナ、基本・濁点・拗音をすべて含む 214 文字を 1 回で、各文字ちょうど 1 回ずつ。
-どちらの印から始めても同じデッキなので、記録も進捗レポートも 1 つにまとまります。
+**Kana** の印の下は、同じ 3 段階を両方の文字種にまたがって並べたものです。シ と ツ、し と つ を
+本当に見分けられるかが分かります。
 
-ただの全部シャッフルではありません。214 枚をまとめて混ぜると、拗音が 8 枚続いたあとにカタカナが
-延々と、といった偏りが目に見えて出ます。偏りは結局そのデッキが戻ってきただけで、ミックスの意味が
-なくなります。そこで 6 つのデッキをそれぞれ個別にシャッフルし、同じ種類が 3 枚以上続かないように
-配ります。出てくる文字は変わらず全 214 文字ちょうど 1 回ずつで、変わるのは順番だけです。
+| デッキ | カード | 内容 |
+|---|---|---|
+| Kana | 92 | 基本を両方 — か と カ が並びます |
+| Dakuten kana | 50 | 濁点を両方 |
+| Combination kana | 72 | 拗音を両方 |
+| Mixed kana | 214 | このアプリの全文字を 1 回で |
 
-**ライティング**だけ 1 点違います。か と カ はどちらも "ka" なので、ミックスでは「Write the
-katakana for this sound」のようにどちらの文字種かを示し、その文字種だけを正解とします。ほかの
-デッキは 1 文字種しかないため、表示はこれまでどおりです。
+どれもただの全部シャッフルではありません。まとめて混ぜると、拗音が 8 枚続いたあとにカタカナが
+延々と、といった偏りが目に見えて出ます。偏りは結局そのデッキが戻ってきただけで、混ぜた意味が
+なくなります。そこで元のデッキをそれぞれ個別にシャッフルし、同じ種類が 3 枚以上続かないように
+配ります。出てくる文字は変わらず各 1 回ずつで、変わるのは順番だけです。
+
+**ライティング**は Kana の印だけ 1 点違います。か と カ はどちらも "ka" なので、これらのデッキでは
+「Write the katakana for this sound」のようにどちらの文字種かを示し、その文字種だけを正解とします。
+1 つの文字種で完結するデッキ（Mixed hiragana も含む）は区別する必要がないため、表示はこれまで
+どおりです。
+
+記録と進捗レポートはデッキごとに別で、混ぜたデッキも同じです。Mixed kana を 1 回やっても、元の
+6 デッキをやったことにはなりません。
 
 **答え方は 3 種類**、「Options」から切り替えられます。
 
@@ -459,8 +487,9 @@ Dark は固定です。ダークは色を反転したものではなく、同じ
   1 回の取りこぼしが総崩れのように見えてしまうからです。
 - **デッキはそれぞれ別のデータです。** カタカナはひらがなの証拠になりませんし、五十音は
   濁音や拗音の証拠になりません。別の教材だからです。デッキをまたいで平均することはなく、
-  ひらがなを 3 回やってもダクテンの分析は出ません。ミックスもここでは 1 つのデッキで、
-  その数字はミックスのランだけから作られ、分析にはミックス自体を 3 回やる必要があります。
+  ひらがなを 3 回やってもダクテンの分析は出ません。混ぜたデッキや Kana のデッキもここでは
+  それぞれ 1 つのデッキで、数字はそのデッキのランだけから作られ、分析にはそのデッキ自体を
+  3 回やる必要があります。レポートは 6 つではなく 12 あることになります。
 - **そのデッキを 3 回やり終えるまで、結論は出しません。** 1 回では調子の悪い日と苦手な文字を
   区別できないので、それまでは分析を出さず、実際に起きたことであるラン一覧だけを見せます。
 - **フリックのドリルは一覧には出ますが、分析はしません。** 方向やキーを訊くもので、その母音・

@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|
 | `index.html` | markup only — six screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`) plus three `<dialog>` sheets (`#moreSheet`, `#fontSheet`, `#chartSheet`); `#play` holds one answer block per mode (`#typeMode`, `#writeMode`, `#chooseMode`) |
 | `styles.css` | the entire stylesheet, mobile-first |
-| `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `mixed`. No kana or font names live in JS or CSS |
+| `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `derived[]`. No kana or font names live in JS or CSS |
 | `app.js` | all front-end logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
 | `icon.svg` | the app icon, and the source the `.ico` is generated from — see **The icon** |
 | `favicon.ico` | six sizes rasterised from `icon.svg`; what `<link rel="icon">` points at |
@@ -64,7 +64,7 @@ the subset — see **Bundled fonts**.
 **`kana.json` is the single source of content and `app.js` is script-agnostic** — it renders
 whatever deck it is handed. Adding or changing decks, cards, accepted romanisations, chart layout
 or font options is a JSON edit, never a code edit. Keys prefixed `//` (`"//fonts"`, `"//charts"`,
-`"//mixed"`) are prose comments for the section that follows; JSON has no comment syntax and
+`"//derived"`) are prose comments for the section that follows; JSON has no comment syntax and
 `app.js` ignores them. Keep them current when the shape they describe changes.
 
 - deck: `{id, label, script, sample, subtitle, note, cards[]}` — `script` is `"hiragana"`/`"katakana"`
@@ -79,8 +79,9 @@ or font options is a JSON edit, never a code edit. Keys prefixed `//` (`"//fonts
   from the decks, so the chart and the quiz can never disagree. The exception is a flow item
   written `{q, a}`, used for the extended katakana (ファ ティ ヴァ …), which are reference-only and
   in no deck.
-- mixed: `{id, label, sample, subtitle, note}` — the everything-deck's identity only. It has **no
-  `cards` and no `script`**, both deliberately; see **The mixed deck** below.
+- derived: `{id, label, script, sample, subtitle, note, sources[]}` — a deck with **no `cards`**,
+  built at boot from the decks `sources` names. `script` places it under a stamp exactly as a real
+  deck's does. See **Derived decks** below.
 
 **Colour** is washi paper throughout — cream ground, ink text, vermilion seal accent — defined
 once in `:root` (`--paper*`, `--c-ink*`, `--shu`, `--brass`, `--matcha`). The accents are
@@ -119,36 +120,51 @@ Six decks: base / dakuten / combination × hiragana / katakana (46 / 25 / 36 car
 total). Obsolete kana (ゐ ゑ ヰ ヱ, the archaic yi/ye/wu forms, polysyllabics) are excluded on
 purpose — do not "complete" the charts by adding them back.
 
-**The mixed deck is a seventh deck built from those six**, not a seventh list of cards.
-`kana.json`'s `mixed` block carries its identity and nothing else; `buildMixedDeck()` fills in the
-cards at boot from every deck in the file, and holds **the same card objects**, not copies. That
-identity is load-bearing twice — `state.missed.includes(c)` and the chart-order review on the
+**Six more decks are derived from those six**, and none of them is a new list of cards.
+`kana.json`'s `derived[]` carries each one's identity and the `sources` it is built from;
+`buildDerivedDecks()` fills in the cards at boot and holds **the same card objects**, not copies.
+That identity is load-bearing twice — `state.missed.includes(c)` and the chart-order review on the
 results screen are both `===` comparisons — and its cost is the rule that nothing walking every
-card in the app may ever be handed this deck, or each character is counted twice. `state.decks`
-therefore stays the six decks `kana.json` lists, `state.mixed` is kept beside it, and `allDecks()`
-is what the three places that mean "every deck the menu can start" use. Building it *after*
-`buildFlickIndex()` in boot is part of the same rule.
+card in the app may ever be handed one of them, or characters are counted two and three times
+over. `state.decks` therefore stays the six decks `kana.json` lists, `state.derived` is kept beside
+it, and `allDecks()` is what the four places meaning "every deck the menu can start" use. Building
+them *after* `buildFlickIndex()` in boot is part of the same rule.
 
-Four things follow from it having no `script`:
+| Derived deck | Stamp | Sources | Cards |
+|---|---|---|---|
+| Mixed hiragana | あ | the three hiragana decks | 107 |
+| Mixed katakana | ア | the three katakana decks | 107 |
+| Kana | かな | both base decks | 92 |
+| Dakuten kana | かな | both dakuten decks | 50 |
+| Combination kana | かな | both yōon decks | 72 |
+| Mixed kana | かな | all six | 214 |
 
-- **It is listed under both seal stamps** — `buildMenu()` and the progress screen's `forScript()`
-  both read a missing script as "belongs to neither, so show it under either", which is the rule
-  the flick drills were already using. It sorts last because it is appended last.
-- **It records once.** The deck id is `mixed` under either stamp, so `recordKey()` gives one
-  `mixed|type`, one report, one history. Listing it twice while recording once is the whole point;
-  a script-flavoured id would silently split the figures in half.
-- **Runs post with `script: null`.** The backend column is already nullable and nothing needs to
-  change there — see the analytics note below for why this isn't a hole in "every deck is its own
-  dataset".
-- **Writing has to name the script in the prompt.** か and カ are both "ka", so a romaji prompt is
-  ambiguous in a way it never is inside one script. `writeAsk()` says which, and `writeAccepts()`
-  is scoped to match — see the invariants.
+**There are three seal stamps, and `kana` is a script as far as everything downstream is
+concerned.** It is not a script anyone writes in — it is where the decks that span both scripts
+live — but giving it a `script` value like any other is what keeps `buildMenu()` and `forScript()`
+to a single comparison each. An earlier version had the everything-deck carry no script and be
+shown under "either" stamp; that listed it twice and meant every filter had a second clause.
+`SCRIPTS` in `app.js` is the list, and it has to match the `data-script` values in the two
+`.scriptbar`s in `index.html`.
 
-**The deal is balanced, not shuffled**, and that is why the deck can't be replaced by concatenating
-the six and calling `shuffle()`. Each source deck is a *category*; each is shuffled on its own, and
-`mixedQueue()` then deals from them under one rule — never more than `MIX_RUN` (2) consecutive
-cards from the same category. Every character still appears exactly once per run; this decides
-order alone, and nothing is sampled or dropped. Three parts of it are easy to get wrong:
+Three things follow:
+
+- **A deck is found where it was started.** One stamp, one deck id, one report — no deck appears
+  under two stamps. The flick drills still do, because they are not decks at all and `allDecks()`
+  never finds them.
+- **Records and runs key off the deck id as always.** `mixed` still means all 214, so a record set
+  before the かな stamp existed still reads. Runs post their deck's own `script`, which is now
+  sometimes the string `"kana"`; the backend column takes any string.
+- **Writing names the script only where it is ambiguous.** か and カ are both "ka", so a deck
+  spanning both scripts has to say which it wants. `spansScripts` is computed from the sources, not
+  declared, so Mixed hiragana — three source decks, one script — says nothing extra. `writeAsk()`
+  and `writeAccepts()` are scoped together; see the invariants.
+
+**The deal is balanced, not shuffled**, and that is why these can't be replaced by concatenating
+their sources and calling `shuffle()`. Each source deck is a *category*; each is shuffled on its
+own, and `mixedQueue()` then deals from them under one rule — never more than `MIX_RUN` (2)
+consecutive cards from the same category. Every character still appears exactly once per run; this
+decides order alone, and nothing is sampled or dropped. Three parts of it are easy to get wrong:
 
 - **Which category to take from is drawn at random, weighted by what it has left** — not
   round-robin, which turns the run into a visible rotation, and not "largest pile first", which is
@@ -159,12 +175,15 @@ order alone, and nothing is sampled or dropped. Three parts of it are easy to ge
   one category need the other *r* as separators, which open *r+1* gaps of at most `MIX_RUN` each,
   so *m* ≤ `MIX_RUN` × (*r*+1), less whatever a run already under way has eaten from the first gap.
 - **The no-candidates fallback deals the biggest pile anyway.** It is unreachable for the deck
-  sizes that ship (46 needs 168 others; it has them) and exists for a `kana.json` grown so lopsided
-  that no ordering can space it out. Bunching up is the right failure there — dropping cards would
-  break "every character exactly once", which is the invariant that actually matters.
+  sizes that ship — the tightest is Kana, 46 against 46, needing only 46 ≤ 2×47 — and exists for a
+  `kana.json` grown so lopsided that no ordering can space it out. Bunching up is the right failure
+  there; dropping cards would break "every character exactly once", which is the invariant that
+  actually matters.
 
-Drills of the mixed deck take the plain shuffle instead. Balancing a handful of cards says nothing,
-and five misses that all came from one category have nothing to interleave with.
+Drills of a derived deck take the plain shuffle instead. Balancing a handful of cards says nothing,
+and five misses that all came from one category have nothing to interleave with. A derived deck
+with fewer than two surviving sources is dropped at boot rather than offered as a run of one
+category, which is also what stops `mixFits()` being asked a meaningless question.
 
 **Three answer modes**, chosen in the Options sheet and held in `state.mode`:
 
@@ -213,15 +232,20 @@ chart. Three things that fall out of that and are easy to get wrong by hand:
 - **ん is deliberately excluded** from both drills: it has no vowel, and which key it sits on
   differs between keyboards, so drilling it would teach a guess. `kanaInfo()` returns null for it.
 
-**The menu shows one script at a time.** The two seal-stamp buttons (`.hanko`, styled with the
-chart sheet and reused by `.scriptbar`) filter `#decks` to that script's three decks — plus the
-mixed deck, which has no script and so survives either filter — and flip `--accent`
-vermilion/indigo via `[data-script]` on `.menu`, mirroring the chart sheet. The chart opens on
-whatever the menu is showing.
+**The menu shows one stamp at a time.** The three seal-stamp buttons (`.hanko`, styled with the
+chart sheet and reused by `.scriptbar`) filter `#decks` to that stamp's four decks and flip
+`--accent` via `[data-script]` on `.menu` — vermilion for hiragana, indigo for katakana, and
+`--murasaki` for かな, which is the two mixed, and lands between them on contrast rather than
+reading as a louder third colour. The chart opens on whatever the menu is showing, except under
+かな: there is no combined chart, so `renderChart()` falls back to the first one.
+
+The かな stamp's glyph is two characters, あア, where the others are one. `.hanko__glyph` is sized
+through a `--stamp` custom property rather than `font-size` directly, so `.hanko__glyph--pair` can
+scale with it at every breakpoint instead of needing an override beside each one.
 
 The same `.scriptbar` markup appears a third time on the progress screen, filtering the deck picker
-rather than the deck list. Two things survive both filters: the flick drills, which belong to
-neither script, and the mixed deck, which belongs to both.
+rather than the deck list. The flick drills are the one thing that survives every filter — they
+are not decks, so `allDecks()` never finds them, and a direction belongs to no script.
 
 **That connection is one-way, and deliberately so.** `openStats()` copies `state.script` into
 `statsScript` on **every** open, not just the first: practising katakana and then finding the
@@ -252,8 +276,8 @@ one already did the job:
   deck label is just the script (`Hiragana` under the あ stamp says nothing new).
 
 What survives is the one case neither covers: a lone non-base deck, where the picker is gone and
-the stamp would give the *wrong* name — `Dakuten hiragana`, `Flick directions` and `Mixed kana`
-all sit under the あ stamp. Don't simplify this to "never show the heading"; that case loses the
+the stamp would give the *wrong* name — `Dakuten hiragana`, `Mixed hiragana` and `Flick
+directions` all sit under the あ stamp. Don't simplify this to "never show the heading"; that case loses the
 deck's identity entirely.
 
 **Persistence** is localStorage key `kana.v1` (`STORE` in `app.js`), holding
@@ -389,11 +413,12 @@ enforced in `analytics.py`, and each one costs data on purpose:
   across decks: katakana is not evidence about hiragana, and base gojūon is not evidence about
   dakuten or yōon. The three-run gate is **per deck**, so three hiragana runs do not unlock the
   dakuten report. There is no all-decks total, deliberately — it would be an average over
-  unrelated material. **The mixed deck is not the exception it looks like**: `mixed` is a deck id
-  like any other, and its figures come only from runs of it. What is forbidden is *deriving* a
-  cross-deck figure from runs of separate decks; sitting down and practising all 214 in one go is
-  a thing you did, and its accuracy and times describe it. Nothing about it feeds the other six
-  reports, or is fed by them, and it needs its own three runs.
+  unrelated material. **The derived decks are not the exception they look like**: `mixed`, `kana`,
+  `hiragana-mixed` and the rest are deck ids like any other, and each one's figures come only from
+  runs of it. What is forbidden is *deriving* a cross-deck figure from runs of separate decks;
+  sitting down and practising all 214 in one go is a thing you did, and its accuracy and times
+  describe it. None of them feeds a source deck's report or is fed by one, and each needs its own
+  three runs. The consequence worth knowing is that there are twelve reports to fill, not six.
 - **Flick drills are listed but never analysed** (`analysable: false` for any `flick-` deck).
   Their prompt is a direction or a key, not a character, and any character with that vowel or on
   that key is accepted — so there is nothing to call slow and a wrong answer can't be traced to a
@@ -492,14 +517,14 @@ These each cost a real bug once. Comments in the source mark most of them.
   the prompt is only the reading, so the user cannot tell which of the pair is being asked and
   `writeAccepts()` must accept **any** card whose `a` matches — grading against `card().q` alone
   makes 4 of the 25 dakuten cards unanswerable.
-- **"Any card whose `a` matches" means within the card's own category, not the whole deck.** In
-  the mixed deck the collision also runs across scripts — か and カ are both `ka` — and every card
-  in it has a twin. Scoped to the deck, write mode there would accept hiragana for all 214 and
-  stop being a test of katakana at all; scoped to `card().q`, じ/ぢ break again. `cardGroup()` is
-  the single knob: it returns the source deck for a mixed card and `state.deck` for everything
-  else, so the other six decks grade exactly as they always did. The prompt has to say which
-  script it wants (`writeAsk()`) or the scoping is just an unwinnable guess — the two ship
-  together.
+- **"Any card whose `a` matches" means within the card's own category, not the whole deck.** In a
+  deck spanning both scripts the collision also runs across them — か and カ are both `ka` — and
+  every card has a twin. Scoped to the deck, write mode there would accept hiragana for all 214
+  and stop being a test of katakana at all; scoped to `card().q`, じ/ぢ break again. `cardGroup()`
+  is the single knob: it returns the source deck for a derived deck's card and `state.deck` for
+  everything else, so the six real decks grade exactly as they always did. A deck that spans
+  scripts also has to say which one it wants (`writeAsk()`, gated on `spansScripts`) or the
+  scoping is just an unwinnable guess — the two ship together.
 - **Enter must not grade while an IME is composing.** That keypress belongs to the IME, which is
   confirming the kana being built; without the `e.isComposing || e.keyCode === 229` guard the
   first Enter of every `ka`→か submits a half-finished romaji string as the answer.
@@ -559,14 +584,14 @@ These each cost a real bug once. Comments in the source mark most of them.
 - **Never look a record up by deck alone.** `store.best(deckId)` without a mode silently returns
   `undefined`→`0`, which renders as "no attempts yet" rather than failing — a bug that reads as
   wiped records.
-- **Choose-mode distractors are drawn from the prompt's category first.** Over the mixed deck's
-  214 cards a plain draw puts three yōon readings beside a one-mora prompt, and the option answers
+- **Choose-mode distractors are drawn from the prompt's category first.** Over Mixed kana's 214
+  cards a plain draw puts three yōon readings beside a one-mora prompt, and the option answers
   itself; the score stops measuring anything. The widen-to-the-whole-deck fallback is only reached
   when a category can't spare three distinct readings, which no shipping deck hits.
-- **The mixed deck's cards are the other decks' card objects, not copies.** Put it in
-  `state.decks` and `chartReadings()`, `buildFlickIndex()` and every other full sweep sees all 214
-  twice. `allDecks()` is for the menu, `deckLabel()` and `forScript()`; `state.decks` is for
-  anything counting characters.
+- **A derived deck's cards are the source decks' card objects, not copies.** Put them in
+  `state.decks` and `chartReadings()`, `buildFlickIndex()` and every other full sweep sees each
+  character three or four times over. `allDecks()` is for the menu, `deckLabel()`, `forScript()`
+  and the stamp check; `state.decks` is for anything counting characters.
 - **`kana.json` is fetched with `cache: "no-cache"`.** Without it the HTTP cache silently serves a
   stale deck file and edits appear to do nothing.
 

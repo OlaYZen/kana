@@ -127,6 +127,11 @@
   --brass-2:  #B8892A;  /* lighter end of the progress gradient */
   --ai:       #2B4570;  /* indigo — the katakana accent */
   --ai-2:     #1B2C47;  /* its label colour, as shu-3 is to shu */
+  /* purple — the かな stamp, the decks that are both scripts at once. Red and
+     indigo mixed, which is exactly what that stamp holds, and it lands between
+     them on contrast too rather than reading as a louder third colour. */
+  --murasaki:   #5C3D7A;
+  --murasaki-2: #452A5C;  /* its label colour, as ai-2 is to ai */
   --guide:    #C8BFA6;  /* practice-square cross guides */
 
   /* the pressed/hover wash on a control with no fill of its own */
@@ -216,6 +221,8 @@
   --brass-2:  #F0CE8C;
   --ai:       #7E9CD8;
   --ai-2:     #A3BAE6;
+  --murasaki:   #B18FD8;
+  --murasaki-2: #C6ACE6;
   --guide:    #4A4335;
 
   --press:    rgba(255,255,255,.09);
@@ -381,12 +388,17 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   margin-bottom:13px;
 }
 .scriptbar .hanko{ flex:1 1 0; width:auto; min-height:62px; gap:5px; }
-.scriptbar .hanko__glyph{ font-size:26px; }
+.scriptbar .hanko__glyph{ --stamp:26px; }
 
-/* katakana carries the indigo accent here too, exactly as it does in the chart */
+/* katakana carries the indigo accent here too, exactly as it does in the chart,
+   and the かな stamp the purple that sits between the two */
 .menu[data-script="katakana"]{
   --accent:var(--ai);
   --accent-dark:var(--ai-2);
+}
+.menu[data-script="kana"]{
+  --accent:var(--murasaki);
+  --accent-dark:var(--murasaki-2);
 }
 
 .menu__scroll{
@@ -617,6 +629,10 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   --accent:var(--ai);
   --accent-dark:var(--ai-2);
 }
+.stats[data-script="kana"]{
+  --accent:var(--murasaki);
+  --accent-dark:var(--murasaki-2);
+}
 
 /* the phone/desktop split — figures from one are never comparable to the other */
 .seg--device{ flex:0 0 auto; display:flex; margin-bottom:10px; }
@@ -838,7 +854,16 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   cursor:pointer;
   transition:transform .15s ease, border-color .15s, color .15s;
 }
-.hanko__glyph{ font-family:var(--kana); font-size:34px; line-height:1; color:var(--c-ink); }
+/* The stamp glyph is sized through --stamp rather than font-size directly, so
+   the two-glyph かな stamp can stay in proportion at every breakpoint instead of
+   needing a second override beside each one. */
+.hanko__glyph{
+  font-family:var(--kana); font-size:var(--stamp, 34px);
+  line-height:1; color:var(--c-ink);
+}
+/* あア is two full-width glyphs in a stamp built for one — at full size the pair
+   is wider than the label under it and the stamp stops looking square. */
+.hanko__glyph--pair{ font-size:calc(var(--stamp, 34px) * .68); letter-spacing:-.02em; }
 .hanko__label{ font-size:12px; letter-spacing:.04em; }
 .hanko[aria-checked="true"]{
   border-color:var(--accent);
@@ -951,7 +976,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   .kcell__k{ font-size:20px; }
   .kcell__r{ font-size:10px; }
   .hanko{ width:84px; min-height:78px; }
-  .hanko__glyph{ font-size:29px; }
+  .hanko__glyph{ --stamp:29px; }
   .chart__masthead h3{ font-size:28px; }
 }
 @media (min-width:600px){
@@ -960,7 +985,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   .kcell{ min-height:72px; }
   .kcell__k{ font-size:27px; }
   .hanko{ width:112px; min-height:100px; }
-  .hanko__glyph{ font-size:38px; }
+  .hanko__glyph{ --stamp:38px; }
   .chart__masthead h3{ font-size:40px; }
 }
 
@@ -1247,7 +1272,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 @media (max-height:450px) and (max-width:599px){
   .scriptbar{ margin-bottom:9px; }
   .scriptbar .hanko{ min-height:50px; }
-  .scriptbar .hanko__glyph{ font-size:22px; }
+  .scriptbar .hanko__glyph{ --stamp:22px; }
   .revealbar{ margin-bottom:2px; }
   .revealbar .link{ min-height:32px; font-size:13px; }
   .playmain{ padding:2px 0; }

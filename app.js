@@ -90,6 +90,12 @@
   // keyboard eats half the screen, so first-time visitors start in Choosing.
   const TOUCH = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 
+  // The seal stamps, in the order index.html lists them. "kana" is the third:
+  // it is not a script anyone writes in, it is the stamp for material that is
+  // both at once, and everything downstream treats it as a script so the deck
+  // filters stay a single comparison.
+  const SCRIPTS = ["hiragana", "katakana", "kana"];
+
   const MODES = ["type", "choose", "write"];
   // "flick" is not a selectable answer mode — the flick drills are their own
   // runs, and they record under it so their scores never mix with a deck's.
@@ -279,12 +285,12 @@
     fonts: [],         // resolved, verified-distinct font options
     fontsMissing: [],  // styles this device can't show
     font: null,        // active option
-    mixed: null,       // the derived everything-deck; kept out of decks[] above
+    derived: [],       // decks built from the ones above; kept out of decks[]
     deck: null,        // active deck definition
     queue: [],         // shuffled cards for this run
     i: 0,
     // the menu lists one script at a time; this is which one
-    script: ["hiragana", "katakana"].includes(store.read().script)
+    script: SCRIPTS.includes(store.read().script)
       ? store.read().script
       : "hiragana",
     // type: kana → romaji.  choose: kana → romaji, multiple choice.
@@ -750,54 +756,69 @@
   const deckSize = (deck) => (deck.flick ? FLICK_LEN : deck.cards.length);
 
   /* ==========================================================================
-     The mixed deck
+     Derived decks
 
-     Everything at once — both scripts, base, dakuten and yōon, every character
-     exactly once in a run. It carries no cards in kana.json and is built here
-     from every deck in the file, holding the *same card objects* rather than
-     copies of them: identity is what `state.missed.includes(c)` and the
-     chart-order review on the results screen both rely on. The other side of
-     that is that nothing which walks every card in the app — chart readings,
-     the flick index — may ever be handed this deck, or it counts each character
-     twice; `state.decks` therefore stays the decks kana.json actually lists and
-     the mixed deck is kept beside it.
+     Decks with no cards of their own, built here from the source decks they
+     name in kana.json. Two shapes of them ship: a per-script mix (all three
+     hiragana decks, all three katakana decks) and the whole `kana` stamp —
+     base, dakuten and yōon each across both scripts, plus everything at once.
 
-     Ordering a run is the part that isn't a plain shuffle. Shuffling all 214
-     together deals visible clumps — eight hiragana yōon, then a stretch of
-     katakana base — and a clump is the deck it came from arriving again, which
-     is the one thing this deck exists not to do. So each source deck is a
-     category, each is shuffled on its own, and they are dealt out under a
+     They hold the source decks' *own card objects*, not copies. Identity is
+     what `state.missed.includes(c)` and the chart-order review on the results
+     screen both rely on. The other side of that is that nothing which walks
+     every card in the app — chart readings, the flick index — may ever be
+     handed one of these, or it counts characters two and three times over;
+     `state.decks` therefore stays the decks kana.json actually lists, and the
+     derived ones are kept beside it in `state.derived`.
+
+     Ordering a run is the part that isn't a plain shuffle. Shuffle a source
+     deck's worth of cards together and it deals visible clumps — eight yōon,
+     then a stretch of katakana base — and a clump is the source deck arriving
+     again, which is the one thing these decks exist not to do. So each source
+     is a category, each is shuffled on its own, and they are dealt out under a
      single rule: never more than MIX_RUN in a row from the same category.
      Nothing is sampled and nothing is dropped — this decides order alone.
      ========================================================================== */
   const MIX_RUN = 2;   // consecutive cards allowed from one category
 
-  function buildMixedDeck(def) {
-    if (!def || !state.decks.length) return null;
-    const groupOf = new Map();
-    const cards = [];
-    state.decks.forEach((d) => d.cards.forEach((c) => {
-      groupOf.set(c, d);
-      cards.push(c);
-    }));
-    return {
-      id: def.id || "mixed",
-      label: def.label || "Mixed kana",
-      sample: def.sample || "あア",
-      subtitle: def.subtitle || "",
-      note: def.note || "",
-      // No script of its own, which is what puts it under both seal stamps:
-      // the menu and the progress screen both read a missing script as "this
-      // one belongs to neither, so show it under either".
-      script: null,
-      mix: state.decks.slice(),   // one category per source deck, in file order
-      groupOf: groupOf,
-      cards: cards
-    };
+  function buildDerivedDecks(defs) {
+    return (defs || []).map((def) => {
+      const mix = (def.sources || [])
+        .map((id) => state.decks.find((d) => d.id === id))
+        .filter(Boolean);
+      // One category is not a mix; it would also make mixFits() meaningless.
+      // A deck whose sources have gone from kana.json is dropped rather than
+      // offered as an empty run.
+      if (mix.length < 2) return null;
+
+      const groupOf = new Map();
+      const cards = [];
+      mix.forEach((d) => d.cards.forEach((c) => { groupOf.set(c, d); cards.push(c); }));
+
+      return {
+        id: def.id,
+        label: def.label || def.id,
+        sample: def.sample || "",
+        subtitle: def.subtitle || "",
+        note: def.note || "",
+        // Placed under a stamp by the same field a real deck uses. "kana" is
+        // the third stamp — material that is both scripts at once — and is a
+        // script like the other two as far as everything downstream is
+        // concerned, which is what keeps the filters single-clause.
+        script: def.script || null,
+        mix: mix,               // one category per source deck, in listed order
+        groupOf: groupOf,
+        cards: cards,
+        // Whether a romaji prompt is ambiguous here, worked out rather than
+        // declared: か and カ are both "ka", so a deck spanning both scripts has
+        // to say which it wants. See writeAsk().
+        spansScripts: new Set(mix.map((d) => d.script)).size > 1
+      };
+    }).filter(Boolean);
   }
 
   // Every deck the menu can start, real and derived.
-  const allDecks = () => state.decks.concat(state.mixed ? [state.mixed] : []);
+  const allDecks = () => state.decks.concat(state.derived);
 
   /* Can what is left in hand still be laid out under the run limit at all? m
      cards of one category need the others as separators: r of them open r+1
@@ -863,11 +884,12 @@
   /* ---------- menu ---------- */
   function buildMenu() {
     el.decks.innerHTML = "";
-    // A deck with no script of its own belongs to both stamps rather than to
-    // neither — that is how the mixed deck comes to be listed twice while
-    // recording once. It sorts last because it is built last: the three decks
-    // above it are what you practise on the way to it.
-    allDecks().filter((d) => !d.script || d.script === state.script)
+    // Derived decks carry a script like any other, so this stays one
+    // comparison. They come out after the real decks because `allDecks()`
+    // appends them, which is also the order they want: under あ or ア the mix
+    // sits below the three decks it is built from, and under かな the whole
+    // stamp is derived anyway.
+    allDecks().filter((d) => d.script === state.script)
       .forEach((deck) => el.decks.appendChild(deckRow(deck)));
 
     // Flick drills aren't decks and aren't script-specific, so they sit in
@@ -1056,13 +1078,14 @@
     }
   }
 
-  // Writing asks with the sound alone, and in the mixed deck a sound is not
-  // enough to identify a character: か and カ are both "ka". So the script is
-  // named rather than left to be guessed, and writeAccepts() holds the answer
-  // to the same scope. Every other deck is one script and says nothing.
+  // Writing asks with the sound alone, and across scripts a sound is not enough
+  // to identify a character: か and カ are both "ka". A deck that spans both
+  // therefore names the one it wants rather than leaving it to be guessed, and
+  // writeAccepts() holds the answer to the same scope. A deck inside one script
+  // — including Mixed hiragana — has nothing to disambiguate and says nothing.
   function writeAsk() {
     const g = cardGroup(card());
-    return state.deck.mix && g.script
+    return state.deck.spansScripts && g.script
       ? "Write the " + g.script + " for this sound."
       : "Write the character for this sound.";
   }
@@ -1678,8 +1701,8 @@
     const saved = store.read();
     applyFont(saved.font);
     if (MODES.includes(saved.mode)) setMode(saved.mode);
-    const known = ["hiragana", "katakana"].indexOf(saved.script) > -1;
-    const hasDecks = state.decks.some((d) => d.script === saved.script);
+    const known = SCRIPTS.indexOf(saved.script) > -1;
+    const hasDecks = allDecks().some((d) => d.script === saved.script);
     if (known && hasDecks) setScript(saved.script);
     else buildMenu();     // records changed even if the script didn't
   }
@@ -1810,14 +1833,14 @@
     });
   }
 
-  // Two things belong to neither script and so stay in the picker under either
-  // stamp: the flick drills, which aren't decks at all, and the mixed deck,
-  // which is both scripts at once. One deck id, one set of figures — finding it
-  // under あ or under ア is the same report.
+  // Same rule as the menu, so a deck is found in the report under the stamp it
+  // was started from. The flick drills are the exception and stay under every
+  // stamp: they aren't decks at all, so `allDecks()` never finds them, and a
+  // direction or a key belongs to neither script.
   function forScript(decks) {
     return decks.filter((r) => {
       const deck = allDecks().find((d) => d.id === r.deck_id);
-      return !deck || !deck.script || deck.script === statsScript;
+      return !deck || deck.script === statsScript;
     });
   }
 
@@ -2065,9 +2088,9 @@
       el.chartBtn.classList.toggle("hidden", !state.charts.length);
       buildFlickIndex();   // needs both decks and charts
       // built from decks, and deliberately after everything that walks them:
-      // its cards are theirs, so anything counting characters must not meet
-      // this deck as well
-      state.mixed = buildMixedDeck(data.mixed);
+      // their cards are the decks' own, so anything counting characters must
+      // not meet these as well
+      state.derived = buildDerivedDecks(data.derived);
       probeBackend();      // runs alongside; the app never waits on it
       const fonts = resolveFonts(data.fonts);
       state.fonts = fonts.list;
@@ -2075,9 +2098,10 @@
       applyFont(store.read().font);
       setMode(state.mode);
 
-      // a script with no decks in kana.json gets no button, and never gets
-      // selected — otherwise the menu would open on an empty list
-      const hasDecks = (id) => state.decks.some((d) => d.script === id);
+      // A script with no decks in kana.json gets no button, and never gets
+      // selected — otherwise the menu would open on an empty list. Derived
+      // decks count: the かな stamp has nothing else under it.
+      const hasDecks = (id) => allDecks().some((d) => d.script === id);
       Array.from(el.scriptSwitch.children).forEach((b) =>
         b.classList.toggle("hidden", !hasDecks(b.dataset.script)));
       setScript(hasDecks(state.script)
