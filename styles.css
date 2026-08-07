@@ -663,10 +663,16 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   cursor:pointer; text-align:left;
   transition:border-color .15s, color .15s, background .15s;
 }
+/* Follows the stamp, like everything else that carries the script's colour: the
+   selected chip is vermilion under あ, indigo under ア, purple under かな. It
+   named --shu directly until the stamps outnumbered it, which left a katakana
+   deck picked out in the hiragana colour two inches below an indigo seal. The
+   two reds left on this screen — .srow__k--bad and .srow__v--bad — are not this
+   and must not follow the accent: they mean *wrong*, not *hiragana*. */
 .deckpick__btn[aria-checked="true"]{
-  border-color:var(--shu);
+  border-color:var(--accent);
   color:var(--c-ink);
-  box-shadow:0 0 0 2px color-mix(in srgb, var(--shu) 14%, transparent);
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 .deckpick__name{ font-size:13px; font-weight:600; white-space:nowrap; }
 .deckpick__n{ font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
