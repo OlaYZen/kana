@@ -14,17 +14,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | File | Role |
 |---|---|
-| `index.html` | markup only — six screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`) plus three `<dialog>` sheets (`#moreSheet`, `#fontSheet`, `#chartSheet`); `#play` holds one answer block per mode (`#typeMode`, `#writeMode`, `#chooseMode`) |
+| `index.html` | markup only — nine screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`, `#options`, `#fontPicker`, `#chart`) and no modals; `#play` holds one answer block per kind of answer (`#typeMode`, `#writeMode`, `#numberMode`, `#chooseMode`) |
 | `styles.css` | the entire stylesheet, mobile-first |
-| `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `derived[]`. No kana or font names live in JS or CSS |
+| `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `derived[]`, `numbers{}`. No kana, font name or number reading lives in JS or CSS |
 | `app.js` | all front-end logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
 | `icon.svg` | the app icon, and the source the `.ico` is generated from — see **The icon** |
 | `favicon.ico` | six sizes rasterised from `icon.svg`; what `<link rel="icon">` points at |
 | `fonts/` | the five bundled Japanese faces, subset to kana, plus `LICENSES.txt` and the `subset.py` that regenerates them — see **Bundled fonts** |
 | `start.sh` | install / update / run, executable in git (mode `100755`) |
 | `backend/` | the optional FastAPI server |
+| `NOTES.md` | hand-written study notes — numbers, time, months, weekdays, dates. Read by nobody; `kana.json` is still the only content the app loads |
 
-That plus `README.md` and this file is the whole repository. Three superseded standalone pages —
+That plus `README.md`, `NOTES.md` and this file is the whole repository. Three superseded standalone pages —
 `hiragana-game.html`, `katakana-game.html` and `kana-chart.html`, near-identical predecessors of
 the drill and the chart — were deleted; they are in git history at `3ece9c6` if one is ever
 needed. Don't reintroduce a second copy of the game: they drifted out of sync with the real app
@@ -72,9 +73,14 @@ or font options is a JSON edit, never a code edit. Keys prefixed `//` (`"//fonts
   (`si` for `shi`, `hu` for `fu`, `sya` for `sha`, `nn` for `n` …)
 - font: `{id, label, ja, note, families[], generic}` — `families` are probed at boot; omit it for
   an option that is deliberately just the device's `generic` face
-- chart: `{id, label, ja, sample, subtitle, sections[]}`, one entry per script. A section is
-  `{title, en, type, …}` where `type` is `"grid"` (consonant `rows` × vowel `cols`, `null` cells
-  are grid gaps, optional `single` for the standalone ん/ン) or `"flow"` (a wrapping `items` list).
+- chart: `{id, label, ja, sample, subtitle, sections[], seal?, note?}`, one entry per stamp that
+  has one. A section is `{title, en, type, …}` where `type` is `"grid"` (consonant `rows` × vowel
+  `cols`, `null` cells are grid gaps, optional `single` for the standalone ん/ン), `"flow"` (a
+  wrapping `items` list) or `"numbers"` (`items` of `{n, x, q, a}` — what the row is, how it is
+  written, the kana, the reading, with `wide` for one per row). `x` is optional and holds the
+  kanji — 六, 二十日, 月曜日, the form the drill puts on the square — while `n` names the row in
+  plain terms: `6`, `Monday`, `the 20th`. `seal`/`note` are the footer, and default to the 五十音 stamp and the
+  gojūon line the two kana charts want.
   **Charts carry layout, not readings** — a cell is just a kana string and its romaji is looked up
   from the decks, so the chart and the quiz can never disagree. The exception is a flow item
   written `{q, a}`, used for the extended katakana (ファ ティ ヴァ …), which are reference-only and
@@ -82,11 +88,15 @@ or font options is a JSON edit, never a code edit. Keys prefixed `//` (`"//fonts
 - derived: `{id, label, script, sample, subtitle, note, sources[]}` — a deck with **no `cards`**,
   built at boot from the decks `sources` names. `script` places it under a stamp exactly as a real
   deck's does. See **Derived decks** below.
+- numbers: `{ones[], places[], groups[], drills[]}` — the parts a number is *composed* from, not a
+  list of them. Each part carries `j` (its kanji), `r` (romaji) and `k` (kana). See **Numbers**.
+- calendar: `{weekdays[], counters[], drills[]}` — the seven days listed, and the four counters
+  months, dates, hours and minutes are composed with. See **The calendar and the clock** below.
 
 **Colour** is washi paper throughout — cream ground, ink text, vermilion seal accent — defined
 once in `:root` (`--paper*`, `--c-ink*`, `--shu`, `--brass`, `--matcha`). The accents are
 deliberately darker than a dark theme's would be: the same red/gold/green at "glowing on indigo"
-lightness fails contrast on cream. Nothing re-themes wholesale — the chart sheet and the menu only
+lightness fails contrast on cream. Nothing re-themes wholesale — the chart and the menu only
 re-point `--accent`, flipping shu-red/indigo-blue via `[data-script]`.
 
 **The dark theme is one more block of custom properties**, `:root[data-theme="dark"]`, and nothing
@@ -95,8 +105,9 @@ and warm off-white ink, with every accent opened up in lightness because the sen
 both ways. Three rules follow from that and are what keep it to one block:
 
 - **No literal colour may appear below the two `:root` blocks.** A literal can only be right in one
-  theme. That includes the translucent ones, which is what `--press`, `--backdrop`, `--on-fill`,
-  `--paper-lift`, `--square-bg` and the three `--shadow-*` values exist for. Shu-derived washes use
+  theme. That includes the translucent ones, which is what `--press`, `--on-fill`,
+  `--paper-lift`, `--square-bg` and the `--shadow-*` values exist for. (`--backdrop` and
+  `--shadow-sheet` went with the dialogs that used them.) Shu-derived washes use
   `color-mix(in srgb, var(--shu) N%, transparent)` instead and need no dark twin at all.
 - **`--accent-dark` is the accent's *label* colour, not "the dark theme's accent"** — `--shu-3` in
   light, a lighter tint in dark. Same for `--ai-2`, its katakana counterpart. The three
@@ -139,13 +150,24 @@ them *after* `buildFlickIndex()` in boot is part of the same rule.
 | Combination kana | かな | both yōon decks | 72 |
 | Mixed kana | かな | all six | 214 |
 
-**There are three seal stamps, and `kana` is a script as far as everything downstream is
-concerned.** It is not a script anyone writes in — it is where the decks that span both scripts
-live — but giving it a `script` value like any other is what keeps `buildMenu()` and `forScript()`
-to a single comparison each. An earlier version had the everything-deck carry no script and be
-shown under "either" stamp; that listed it twice and meant every filter had a second clause.
-`SCRIPTS` in `app.js` is the list, and it has to match the `data-script` values in the two
-`.scriptbar`s in `index.html`.
+**There are five seal stamps, and only two of them are scripts anyone writes in.** `kana` is where
+the decks spanning both scripts live; `number` is the counting drills and `calendar` — the 日時
+stamp, labelled **Time** — the weekdays, months, dates and the clock, neither of which is kana at
+all. The stamp is `calendar` everywhere in the code, in `SCRIPTS`, in the `cal-` deck ids and in
+the `script` column of every run already posted, and it covers the clock as well because *when*
+is one subject and because a sixth stamp has nowhere to put its label. Only what the user reads
+says Time. Giving each a `script` value like any other is
+what keeps `buildMenu()` and `forScript()` to a single comparison each. An earlier version had the everything-deck carry no script and be shown
+under "either" stamp; that listed it twice and meant every filter had a second clause, and the
+number drills sat in a section below the list with their own build step and their own visibility
+flag — which was the same mistake a second time. `SCRIPTS` in `app.js` is the list, and it has to
+match the `data-script` values in the two `.scriptbar`s in `index.html`. **Five labels is what the
+bar can hold**; a sixth would have to come with somewhere else for the labels to go.
+
+`allDecks()` is `state.decks + state.derived + NUMBER_DECKS + CALENDAR_DECKS`, and the drills are
+safe in it for precisely the reason the rule about derived decks exists: **they have no `cards` at
+all**, and nothing that counts characters uses `allDecks()`. The flick drills stay out of it — they carry no
+script, and a direction belongs to none.
 
 Three things follow:
 
@@ -185,7 +207,7 @@ and five misses that all came from one category have nothing to interleave with.
 with fewer than two surviving sources is dropped at boot rather than offered as a run of one
 category, which is also what stops `mixFits()` being asked a meaningless question.
 
-**Three answer modes**, chosen in the Options sheet and held in `state.mode`:
+**Three answer modes**, chosen in Options and held in `state.mode`:
 
 | mode | prompt | answer | graded by |
 |---|---|---|---|
@@ -232,20 +254,264 @@ chart. Three things that fall out of that and are easy to get wrong by hand:
 - **ん is deliberately excluded** from both drills: it has no vowel, and which key it sits on
   differs between keyboards, so drilling it would teach a guess. `kanaInfo()` returns null for it.
 
-**The menu shows one stamp at a time.** The three seal-stamp buttons (`.hanko`, styled with the
-chart sheet and reused by `.scriptbar`) filter `#decks` to that stamp's four decks and flip
-`--accent` via `[data-script]` on `.menu` — vermilion for hiragana, indigo for katakana, and
-`--murasaki` for かな, which is the two mixed, and lands between them on contrast rather than
-reading as a louder third colour. The chart opens on whatever the menu is showing, except under
-かな: there is no combined chart, so `renderChart()` falls back to the first one.
+## Numbers
 
-The かな stamp's glyph is two characters, あア, where the others are one. `.hanko__glyph` is sized
+**`num-50` and `num-random` are the app's second subject, and the first content that is generated
+rather than enumerated.** 1 to 1,000,000 is not a card list, so `kana.json` carries the *parts* —
+the nine digits, the places 千 百 十, the group 万 — and `readNumber()` composes a reading out of
+them while `kanjiNumber()` composes the written form. No number's sound and no number's spelling
+is written in `app.js`, for exactly the reason no kana reading is.
+
+**The two composers are deliberately not one.** A place's `forms` change how it *sounds* — 三百 is
+`sanbyaku` — and never how it is written, so `kanjiNumber()` walks `j` alone and cannot be dragged
+off by a sound change. What they do share is the 一: a place drops a leading one (十, never 一十)
+and a group keeps it (一万), which is the same split that makes `places` and `groups` two lists.
+
+**They answer to the three answer modes like a deck does, and the mode is what decides which way
+round a prompt goes.** `state.numbers` holds `"count"`/`"random"` while one is running, but it
+never touches `activeMode()` — a number record is keyed `num-10|type` exactly as a deck's is.
+
+| mode | prompt | answer | field |
+|---|---|---|---|
+| `type` | 六 or `roku` — see below | the digits | `#numInput`, a numeric keypad |
+| `choose` | 六 or `roku` | the digits, 1 of 4 | `#choices` |
+| `write` | the digits — `6` | the kana — ろく | `#kanaInput`, the IME |
+
+**Which mirrors the decks exactly**: type and choose share a direction and differ only in how the
+answer arrives, and write is the reverse of both and the one that needs an IME. The unifying rule
+across all three subjects is *type = a plain keyboard, write = a Japanese IME, choose = a pick* —
+and it is the reason numbers and dates can be decks rather than extra modes.
+
+**Which script the two reading modes ask in is a setting** — `state.prompt`, `PROMPTS`, the
+`Numbers & dates ask with` switch in Options — because 六 → 6 and `roku` → 6 are both worth
+practising and neither is a substitute for the other. Reading the kanji is what you need on a price
+tag; hearing the reading and knowing the value is what you need at a till. Three things about it:
+
+- **It is a setting and not a fourth mode.** The mode means *how does the answer arrive* — plain
+  keyboard, IME, pick — and it must not also come to mean *which script is the question in*. Those
+  are two independent questions and the app asks them separately.
+- **Writing ignores it**, because that direction asks with the identity — 6, 20日, Monday — and
+  answers in kana. There is no reading for it to ask with.
+- **It belongs to `store`, so an account carries it**, unlike the theme and Fast. Which script you
+  want to be asked in is a fact about what you are learning, not about the screen in front of you.
+  `applyStoredPrefs()` therefore runs it through `setPrompt()` on sign-in like every other synced
+  preference, and boot calls `setPrompt()` **before** `setMode()` — `buildMenu()` reads it.
+
+**An earlier version dealt the direction per card and ignored the mode.** Typing then showed a
+number half the time and a reading the other half, and the answer box changed under you mid-run.
+Don't go back to it: "which way round am I being asked" is a property of the mode, and a mode the
+user chose is the one place that answer belongs. Two things fell out of the fix, both worth
+keeping — `numberCard()` carries no direction at all, so switching mode mid-run flips every
+remaining prompt instead of leaving a half-dealt run inconsistent; and `pairedQueue`, which existed
+to space a value's two askings apart, went with it.
+
+**They are a stamp, though, where the flick drills are a section.** A number drill is a deck-shaped
+thing — a fixed identity, a record, a report, an answer mode — that simply is not kana, so it
+carries `script: "number"` and every existing filter finds it. A flick drill is not a deck at all,
+belongs to no script and ignores the mode, which is why it still needs a section of its own. Number
+drills are also **not touch-only**: counting is the same skill on either keyboard.
+
+**Writing takes either script here, and `alt` is graded rather than shown.** `numKanaAccepts()`
+walks the parts against `k` + `altk`, `numRomajiAccepts()` against `r` + `alt`, and Writing accepts
+whichever matches — 2 is に or `ni`, 4 is よん, し, よ, `yon`, `shi` or `yo`. The same rule governs
+both: only a bare trailing digit carries alternates, because 四十 is よんじゅう and never しじゅう.
+That falls out of `readGroup()` building compounds from `k` and `r` alone and needs no rule of its
+own.
+
+**The romaji path exists exactly where romaji is not the prompt, and nowhere else.** A deck asks
+Writing with the reading — か is asked as "ka" — so accepting romaji there would be typing the
+question back; `writeAccepts()` stays kana-only and must. A generated drill asks with the identity
+instead — 6, 20日, Monday — so "roku" is a real answer to it. Without that, Writing is simply
+unanswerable on a machine with no Japanese input installed, which is a fact about the machine and
+not about the person practising. The hint under the field says which: *Kana or romaji* for a
+generated drill, *Japanese keyboard* for a deck.
+
+**Choosing generates its distractors** (`numNeighbours()`) — the same value with one digit changed
+or two adjacent digits swapped. Four numbers drawn at random would give the answer away by length
+alone: 六 beside 6, 400 and 12,000 is not a question about the reading. The top of the range is
+the case that breaks it — every digit of 1,000,000 that can be changed leaves the range, and its
+swaps are all zeros — so a value with fewer than three neighbours tops up from its own
+`NUM_BANDS` band, which is still a wrong answer of the right size.
+
+**The digits answer has a field of its own** (`#numInput`), and this is not tidiness. A keypad and
+a Japanese IME are two different on-screen keyboards, and changing `inputmode` on a live field does
+not reliably re-trigger it — the same reason `#kanaInput` is not `#input` with an attribute swap.
+`typedField()` is the single place that decides, and it asks `numericAnswer()`: *is this card
+answered with a number?* Not *which drill is running* — a month and a date answer with theirs too,
+and a weekday, alone among the generated prompts, does not.
+
+### Composing a reading
+
+`readNumber()` returns **chunks**, each a list of parts, and the distinction is load-bearing twice:
+
+- **A group takes its whole multiplier with it.** 999,999 is 九十九万 九千九百九十九 —
+  `kyūjūkyūman kyūsen kyūhyaku kyūjū kyū`, not "ninety, nine, ten-thousand". Everything
+  below the last group is one chunk per place.
+- **Chunks are for the display; grading walks the parts flat.** A chunk is written as one word and
+  chunks are spaced apart, so the chart shows `ichiman nisen sanbyaku yonjū go` — 一万 二千 三百
+  四十 五 at a glance. Real romaji runs it together, which hides the one thing the chart teaches.
+  Nothing is graded on the spacing, because nothing is graded on the romaji at all. **The calendar
+  joins the same parts with no spaces**, because a date is one spoken word — `nijūyokka`, never
+  "nijū yokka" — and the counter is what welds it into one.
+
+Four rules in `kana.json` that are easy to get wrong by hand:
+
+- **`places` drop a leading 一 and `groups` keep it.** 10 is `jū`, never `ichijū`; 10,000 is
+  `ichiman`, never `man`. That difference is the entire reason they are two lists rather than one
+  with a flag — and it holds for the kanji too, 十 against 一万, which is why `kanjiNumber()` can
+  reuse the same pair of loops.
+- **Readings are spelt with macrons** — `jū`, `kyū`, `yōka` — which is only possible because
+  nothing grades them. ō and ū are the only two, and `subset.py` carries `U+014D,U+016B` for them.
+- **The sound changes are not optional and are not derivable.** 300 is `sanbyaku`, 600 `roppyaku`,
+  800 `happyaku`, 3,000 `sanzen`, 8,000 `hassen`. They live in each place's `forms`, keyed by the
+  leading digit, and a place with none carries `"forms": {}`.
+- **A digit's `alt` is deliberately not carried into a compound.** 四 alone is `yon`, `shi` or
+  `yo`, but 四十 is only `yonjū` and 四百 only `yonhyaku`. Propagating `alt` would have the drill
+  agree with `shihyaku`, which is not how anyone counts. Only the trailing bare digit takes them,
+  which is what makes 17 `jūnana` *or* `jūshichi` — and what forces every date ending in 4, 7 or 9
+  to be written out by hand; see **The calendar and the clock**.
+- **Reaching 億 or 兆 is one more `groups` entry plus a wider band in `NUM_BANDS`.** Nothing else
+  changes; `readNumber()` already loops the groups biggest-first.
+
+### Grading
+
+**`numKanaAccepts()` walks the answer against the parts instead of expanding them.** 7 is なな or
+しち and 9 きゅう or く, so a seven-part reading has a few hundred spellings between them; matching
+left to right with a backtrack costs a handful of string compares, and a wrong prefix prunes the
+rest. Spellings are normalised once and cached on the part object, which `kana.json` shares across
+every card that uses it.
+
+**`normRomaji` folds the spellings nobody agrees on**, in this order: case, spaces and the
+apostrophe in kin'yōbi; macrons off, ō → o and ū → u; the y-form `jyu` → `ju`; then every way a
+long vowel gets written down, so `jū`, `juu`, `jyuu` and `ju` are one string and so are `yōka`,
+`youka` and `yooka`.
+
+**Vowel length is therefore not graded on the romaji path**, and that is the price of the path
+existing rather than a bug to fix later. A fold that makes those four spellings one answer cannot
+also tell a long vowel from a short one; demanding the macron instead would be asking someone on a
+plain keyboard to guess a romanisation convention. **The kana path grades length exactly** — じゅう
+is じゅう — which is the strongest argument for using the IME where there is one, and it is why the
+romaji in `kana.json` is still spelt properly with macrons rather than however the grader could
+cope with.
+
+**`normDigits` NFKC-folds first**, so an IME's full-width ７ counts, and then drops everything that
+is not a digit — which is what lets `1,000,000` and `1000000` both be the answer, and why the
+prompt can be written with separators at all.
+
+### The two drills
+
+`num-50` is 1–50, every value once, and is a fixed set of prompts like a deck. `num-random` deals
+20, and **deals them across magnitude bands rather than sampling the range** (`NUM_BANDS`). Uniform
+sampling of 1..1,000,000 is not what "random numbers" should mean here: nine tenths of that range
+is six digits long, so a run would be twenty variations on one problem and never once ask for 8 or
+40. Same argument as flick prompts being dealt rather than sampled.
+
+That difference is also why **`num-random` is the one deck the backend refuses to analyse**
+(`UNANALYSABLE` in `analytics.py`) while `num-50` is analysed like any other. Twenty values drawn
+from a million are never seen twice, so "slowest to recall" over them is a list of things you will
+not be asked again. `num-50` is the opposite case: fifty fixed prompts, and which of them you are
+slow on is exactly what the report is for.
+
+**`logAnswer()` files a number under `card.key`, not `card.q`.** A number asked both ways is one
+thing you either know or don't, so both directions pool under the value itself — the report should
+say "you are slow on 8", not rank "8" against "hachi". `key` is the general escape hatch for a card
+whose prompt is not what it is about; nothing else uses it yet.
+
+### Two smaller decisions
+
+- **The prompt sizes itself.** `6` and 九十九万九千九百九十九 arrive in the same slot, which
+  nothing else in the app has to cope with. `.square` is a container, so `app.js` picks a `--fit`
+  multiplier and `.glyph.is-number` does the arithmetic in `cqw`. Buckets (`NUM_FIT`) rather than a
+  formula: there are a handful of sizes that matter and a bucket can be looked at. The CSS fallback
+  is the shortest bucket, so a missing property under-fills rather than overflowing.
+  **The bucket is chosen on columns, not characters** (`fitWidth()`). Now that the prompt comes in
+  both scripts that distinction is the whole game: `1,000,000` is nine narrow glyphs where
+  一万二千三百四十五 is nine full-width ones and wants twice the room. Everything from CJK
+  punctuation up counts two; Latin, digits and ō count one.
+  **Columns are not the whole story either**, which is why seven has a bucket to itself. A column
+  of Latin is wider against the font size than half a full-width glyph is, and — the part that
+  actually matters — a Latin prompt is one *word*: 一万二千三百四十五 wrapping onto two lines is
+  fine, `Tuesda / y` is not. So where the two scripts share a bucket, the Latin case sets the size.
+  This is invisible to jsdom and invisible to a bounding box, since the glyph is a block that fills
+  the square whether the text inside it wrapped or not — measure the line boxes with a Range, and
+  measure each *word* with one too: what must not happen is a word broken across lines, and a
+  prompt with a space in it — every clock reading is two words — is allowed to wrap between them.
+  **The 12/13 boundary was measured, not chosen**, and was wrong until the clock made it visible:
+  at 13cqw a thirteenth column is past the square's inner width, so `sanjūichinichi` and two other
+  date readings had been breaking mid-word for as long as they had existed.
+- **The deck samples use only characters the bundled subsets carry.** 十 for `num-10`, 五十 for
+  `num-50`, 万 for `num-random`. That last one used to be まん in kana, because 万 was not in
+  `subset.py`'s `KANJI` and the stamp would have been tofu on any machine with no Japanese font
+  installed; it is in the list now, since a number is written in kanji on the square. Any new
+  interface glyph faces the same choice, and the answer is to add it to `KANJI` and regenerate the
+  eight files — never to ship a character no bundled face carries. See **Bundled fonts**.
+
+**The menu shows one stamp at a time.** The five seal-stamp buttons (`.hanko`, styled with the
+chart and reused by `.scriptbar`) filter `#decks` to that stamp's decks and flip `--accent`
+via `[data-script]` on `.menu` — vermilion for hiragana, indigo for katakana, `--murasaki` for
+かな, which is the two mixed and lands between them on contrast rather than reading as a louder
+third colour, `--nando` for 十 and `--kuri` for 日時.
+
+**`--nando` and `--kuri` are deliberately outside that family, and deliberately not `--matcha` or
+`--brass`.** Numbers and dates are different subjects rather than further scripts, so a colour that
+reads as another point on the shu→murasaki→ai line would be saying the wrong thing. The two
+greens/golds already in the palette were the obvious reach and are both taken: `--matcha` means
+*correct* everywhere in a run and `--brass` means *your record*, and a stamp is neither. `--nando`
+is a teal; `--kuri` had no hue left to take — six accents had the circle covered — so it is the
+unsaturated one instead, bark against dyes, which happens to suit the only stamp that is about time
+rather than about writing. Both label colours land near 8:1 on `--paper-card` in either theme,
+inside the band the other three sit in.
+
+The chart opens on whatever the menu is showing, except under かな, where there is no combined
+chart and `renderChart()` falls back to the first one. **Every other stamp opens its own chart or
+none**: falling back under 十 or 日時 would hand over a kana table in answer to a question about
+counting or about dates, so if `kana.json` ever loses one of those charts the button is hidden
+instead. `chartApplies()` is the single test — `state.script === "kana" || charts.some(id ===
+state.script)` — and it also carries the "are there any charts at all" case, so the two can never
+disagree.
+
+### The two generated charts
+
+**The numbers and calendar charts carry their own readings, and are the only ones that could not do
+otherwise** — every other cell's romaji is looked up from the decks, and there is no deck of
+numbers or of dates to look one up from. That loses the guarantee the lookup exists for, so it is
+bought back a different way: **every derivable entry in the two shipped charts was generated by
+`readNumber()` and `kanjiNumber()` rather than typed** — 46 rows and 94 — and the generator asserts
+each one against a table of the readings written out independently before it emits anything. Edit
+an entry by hand and the charts become the only things in the app that can lie about a reading;
+regenerate them instead.
+
+The four parts are `{n, x, q, a}` — what the row is, how it is written, the kana, the reading —
+because a row has four facts and `.nrow` has three slots. `n` and `x` share the leading cell, the
+kanji leading in `--accent-dark` with the identity quiet underneath, and the kana and romaji stack
+beside them. Every row is its own grid, so the leading cell carries a `min-width` just past the
+longest identity either chart has ("Wednesday", 71px) — without it nothing lines up down the page
+and 水曜日 sits a dozen pixels right of 月曜日. `wide` drops a section to one item per row, which
+the worked examples need: 12,345 is nine kanji and eighteen kana and does not sit beside another.
+
+Six sections, and the order is the argument: the ten digits, the three second readings, how 十
+behaves either side of a digit, the places, the five sound changes, then whole numbers coming
+apart. **"Second readings" is the section that is not a composition** — し・よ, しち, く are
+alternates, not what `readNumber()` returns — so the suite checks them the other way round, by
+asserting the grader accepts each one for that value.
+
+Nothing in it can reach `buildFlickIndex()`, which reads `type: "grid"` sections only.
+
+The かな stamp's glyph is two characters, あア, where the other three are one. `.hanko__glyph` is sized
 through a `--stamp` custom property rather than `font-size` directly, so `.hanko__glyph--pair` can
 scale with it at every breakpoint instead of needing an override beside each one.
 
 The same `.scriptbar` markup appears a third time on the progress screen, filtering the deck picker
 rather than the deck list. The flick drills are the one thing that survives every filter — they
-are not decks, so `allDecks()` never finds them, and a direction belongs to no script.
+are not decks, so `allDecks()` never finds them, and a direction belongs to no script. The number
+drills used to do the same and no longer do: they are in `allDecks()` now, so their reports are
+found under 十 and nowhere else, which is the point of a stamp.
+
+**Four stamps share the width three used to**, so the label is what runs out of room first —
+"Katakana" and "Numbers" are the long ones, and "Time" is the shortest — part of why the clock
+went under a stamp that already existed rather than taking a sixth. The bar closes its gap a
+little and the labels are held to one line, with a narrow-phone block that drops the
+letter-spacing before the size.
 
 **That connection is one-way, and deliberately so.** `openStats()` copies `state.script` into
 `statsScript` on **every** open, not just the first: practising katakana and then finding the
@@ -281,7 +547,7 @@ directions` all sit under the あ stamp. Don't simplify this to "never show the 
 deck's identity entirely.
 
 **Persistence** is localStorage key `kana.v1` (`STORE` in `app.js`), holding
-`{rev, mode, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
+`{rev, mode, prompt, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
 merges patches — never `setItem` directly. **Renaming that key wipes every record anyone has set**,
 because it is the only handle on a returning user's saved bests — the `hkk.v1` → `kana.v1` rename
 was only safe because `renameKeys()` moves the old value across first, and any future rename needs
@@ -294,6 +560,9 @@ Two things are kept in keys of their own, both deliberately outside the synced b
   business making that round trip.
 - **`kana.theme`**, `auto`/`light`/`dark` — see the theme rules below. It is read and written
   directly, never through `store`, which is precisely what stops it syncing.
+- **`kana.perf`**, `on`/`off` — performance mode, kept out for the theme's reason exactly: whether
+  animation costs this device anything is a fact about this device. Read and written directly, for
+  the same reason.
 
 **The theme is the one setting that must not follow the user between devices.** Which theme is
 right is a fact about the screen in front of them — a phone in a dark room, a laptop under office
@@ -310,32 +579,261 @@ minimum — the key name and the two output values — and both copies have to c
 `<meta name="darkreader-lock">` is in `<head>` because the app has a real dark theme; Dark Reader's
 automatic inversion would fight the palette rather than add to it.
 
+## The calendar and the clock
+
+**Weekdays, months, dates and telling the time — the third subject, and nearly all of it is
+counting.** 四月 is the number four with a counter on the end, 二十日 the number twenty with
+another, 四時 and 四十五分 two more, so a reading is *composed* exactly as a number's is:
+`readNumber()` for the value, `kanjiNumber()` for how it is written, then the counter. `kana.json`
+writes down only what composition gets wrong.
+
+That list is each counter's `irregular`, and it is **keyed by the whole value rather than by a
+digit**, because these replace the entire reading and not one part of it — 一日 is `tsuitachi`,
+二十日 `hatsuka`, 四月 `shigatsu`. Everything absent from it is built, kanji included.
+
+**Which values have to be listed is not a matter of taste.** 4, 7 and 9 carry `alt` readings in
+`numbers` (yon/shi, nana/shichi, kyū/ku) and a bare trailing digit takes them, so **every value
+ending in one of the three is written out** — 四日 七日 九日, 十四日 十七日 十九日, 二十四日
+二十七日 二十九日 — or the drill would quietly accept `jūnananichi` for 十七日, which no calendar
+says. Everything else composes: 十一日 is `jū` + `ichi` + `nichi` and needs no entry.
+
+**Weekdays are not counting at all and are simply listed.** What makes them the same kind of thing
+as a date is that both have an **identity that is not Japanese** — the number for a month or a
+date, the English name for a weekday — and that identity is what Typing and Choosing answer with,
+exactly as the number drills answer with digits.
+
+| mode | prompt | answer | field |
+|---|---|---|---|
+| `type` | 二十日 or `hatsuka`, 月曜日 or `getsuyōbi` | 20, 4, `Monday` | `#numInput`, or `#input` for a weekday |
+| `choose` | the same prompt | the same answer, 1 of 4 | `#choices` |
+| `write` | the identity — `20日`, `4月`, `Monday` | the kana — はつか | `#kanaInput`, the IME |
+
+Four things about that table are load-bearing:
+
+- **Which script the first two ask in is the `Numbers & dates ask with` setting**, shared with the
+  number drills — see **Numbers**. Both forms are worth practising and each keeps its own records.
+- **Writing asks with `20日`, not with 二十日.** The kanji is one of the two things the other modes
+  show, so asking with it there could be the same question twice. The counter still has to be
+  named, though, or a bare "20" could want either はつか or にじゅう — which is why the prompt is
+  the plain numeral with the counter's own kanji after it.
+- **A weekday takes the plain field, not the keypad.** `numericAnswer()` is what decides, and it
+  asks whether *this card* is answered with a number rather than which drill is running. It is the
+  one generated prompt that isn't.
+- **Grading is `numKanaAccepts()` / `numRomajiAccepts()`, unchanged.** An irregular value is a
+  single part — the whole word — which is also what puts its `altk` in the right place: 十七日 takes
+  じゅうしちにち or じゅうななにち, and nothing composed has an alternate at all, because everything
+  that would have had one is listed instead.
+- **A weekday takes its stem alone**, げつ for げつようび, which is one more `altk`/`alt` on the
+  entry in `kana.json` and no code at all — a weekday card's parts are that entry, so the machinery
+  that already reads alternates reads these. It works here and would not anywhere else in the app:
+  every weekday ends in the same ようび, so the stem is the whole of what distinguishes them, and it
+  is a *word* rather than a number. A month's stem is the bare number (四月 → し, which is also 4)
+  and a date's is either the bare number or nothing separable at all (はつか does not come apart),
+  so accepting a stem there would drop the counter the drill exists to teach. The instruction line
+  says "its first part is enough" in general terms rather than by example, since naming the stem
+  would name the answer.
+- **`key` is the identity**, so `logAnswer()` files a date under `20` and a weekday under `Monday`.
+  A date asked both ways is one thing you either know or don't; the report should say you are slow
+  on the 20th, not rank `hatsuka` against `20`.
+
+**Choosing draws its distractors from nearby** (`calNeighbours()`) — the dates either side, then a
+week and ten days away, then whatever the drill still holds; for a weekday, the rest of the week.
+Deliberately *not* `numNeighbours()`'s digit surgery, which over a range of 31 offers 10 and 30 for
+the 20th and never 19 — the two you actually mix up.
+
+**Every value is asked exactly once**: seven, twelve, thirty-one, or the thirteen a drill picks out
+of them. A calendar is a fixed set, so there is nothing to sample and no magnitude band to deal
+across, and `calendarQueue()` is a plain shuffle of `calPool()`.
+
+**A drill may name the values it asks** — `values` in `kana.json`, which `cal-day-native` carries:
+1–10, 14, 20 and 24, the dates that are said as words instead of ending in にち. It is a *subset of
+the same material*, not a fourth kind of thing — same composition, same grading, same three answer
+modes, same report — and the only code it needs is `calPool()`, which returns either the list or
+the counter's whole range. Two details that are not optional:
+
+- **It carries no `len`.** Two copies of the same count are one of them waiting to go stale, so
+  boot derives it from the list. The three full drills keep theirs, which is the counter's range
+  and not a second copy of anything.
+- **Choosing draws from the pool, not from the counter.** Offer the 19th against はつか in a drill
+  that only ever asks thirteen dates and anyone who knows *which* thirteen answers without reading
+  the prompt — the same giveaway `numNeighbours()` tops up its band to avoid. That is why
+  `calNeighbours()` takes the pool rather than a `max`, and why its fallback runs nearest-first: a
+  subset is sparse, so the offsets it is asked for mostly miss.
+
+**The English is a card field, not a lookup.** A weekday's comes from `en` in `kana.json` and a
+month's from the counter's `names`; a date's ordinal is generated, because "the 21st" is a rule
+about a number rather than a word anyone had to write down — the same reason `fmtDigits()` is code
+and not content. That is what lets the feedback say *二十日 is the 20th — はつか "hatsuka"*, which
+is the one useful way round however the card was asked.
+
+**A drill whose counter has gone from `kana.json` is dropped at boot**, and so is one left with no
+values — or, for the clock, without both of its counters and its marks — rather than offering a run
+that cannot generate a card. The same rule that drops a derived deck with nothing left to derive
+from.
+
+### The clock
+
+**Three more drills, and between them they add exactly one idea: two counters said one after the
+other.** Hours and minutes are counters like 月 and 日 — `cal-hour` is 一時 to 十二時 and
+`cal-minute` the nineteen values `values` names — so they need no code at all beyond being listed.
+`cal-time` is the new shape, and `timeChunks()` is all of it: the hour composed, then the minute
+composed, then joined.
+
+- **The two counters are named by the drill**, in `counters`, and the marks it asks in `minutes`.
+  An id belongs to the content, so `"hour"` and `"minute"` appear in `kana.json` and are read from
+  the deck — never written into a lookup in `app.js`.
+- **A clock reading is two words where a date is one.** 三時四十五分 is `sanji yonjūgofun`, so the
+  romaji keeps the space between the counters and the kana runs together as it is written. That is
+  the one place the calendar's own "join with no spaces" rule doesn't hold, and it costs nothing:
+  grading walks the parts flat and `normRomaji` drops spaces anyway.
+- **半 is an alternate on the minute, not a second reading of the time.** 三時半 and 三時三十分 are
+  the same clock face, so `half` in `kana.json` is merged onto a *copy* of the minute part — the
+  part objects are shared between cards and cache their spellings on themselves — and only while
+  the two counters are being said together. A bare 三十分 is さんじゅっぷん and never はん, which is
+  why this must not reach the minutes drill, and doesn't. The merge is guarded on the minute being
+  a single part, which being listed in `irregular` is what makes it.
+- **The identity has a colon and the keypad has no colon key**, so `readClock()` takes the digits
+  and reads the last two as the minutes: `3:45`, `345` and `03:45` are one answer. Asking for the
+  colon would leave the drill unanswerable on a phone, which is the device it is for. The
+  placeholder says `h:mm…` rather than the instruction line naming a format above the question.
+- **`n` is null on a clock card and on a weekday**, one because it is not counted and the other
+  because it is counted twice, so every branch tests `kind` instead. Reading `c.cal.n` to tell them
+  apart is what the weekday branch used to do and is what broke first.
+
+**The faces are dealt, not sampled.** Twelve hours against twelve marks is 144 faces and a run asks
+twenty, so `timeValues()` cycles a shuffled list of each: every hour is asked before any hour is
+asked twice, and the same for the marks. Sampling twenty of 144 can leave 四時 or 七時 out of a run
+altogether — the same argument that deals the flick prompts. The distractors wrap around the face,
+so 12:55 is offered against 1:00.
+
+**Which is also why `cal-time` is the second drill the backend refuses to analyse.** One face comes
+round about every seventh run, so ranking them says nothing; `cal-hour` and `cal-minute` are twelve
+and nineteen fixed prompts and are analysed like any deck. See `UNANALYSABLE`.
+
+**Not included, deliberately:** 午前 and 午後. They are a second axis rather than more material —
+every prompt would double, and knowing that 午後 is pm is not the thing these drills are for.
+Minutes stop at the five-minute marks for a related reason: 3:47 is composition plus one more
+`irregular` entry, and a clock is read to the nearest five aloud far more often than not. Both are
+a `kana.json` edit away — the marks are a list on the drill — and neither needs code.
+
+## Performance mode
+
+**`kana.perf` drops every animation and the pause after a right answer.** `setPerf()` writes
+`data-perf` on `<html>` and the stylesheet does the rest; `revealDelay()` is `0` instead of
+`REVEAL_DELAY` while it is on, so a correct answer advances on the next tick rather than after
+620 ms of 〇.
+
+Four things about it are deliberate:
+
+- **It is not `auto`, where the theme is.** The OS already has a way to ask for less motion and the
+  stylesheet obeys `prefers-reduced-motion` unconditionally, as it always did. What this adds on
+  top is the *pacing* change, which no system setting has an opinion about — inferring it would
+  quietly change how fast someone's drill runs because of an accessibility preference they set for
+  an unrelated reason. The two overlap on animation and agree there.
+- **The 〇 is removed, not sped up.** It is the one animation that is not decoration — half a
+  second of reward — and `animation-duration: .001ms` would leave it *stamped on the square* for
+  the rest of the pause rather than skipping it. `display: none` is what "no circle" means. The
+  red/green square and the feedback line still say what happened.
+- **A wrong answer is untouched.** It waits for Enter or a tap in either mode, because the
+  correction is the part worth reading; skipping it would make Fast a way to answer badly and never
+  find out.
+- **A Fast run sets records like any other, and there is one pool.** It shipped for a day refusing
+  to set a *time*, on the grounds that dropping ~0.6 s per card makes it a different measurement —
+  which is true, and was still the wrong call: it threw away a run the user actually did and sat
+  through, and told them so on the results screen. Don't reinstate it. A record you can't take by
+  playing better is not a record, and the honest fix for the comparison — if it ever matters — is
+  to stop counting the app's own pause towards the clock, never to start rejecting runs.
+
+  What follows is that the record for a deck ends up being a Fast one, since Fast is quicker by the
+  stamp delay per card. That is accepted, not overlooked. **The per-card timings the backend
+  analyses are unaffected either way**: they measure the card's time on screen *before* the answer,
+  which no pause after it can touch. Only the run total moves, and `recent_runs` reports it as the
+  fact it is.
+
+There is deliberately **no inline `<head>` script** for it, where the theme needs one. The theme
+would otherwise flash the wrong palette on every load; nothing animates at boot — transitions fire
+on change and nothing animates on arrival — so there is nothing to catch, and a
+second duplicated pre-paint script is a cost with no bug behind it.
+
 **Records belong to a deck _and_ a mode**, keyed `deckId|mode` by `recordKey()` — reading kana,
 picking from four, and writing kana from a sound are three different skills, and pooling them let
 the easiest mode set a score the hardest could never beat. Every `store.best`/`setBest`/`bestTime`/
 `setBestTime` call therefore takes a mode. Two consequences that are easy to miss:
 
+- **A generated drill's record carries the prompt form too**, keyed `deckId|type-kanji` by
+  `recordMode()`. 六 → 6 gives itself away to anyone who has met ten kanji where `roku` → 6 does
+  not, so pooling the two would let the easier one set a score the harder can never beat — which is
+  the whole reason records split by mode in the first place. Only the two reading modes are
+  suffixed; Writing asks the same question either way. `promptApplies()` is the single test, and
+  `modeLabel()` is what takes the key apart again for display, including for run rows the server
+  sends back.
+- **`setPrompt()` has to rebuild the menu** for the same reason `setMode()` does, below: every
+  figure under 十 and 日時 belongs to the form on screen.
 - **`setMode()` has to rebuild the menu**, not just re-render the play screen. The deck rows show
   the selected mode's figures, so switching mode while on the menu changes every number in the
   list. The `<small>` under each figure names the mode for the same reason — an unlabelled
   percentage reads as *the* score for that deck.
-- **`rev < 2` stores are migrated, not discarded.** Records keyed by bare deck id predate the
-  split; `store.migrate()` moves them to whichever mode was last selected, that being the only
-  evidence of which mode earned them. It runs once at boot and is idempotent.
+- **`rev < 4` stores are migrated, not discarded**, in three steps. `rev 2` moves records keyed by
+  bare deck id into `deckId|mode`; `rev 3` moves `deckId|number` — the reserved mode the number
+  drills briefly used — onto the mode that was last selected, that being the only evidence of which
+  one earned them, and never overwrites a record the real mode already holds. `rev 4` moves a
+  generated drill's `|type` and `|choose` records onto `|type-reading` and `|choose-reading`,
+  because romaji was the only way those drills asked before the kanji prompt existed. It matches on
+  the `num-` and `cal-` id prefixes rather than on `allDecks()`, which is empty at that point —
+  `store.migrate()` runs at boot, before `kana.json` has been fetched. All three run once and are
+  idempotent.
 
 **The menu is deliberately shallow.** Only three things sit on it: the script switch, the deck
 list (which scrolls, and holds the flick drills), and one Options button. Answer mode, theme, font,
-chart, progress and account all live in `#moreSheet` behind that button — stacked on the menu they took
-about a third of a phone screen away from the deck list, which is the thing you came to use. The
-mode is the one setting that is otherwise invisible from the menu, so `setMode()` writes it into
-the Options button's label. Anything opened from Options goes through `fromMore()`, which closes
-it first: a second `showModal()` over an open dialog stacks them, and the backdrop-close handler
-would then only ever see the top one.
+chart, progress and account all live on `#options` behind that button — stacked on the menu they
+took about a third of a phone screen away from the deck list, which is the thing you came to use.
+The mode is the one setting that is otherwise invisible from the menu, so `setMode()` writes it
+into the Options button's label. That shallowness holds on a wide window too, where the menu is
+the rail: the rail is the same element, so promoting Progress or the chart into it would mean a
+second copy of a row that already exists, and rows drift the moment there are two of them.
 
-**Layout model.** `body` → `.stage` (width-capped, and height-bounded from `dvh`) → one `.screen`
-flex column per screen. `.play` is four bands: `.playbar` (fixed) / `.revealbar` (fixed, touch
-only) / `.playmain` (flexes, holds the writing square) / `.dock` (fixed, holds feedback + answer
-controls + stats).
+**Layout model.** `body` → `.stage` → one `.screen` flex column per screen. `.play` is four bands:
+`.playbar` (fixed) / `.revealbar` (fixed, touch only) / `.playmain` (flexes, holds the writing
+square) / `.dock` (fixed, holds feedback + answer controls + stats).
+
+**Nothing is a modal.** Options, the font picker and the chart were `<dialog>` sheets and are now
+screens like every other — `#options`, `#fontPicker`, `#chart` — reached with `navTo()` and left
+with `navBack()`. What that bought, in order of how much it mattered:
+
+- **A sheet has to cap its own height and a screen does not.** Options is the tallest thing in the
+  app and the *last* row in it is Account, which is the way to Sign out, so the cap was what
+  decided whether the way out was on screen. There was a whole invariant about re-measuring two
+  `max-height` values whenever a row was added. It is gone, along with `--backdrop` and
+  `--shadow-sheet`.
+- **One way out instead of four.** A sheet closed by its ✕, its backdrop, Escape, or another sheet
+  opening over it, and only `<dialog>`'s own `close` event caught all four. Screens have `navBack()`
+  and the keydown handler sends Escape to it.
+- **A trail rather than a single trigger.** `navTo()` pushes `{screen, focus}`, so menu → Options →
+  chart → back lands on Options and not on the menu, and 字 from a running card comes back to the
+  card. `show()` is the plain move that cuts the trail; every "go to the menu" path uses it.
+
+`navBack()` keeps the one piece of the old `close` handler that was load-bearing: **back into a
+running card refocuses the answer field**, because the on-screen keyboard follows focus and the
+point of coming back is to keep typing.
+
+**On a wide window the menu is a rail and everything else is the pane.** One media query does it
+(`min-width:1100px and min-height:560px`) and there is no second copy of anything: `#menu` is the
+same element, placed in column one and exempted from `.hidden`, and every other screen is placed
+in column two. Four things about it:
+
+- **`activeScreen()` still reads the class, not what is painted.** `.hidden` stays on the menu
+  while a drill runs; CSS is what decides it is still visible. So app.js keeps thinking one screen
+  at a time, which is what kept this to a layout change instead of a rewrite.
+- **`.hidden` carries `!important`** — it has to, or a later `display:` rule like `.play`'s grid
+  would beat it — so the two exemptions carry it too. An id beats a class, which is what settles
+  which important rule wins.
+- **`data-screen` on `<body>` is the one thing JS tells the stylesheet**, and it decides the idle
+  pane: with nothing running, the chart fills it and its Back link is dropped. `paint()` keeps the
+  chart built and `setScript()` re-renders it, because a stamp has to move the deck list and the
+  table beside it together.
+- **1100px is a measured floor, not a round number.** Below it five seal stamps and their labels
+  do not fit in a rail that still leaves a usable pane — the bar overflows before the labels are
+  legible. `#fatal` is the one screen that suppresses the rail: there are no decks to list.
 
 **Reveal exists twice**, once in `.revealbar` above the square and once in `#typedTools` below the
 answer, with exactly one shown: the dock is under the on-screen keyboard on a phone, and a single
@@ -419,6 +917,14 @@ enforced in `analytics.py`, and each one costs data on purpose:
   sitting down and practising all 214 in one go is a thing you did, and its accuracy and times
   describe it. None of them feeds a source deck's report or is fed by one, and each needs its own
   three runs. The consequence worth knowing is that there are twelve reports to fill, not six.
+- **The random number drill is listed but never analysed**, for the reason above; `num-50` is
+  analysed like a deck. `UNANALYSABLE` is the set, kept beside `FLICK_PREFIX` because it is the
+  same distinction — a prompt that will not recur cannot be ranked. **The clock drill is the other
+  one in it**: twelve hours against twelve marks is 144 faces and a run deals twenty, so one face
+  comes round about every seventh run and ranking them would say nothing. **Every other calendar
+  drill is analysable** and needs nothing added: seven, twelve, thirteen, nineteen, twelve and
+  thirty-one fixed prompts, every one of them asked every run, which is exactly the case the
+  report is for.
 - **Flick drills are listed but never analysed** (`analysable: false` for any `flick-` deck).
   Their prompt is a direction or a key, not a character, and any character with that vowel or on
   that key is accepted — so there is nothing to call slow and a wrong answer can't be traced to a
@@ -545,8 +1051,8 @@ These each cost a real bug once. Comments in the source mark most of them.
   mid-card control has to be added to that list or it reintroduces the flicker.
 - **A blur that gets through means the user closed the keyboard themselves**, and `state.kbDismissed`
   makes `focusField()` respect that until they put the caret back in a field. `noteBlur()` ignores
-  blurs while a sheet is open — that focus move is the app's doing, not theirs — and `start()`
-  clears the flag so a fresh run always offers the keyboard.
+  blurs once the play screen is gone — that focus move is the app's doing, not theirs — and
+  `start()` clears the flag so a fresh run always offers the keyboard.
 - **Any new direct child of `.play` needs a `grid-area` in the landscape block, or hiding there.**
   That media query re-declares `.play` as a two-column grid with named areas; an unplaced child is
   auto-placed into a row of its own and shoves the square out of its cell. `.revealbar` is hidden
@@ -559,18 +1065,49 @@ These each cost a real bug once. Comments in the source mark most of them.
 - **`.stage` needs `max-height`, not just `min-height`.** Without the cap, tall content grows the
   stage past the viewport and the *page* scrolls (dragging controls off-screen) instead of
   `.menu__scroll` / `.end__scroll` engaging.
-- **`display` on a `<dialog>` belongs on `[open]` only.** An author `display:flex` on the dialog
-  itself beats the UA's `dialog:not([open]){display:none}` — author rules always win over UA
-  rules — leaving a dead, unclosable panel in the page.
+- **`.hidden` is `display:none !important`, and the rail layout is the only thing allowed past
+  it.** The `!important` is load-bearing: a later `display:` rule — `.play`'s grid, say — would
+  otherwise beat a plain `.hidden`. So the two wide-window exemptions (`#menu.hidden` always, and
+  `#chart.hidden` while `data-screen="menu"`) are important *and* id-scoped, which is what makes
+  them win. Anything else that wants to show a hidden screen is a bug waiting: the class is how
+  `activeScreen()` knows what is up.
 - **Sibling `<span>`s sharing a grid cell need explicit `display:block`** or their text runs
   together (this bit `.deck__name`/`.deck__meta` and `.font__name`/`.font__note`).
 - **The run is timed but the clock is never shown while practising** — deliberate, a visible
   ticking counter turns practice into a race. Total appears once, on the results screen.
-- **Never select `.seg__btn` document-wide.** Three switches share the class now — answer mode,
-  theme, and the progress screen's device switch. A global query wires `setMode(undefined)` onto
-  the others and blanks their `aria-checked` on every mode change. Each has an id of its own for
-  exactly this reason: go through `el.modeSwitch` / `el.themeSwitch` / `el.deviceSwitch`. The
-  shared *layout* is `.modebar--stack`, which is a layout modifier and not a handle on the mode.
+- **Never select `.seg__btn` document-wide.** Five switches share the class now — answer mode,
+  prompt form, theme, performance, and the progress screen's device switch. A global query wires
+  `setMode(undefined)` onto the others and blanks their `aria-checked` on every mode change. Each
+  has a handle of its own for exactly this reason: go through `el.modeSwitch` / `el.promptSwitch` /
+  `el.themeSwitch` / `el.perfSwitch` / `el.deviceSwitch`. The shared *layout* is `.modebar--stack`,
+  which is a layout modifier and not a handle on the mode.
+- **`activeMode()` is a record key, not a test of what is on screen.** It carries a `-kanji` or
+  `-reading` suffix for the generated drills, so `activeMode() !== "choose"` silently stopped being
+  true and the two places that asked it now call `choosingNow()`. That can't be `state.mode ===
+  "choose"` either: a flick run ignores the mode and is always typed.
+- **A panel is left with `navBack()`, and Escape has to be wired to it by hand.** `<dialog>` used
+  to handle Escape natively; a screen does not, so the document keydown handler sends it there —
+  and returns early while a panel is up, or the digits that pick an answer would reach the card
+  behind it. Leaving a panel any other way (calling `show()` from inside one) drops the trail and
+  strands you on the menu.
+- **Back into a running card refocuses the answer field.** This is the one piece of the old sheet
+  `close` handler that was load-bearing rather than plumbing: the on-screen keyboard follows focus,
+  so without it 字 mid-card left the keyboard down for the rest of the card. It lives in
+  `navBack()` now, and it has to stay ahead of the "focus what opened this" branch.
+- **A stamp on a wide window moves two things.** The deck rail and the chart in the pane beside it
+  are the same stamp, so `setScript()` re-renders the chart when the menu is the active screen.
+  Miss it and the rail says Time while the pane still shows hiragana.
+- **A form that validates itself needs `novalidate`.** `required` stays on the fields, because that
+  is what tells a screen reader they are mandatory — but the browser's own bubble fires first and
+  suppresses `#authMsg`/`#pwMsg` entirely, so the message the app writes is never seen and
+  `aria-invalid` is never set. Both forms carry `novalidate` and validate in `submitAuth()` /
+  `submitPassword()`.
+- **A submit button is disabled only while its request is in flight**, never to gate a form: an
+  always-pressable button lets the error say what is wrong instead of leaving you to guess what the
+  button is waiting for. `busy()` is the one place that does it, and it swaps the label too —
+  signing in is 600k PBKDF2 rounds, long enough that a button which only greys out reads as dead.
+  It stashes the idle label in `dataset.idle`, so `setAuthMode()` swapping Sign in ↔ Create account
+  mid-request writes where `busy()` will find it rather than over the top of it.
 - **`store.migrate()` is called from boot, not at the `store` literal.** It writes, a write reaches
   `schedulePush()`, and that touches the `api` const declared further down — running it early hits
   that binding's temporal dead zone and the whole IIFE throws.
@@ -580,7 +1117,8 @@ These each cost a real bug once. Comments in the source mark most of them.
   prompts, random sampling can leave a whole direction out of the run, which is the one thing a
   drill whose entire purpose is covering all five directions must not do.
 - **Best *time* is only recorded for a flawless (100%) run.** Timing every run lets a rushed or
-  revealed-answer run set an unbeatable record. Reveals count as misses.
+  revealed-answer run set an unbeatable record. Reveals count as misses. Performance mode is *not*
+  a second condition on this and was briefly and wrongly made into one — see **Performance mode**.
 - **Never look a record up by deck alone.** `store.best(deckId)` without a mode silently returns
   `undefined`→`0`, which renders as "no attempts yet" rather than failing — a bug that reads as
   wiped records.
@@ -592,6 +1130,30 @@ These each cost a real bug once. Comments in the source mark most of them.
   `state.decks` and `chartReadings()`, `buildFlickIndex()` and every other full sweep sees each
   character three or four times over. `allDecks()` is for the menu, `deckLabel()`, `forScript()`
   and the stamp check; `state.decks` is for anything counting characters.
+- **A generated run answers to the mode, so the branch for it has to come first.** `render()`
+  computes its prompt from `state.numbers` / `state.calendar` before it looks at `state.mode`, and
+  `submitTyped()` tests them before the deck paths. Miss that and a numbers run started while
+  Writing is selected shows the IME field with a digit prompt in it.
+- **`typedField()` is the only thing that knows which of the three fields is live**, and it asks
+  `numericAnswer()` — *is this card answered with a number?* — never *which drill is running*. A
+  month and a date answer with theirs; a weekday, alone among the generated prompts, answers with
+  an English name and takes the plain field. Reading `el.input` directly in a grading path is what
+  this exists to stop.
+- **Anything that walks `state.deck.cards` needs a branch for the generated drills.** A number or
+  calendar drill has no `cards` — the end screen's miss ordering and the "practise again" wording
+  both reached for `.length` and would throw. `deckSize()` is the one place a generated run's
+  length is known.
+- **Romaji is accepted exactly where it is not the prompt.** Writing takes `roku` for 6 and
+  `hatsuka` for 20日, because those drills ask with the identity; it must never take `ka` for か,
+  because a deck asks Writing with the reading and the answer would be the question. `writeAccepts()`
+  is kana-only and `numRomajiAccepts()` is reached only from the two generated branches.
+- **A calendar value a drill *asks* and whose last digit is 4, 7 or 9 must be in `irregular`.**
+  Composition hands a bare trailing digit its number-alternates, so 十七日 would answer to
+  `jūnananichi` and 七分 to `shichifun` — see **The calendar and the clock**. "Asks" is the whole
+  rule now that a drill can name its `values`: 四十七分 is not listed because nothing asks it, and
+  listing every value a counter *could* take would be a hand-written table where composition does
+  the work. The generator that produces the chart asserts this over each drill's own pool,
+  including the clock's marks; a hand edit has nothing checking it.
 - **`kana.json` is fetched with `cache: "no-cache"`.** Without it the HTTP cache silently serves a
   stale deck file and edits appear to do nothing.
 
@@ -620,9 +1182,19 @@ keep working with no network at all**, on a LAN, and from a folder on a static h
 
 - **The cut is defined by Unicode *ranges*, not by the current contents of `kana.json`.** Every
   kana block is kept whole, so adding a card can never produce tofu — which would otherwise make
-  "adding a deck is a JSON edit" quietly false. The one enumerated part is the eighteen kanji of
-  interface chrome (設定 記録 五十音 …); `subset.py`'s `check()` re-derives them from the sources
-  and fails if the list has drifted, so that can't rot silently.
+  "adding a deck is a JSON edit" quietly false. The enumerated part is the forty kanji the
+  interface actually draws — 設定 記録 五十音 …, the numerals 一二三四五六七八九十百千万 both
+  generated subjects write their values in, the calendar's 月火水木金土日曜, and 時分半 for the
+  clock — plus `U+014D` and `U+016B` for the ō and ū the readings are spelt with. `subset.py`'s `check()` re-derives the
+  kanji from the sources and fails if the list has drifted, so that can't rot silently.
+  **`check()` reads only what is rendered**: comments are cut out of all four files and `kana.json`'s
+  `//` keys with them. Those discuss characters the app never draws — 億 and 兆 in the prose about
+  how a number is read, 納戸 and 栗 beside the colours named after them — and a kanji that is only
+  ever *written about* cannot come out as tofu. Counting them grew all eight files for nothing.
+- **Zen Maru Gothic has no ō or ū upstream**, so those two fall back per character to a device face
+  in 丸ゴシック. That is harmless only because romaji never renders in `--kana`: `.glyph.is-romaji`
+  is `--mincho`, the chart's reading line is `--mono`, and the feedback is the page's own sans. Put
+  romaji in `--kana` and this becomes a visible mismatch.
 - **No `vert`/`vrt2`/`palt`.** The app never sets `writing-mode` or `font-feature-settings`, and
   dropping those prunes every vertical alternate glyph with them — 30% of the subset. `mark`/`mkmk`
   stay, so a decomposed dakuten arriving from an IME is positioned rather than stacked on the origin.
@@ -683,19 +1255,28 @@ whose RFN is its own name, the subset has to be renamed**, since subsetting is m
 
 ## Verifying changes
 
-**No test suite is committed.** Nothing in the repo runs tests, and there is no test runner to
-invoke. What follows is how to build one in a scratch directory — do that rather than assuming a
-change is fine because it looks fine.
+**No test suite is committed, and there is no runtime on this machine either** — no `node`, no
+`fontTools`. Everything below is built in a scratch directory: fetch a Node tarball and unpack it
+there, `npm install jsdom` (and `playwright` if geometry is in question), `python -m venv` for
+`fonttools[woff] brotli`. Nothing goes in the project. Do that rather than assuming a change is
+fine because it looks fine.
+
+**The generated content needs regenerating, not editing.** The two `"numbers"` charts and every
+calendar reading come out of `readNumber()` + `kanjiNumber()` + the counters. The way to change
+them is a script that reimplements those few loops against `kana.json`, **asserts its output
+against a table of the readings and the kanji forms written out independently first**, and only
+then emits the JSON. That assertion is the whole value of the exercise: it is what caught nothing
+this time and is what would catch a `forms` entry with the wrong leading digit. Regenerating
+without it is just retyping.
 
 **Front end — jsdom.** `app.js` runs under it unmodified, which is enough to drive whole runs end
 to end: script switching, all four modes, grading, records, the account flow, the progress screen.
 Install jsdom in a scratch directory, never the project. **Give the `JSDOM` an origin** — `url:
 "http://localhost:8000/"` or similar — or there is no `localStorage`, every write takes its
-private-mode path, and nothing about records or preferences can be asserted on. Then stub four
+private-mode path, and nothing about records or preferences can be asserted on. Then stub three
 things — `fetch` (return `kana.json`, and *reject* `/api/*` unless you are deliberately testing the
-backend path),
-`HTMLDialogElement.prototype.showModal`/`close` (jsdom implements neither), `matchMedia`, and
-`confirm`. To exercise the font picker's probe at all you have to stub
+backend path), `matchMedia`, and `confirm`. (It was four: the `<dialog>` stubs are no longer needed
+now that nothing is a modal, and an old suite that still installs them is harmless.) To exercise the font picker's probe at all you have to stub
 `HTMLCanvasElement.prototype.getContext` as well, with a fake 2D context whose `getImageData`
 varies by the family in the assigned `ctx.font` — that is the only way to test "this device has
 Yu Mincho and nothing else" without the device. The `matchMedia` stub now needs `addEventListener`/`removeEventListener` as well as
@@ -722,14 +1303,34 @@ by design, so a suite that trips it (any suite testing the throttle must run las
 login tests on a second pass against the same process.
 
 **jsdom has no layout engine** — it proves logic, never geometry. Anything about size, overflow,
-collision or whether a control is on screen still needs a real browser.
+collision or whether a control is on screen still needs a real browser. Three things in this app
+are squarely in that territory and are worth a headless sweep across ~320–2560px whenever they
+move:
+
+- **The five-stamp bar**, where the label is what runs out of room. Check each label's
+  `scrollWidth` against its seal and that `getClientRects().length === 1` so nothing has wrapped —
+  and check **`scrollWidth - clientWidth` on the bar itself**, which is the one that actually
+  catches it. A stamp cannot shrink below its label, so the bar overflows while every individual
+  stamp still measures fine; that is how the rail floor of 1100px was found, and how a
+  `white-space:nowrap` on the two-character glyphs turned out to cost 8px at 320px (min-content
+  went from one character to two).
+- **The generated prompt**, where a full-width string is twice the width of a Latin one of the
+  same length — set the square's glyph to the worst case each drill can produce
+  (九十九万九千九百九十九, 十一時五十五分) at the `--fit` its bucket gives and check it against the
+  square's own box, measuring each *word* as well as the whole string.
+- **The rail layout**, at and either side of 1100px: which screens are painted
+  (`offsetParent !== null`, not the class), no page overflow in either axis, and the idle pane
+  holding the chart. Sweeping it in an iframe is enough and is much faster than resizing a window.
 
 Two environment quirks worth knowing:
 
 - **CSS animations do not advance while the preview pane is hidden** (no frames composited), so an
   entry animation stays frozen mid-transform and reads as a layout bug. Force the resting state
   with `document.getAnimations().forEach(a => a.finish())` before measuring. Awaiting
-  `animation.finished` in that state hangs.
+  `animation.finished` in that state hangs. **`finish()` throws on an infinite animation** —
+  `InvalidStateError`, "cannot finish Animation with an infinite target effect end" — which the
+  report's loading placeholder now has, so wrap it: `try { a.finish(); } catch { a.pause();
+  a.currentTime = 0; }`.
 - **Sweep viewports with a sized `<iframe>`** rather than resizing the window repeatedly: `dvh`
   units and media queries resolve against the iframe box, so many device sizes can be checked in
   one pass. `hover`/`pointer` media features still come from the host device, so touch-only CSS

@@ -48,8 +48,9 @@ Google or anyone else — it works with no internet connection at all. See **Cha
 
 ## The drill
 
-**Three seal stamps at the top of the menu**: あ hiragana, ア katakana, and あア Kana for the decks
-that are both scripts at once. Each shows four decks.
+**Five seal stamps at the top of the menu**: あ hiragana, ア katakana, あア Kana for the decks that
+are both scripts at once, 十 Numbers for counting, and 日時 Time for weekdays, months, dates and
+the clock. The first three show four decks each; the last two are described further down.
 
 Under あ and ア, the same three tiers plus a mix of them:
 
@@ -98,7 +99,88 @@ Mixed kana is not a run of the six decks it's built from, and doesn't count towa
   phone, or a Japanese input method on a desktop. Both readings of an ambiguous sound are
   accepted — `ji` takes じ or ぢ, `zu` takes ず or づ.
 
-**Flick keyboard drills — phones and tablets only.** Below the decks, on a touch device, are two
+**Numbers — the 十 stamp.** Counting has a seal stamp of its own, beside あ, ア and あア, holding
+three drills and a reference table. It isn't kana, so it gets its own colour (a deep teal) and its
+own records — but it uses the same three answer modes the decks do, and **the mode is what decides
+which way round you're asked**:
+
+- **Typing** shows **六** and you type **6**. The box is a number pad.
+- **Choosing** shows **六** and you pick **6** from four numbers. The wrong three are the same
+  number with a digit changed or swapped, so the answer isn't obvious from its length.
+- **Writing** shows **6** and you type **ろく** — or `roku`, if you haven't got a Japanese
+  keyboard set up. Both count, and the hint under the box says so. (Kana decks are stricter: there
+  Writing shows you the reading, so romaji would just be typing the question back.)
+
+**Numbers & dates ask with · Kanji / Reading** in Options decides what the first two show: the
+kanji — 六, 十二, 一万二千三百四十五 — which is what you meet on a price tag or a form, or the
+reading — `roku`, `jū ni` — which is what you hear at a till. Both are worth practising and neither
+stands in for the other, so each keeps its own best score and time. Writing ignores the setting: it
+asks with **6** either way. Whichever way you were asked, the answer tells you all three:
+**六 is 6 — ろく "roku"**.
+
+So the direction is yours to choose and it stays put for the whole run — switch mode in Options to
+practise the other way.
+
+- **Numbers 1–10** is the ten words everything else is built from. Start here.
+- **Numbers 1–50** is every value once, 50 prompts — 11–50 are the pattern (`nijū` = 2×10,
+  `nijū ichi` = 2×10+1) rather than fifty new words.
+- **Random numbers** deals 20 drawn from 1 to 1,000,000, spread deliberately across magnitudes so a
+  run isn't twenty six-digit numbers. This is where 百 千 万 and the sound changes show up.
+
+In the table, readings are shown with the parts spaced apart — `ichiman nisen sanbyaku yonjū go`
+for 12,345, which is 一万 二千 三百 四十 五 — because seeing the structure is the whole lesson.
+Commas in a digit answer aren't graded, so `1,000,000` and `1000000` both count. Where a number has
+more than one reading, Writing takes any of them: 4 is よん, し or よ, 7 is なな or しち, 9 is
+きゅう or く. The sound changes are not optional, though, because they're the point — 300 is
+`sanbyaku`, 600 `roppyaku`, 800 `happyaku`, 3,000 `sanzen`, 8,000 `hassen`.
+
+Each drill keeps its own best score and time, separate from the decks and from each other.
+
+**All characters → 十** is the counting table, next to the two kana ones: 1–10, the second readings
+of 4, 7 and 9, how 十 works either side of a digit, the places (10, 100, 1,000, 10,000, 1,000,000),
+the five sound changes that break the pattern — 300 さんびゃく, 600 ろっぴゃく, 800 はっぴゃく,
+3,000 さんぜん, 8,000 はっせん — and then whole numbers taken apart, up to
+`一万二千三百四十五 いちまんにせんさんびゃくよんじゅうご`. Every row is the kanji, what it is, the
+kana and the reading.
+
+**Time — the 日時 stamp.** Weekdays, months, dates and the clock, in seven drills with a table of
+their own. Most of it is counting with something on the end — 四月 is month four, 二十日 the
+twentieth, 四時 four o'clock — so it reads the same way round as the numbers:
+
+- **Typing** shows **月曜日** and you type **Monday**; **二十日** and you type **20** — or
+  `getsuyōbi` and `hatsuka`, if the Options setting above is on Reading.
+- **Choosing** is the same question with four options — the dates either side of the right one, or
+  the rest of the week.
+- **Writing** shows **20日** and you type **はつか**; **Monday** and you type **げつようび**;
+  **3:45** and you type **さんじよんじゅうごふん**. Romaji counts here too — `hatsuka`,
+  `getsuyōbi` — spelt however you like: `juuni`, `jūni` and `juni` are all the same answer.
+
+- **Weekdays** is the seven, each ending in ようび with the day's kanji in front: 月 moon, 火 fire,
+  水 water, 木 wood, 金 gold, 土 earth, 日 sun. Since every one of them ends the same way, Writing
+  takes just the part in front — **か** or `ka` for 火曜日 — as well as the whole **かようび**.
+- **Months** is 一月 to 十二月, which are just the numbers plus がつ — except **四月 しがつ**,
+  **七月 しちがつ** and **九月 くがつ**, which never take よん, なな or きゅう.
+- **Days of the month** is the hard one. 一日 to 十日 have native readings that are nothing like the
+  numbers — ついたち, ふつか, みっか, よっか, いつか, むいか, なのか, ようか, ここのか, とおか —
+  and **二十日 は はつか**. 十四日 and 二十四日 keep よっか. The rest are the number plus にち.
+- **Native dates** is those thirteen on their own — 一日 to 十日, 十四日, 二十日, 二十四日, the ones
+  that are said as words instead of ending in にち. Same prompts, same grading, same three answer
+  modes as the full month; it just stops asking you the eighteen you already know how to count.
+- **Hours** is 一時 to 十二時 — the number plus じ, with the 4/7/9 problem one more time: **四時
+  よじ**, **七時 しちじ**, **九時 くじ**.
+- **Minutes** is where 分 changes shape. It is ふん after 2, 5 and 7 and ぷん after the rest, and
+  the number in front changes with it: 一分 **いっぷん**, 六分 **ろっぷん**, 八分 **はっぷん**,
+  十分 **じゅっぷん**. The drill asks 1 to 10 and then every five, which is how a clock is read.
+- **Clock times** puts the two together: 三時四十五分 is **さんじよんじゅうごふん**, the hour and
+  then the minute. Twenty faces a run, dealt so that every hour comes up. Half past has a word of
+  its own — 三時半 **さんじはん** — and Writing takes either that or the long way round. Typing
+  takes **3:45**, or just **345**, so the phone keypad can answer it.
+
+**All characters → 日時** lays all of that out: the week, the twelve months, the three that change,
+days 1–10, days 11–31, the three that stay native, the twelve hours, the minutes, and a handful of
+whole times taken apart.
+
+**Flick keyboard drills — phones and tablets only.** Below the deck list, on a touch device, are two
 drills for the Japanese phone keyboard itself, which has ten keys — one per gojūon row — where the
 vowel comes from the direction you swipe: middle **a**, left **i**, up **u**, right **e**, down
 **o**. Each drill is 20 prompts and needs the Japanese keyboard. They don't appear on a desktop:
@@ -115,6 +197,19 @@ there's no flicking to practise with a physical keyboard.
 
 Each drill keeps its own best score and time, separate from the decks and from each other. ん
 isn't drilled: it has no vowel, and which key it sits on varies between keyboards.
+
+**Performance · Normal / Fast** in Options turns every animation off. The 〇 stamp goes with them,
+so a right answer moves straight to the next character instead of pausing for it — which makes a
+run noticeably quicker as well as cheaper to draw on an older phone. A wrong answer is unchanged:
+it still stops, still tells you what the answer was, and still waits for you.
+
+Fast runs count for records like any other run — same accuracy records, same fastest-run records,
+one pool. Worth knowing: because Fast skips about 0.6 s per card, it finishes half a minute ahead
+of the same run at the normal pace on a 50-card deck, so once you've set a time in Fast it's
+usually a Fast run that beats it.
+
+The setting stays on this device and is never synced to an account, the same as the theme. If your
+system is already set to reduce motion, the app has always honoured that on its own.
 
 In the two typing modes the answer box takes focus on every card, so you can type straight through
 a deck without tapping it again each time. On a phone the keyboard stays up for the whole run —
@@ -138,7 +233,14 @@ into a race. Missed drills don't count towards records.
 button — everything else (answer mode, font, the chart, progress, account) is behind that button,
 so the deck list keeps the screen instead of losing a third of a phone to stacked settings. The
 Options button shows the current answer mode, since that's the one setting worth seeing at a
-glance, and the deck rows are labelled with it too.
+glance, and the deck rows are labelled with it too. Options, the font picker and the chart are
+screens rather than pop-ups, so nothing is ever half a panel with the way out below the fold.
+
+**On a wide screen the menu becomes a rail.** From about 1100px the deck list stays put on the
+left and whatever you're doing — a drill, the chart, Options, your progress — fills the space
+beside it, with the writing square and the answer box side by side instead of stacked. When
+nothing is running the chart sits in that space, so the table you'd look a character up in is
+already open. Phones and tablets are untouched: one screen at a time, exactly as before.
 
 **Reference chart.** "All characters & romaji" opens the full gojūon tables, laid out the standard
 way, including the extended katakana (ファ ティ ヴァ …) that are reference-only.
@@ -198,7 +300,7 @@ unlocked from taking the account. Changing it signs you out everywhere else; the
 it on stays signed in.
 
 **Your progress** is kept per deck. Phone or desktop sits at the very top — you set that once —
-and under it the same hiragana/katakana stamps as the menu, which stay stuck to the top as the
+and under it the same stamps as the menu, which stay stuck to the top as the
 report scrolls so you can switch scripts without scrolling back up. It opens on whichever script
 the menu is showing, so practising katakana and then checking your progress lands on katakana.
 Switching the stamps in here only changes what you're reading; the menu stays where you left it. The decks for that script
@@ -241,7 +343,7 @@ Times are reported as medians rather than averages, so one slow card doesn't mov
 ## Layout
 
 ```
-index.html         six screens and three dialogs
+index.html         nine screens, no modals
 styles.css         the whole stylesheet, mobile-first
 kana.json          all content — decks, cards, chart layout, font options
 app.js             all front-end logic, one IIFE
@@ -326,8 +428,9 @@ python -m http.server 8000
 
 ## ドリルの内容
 
-メニューの上には印が 3 つあります。あ（ひらがな）、ア（カタカナ）、そして あア（Kana）— 両方の
-文字種にまたがるデッキ用です。それぞれに 4 つのデッキがあります。
+メニューの上には印が 5 つあります。あ（ひらがな）、ア（カタカナ）、あア（Kana）— 両方の文字種に
+またがるデッキ用 —、十（数字）、そして 日時（Time）— 曜日・月・日付・時刻 — です。前の 3 つは
+それぞれ 4 つのデッキ、後の 2 つは詳しくは後述します。
 
 あ と ア の下は、これまでの 3 段階と、その 3 つを混ぜたものです。
 
@@ -374,7 +477,92 @@ python -m http.server 8000
   なので IME が必要です。読みが重なる場合は両方受け付けます。`ji` は じ でも ぢ でも、`zu` は ず
   でも づ でも正解です。
 
-**フリック入力のドリル — スマートフォンとタブレットのみ。** タッチ端末では、デッキの下にフリック
+**数字 — 十 の印。** 数え方には専用の印があります。あ・ア・あア の隣の 十 で、ドリルが 3 つと一覧表が
+入っています。かなではないので色も別（納戸色）、記録も別ですが、解答モードはデッキと同じ 3 つで、
+**どちらの向きで訊かれるかはモードが決めます**。
+
+- **タイピング** は **六** を出して **6** を入力。入力欄はテンキーになります。
+- **選択** は **六** を出して 4 つの数字から **6** を選択。外れの 3 つは 1 桁だけ違う数や桁を
+  入れ替えた数なので、長さだけで答えが分かることはありません。
+- **書き取り** は **6** を出して **ろく** を入力。日本語入力がない環境では `roku` でも正解に
+  なります（入力欄の下にどちらでもよいと出ます）。かなのデッキはこの限りではありません。あちらは
+  読みを出して文字を訊くので、ローマ字を受け付けると問題文をそのまま打つことになるからです。
+
+向きは自分で選べて、1 回の中では変わりません。逆向きを練習したいときは設定でモードを切り替えます。
+
+読む側の 2 つが何を出すかは、設定の **Numbers & dates ask with · Kanji / Reading** で決まります。
+漢数字 — 六、十二、一万二千三百四十五 — は値札や書類で目にする形、読み — `roku`、`jū ni` — は
+レジで耳にする形です。どちらも必要で互いの代わりにはならないので、記録も別々に持ちます。書き取りは
+この設定を見ません（どちらでも **6** を出します）。どちらで訊かれても、答えには 3 つとも出ます。
+**六 is 6 — ろく "roku"**。
+
+- **Numbers 1–10** は土台になる 10 語。まずはこちら。
+- **Numbers 1–50** は 1 から 50 まで各 1 回、計 50 問。11〜50 は新しい語ではなく組み立て方
+  （`nijū` は 2×10、`nijū ichi` は 2×10+1）です。
+- **Random numbers** は 1〜1,000,000 から 20 問。桁がばらけるように配ってあるので、6 桁ばかりが
+  20 問続くことはありません。百・千・万と音便が出てくるのはこちらです。
+
+一覧表では読みを部分ごとに空けて表示します。12,345 なら `ichiman nisen sanbyaku yonjū go` —
+一万 二千 三百 四十 五 です。組み立てが見えることが眼目なので、実際のローマ字のように続けて
+書きません。数字の入力ではカンマは採点しないので、`1,000,000` でも `1000000` でも正解です。
+読みが複数あるものは書き取りでどれでも正解です。4 は よん・し・よ、7 は なな・しち、9 は きゅう・く。
+ただし音便は必須です — 300 は `sanbyaku`、600 は `roppyaku`、800 は `happyaku`、3,000 は
+`sanzen`、8,000 は `hassen`。
+
+それぞれ自分の最高記録と時間を持ちます（デッキとも、互いとも別）。
+
+**パフォーマンス · Normal / Fast** は設定にあります。Fast にするとアニメーションが全部止まります。
+〇 の判子も出ないので、正解するとそのまま次の文字に進みます（速くなりますし、古い端末では描画も
+軽くなります）。間違えたときは今までどおりです — 止まって、答えを見せて、こちらを待ちます。
+
+Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 つの記録に入ります。ただし Fast は
+1 問あたり約 0.6 秒短いので、50 問のデッキなら 30 秒ほど速く終わります。一度 Fast で記録を出すと、
+その後もだいたい Fast の走りが記録を更新することになります。
+
+この設定はこの端末だけのもので、アカウントには同期されません（テーマと同じ）。OS 側で「視差効果を
+減らす」を設定している場合は、もともとアプリが従っています。
+
+**五十音表 → 十** は数の一覧表です（かなの 2 つの隣）。1〜10、4・7・9 のもう一つの読み、十 の前後で
+何が起きるか、位（10・100・1,000・10,000・1,000,000）、例外の 5 つ — 300 さんびゃく、600 ろっぴゃく、
+800 はっぴゃく、3,000 さんぜん、8,000 はっせん — そして
+`一万二千三百四十五 いちまんにせんさんびゃくよんじゅうご` のように大きな数を分解した例。各行は
+「漢字・何であるか・かな・読み」の 4 つです。
+
+**時 — 日時 の印。** 曜日・月・日付・時刻の 7 つのドリルと、専用の一覧表が入っています。ほとんどは
+数え方に何かが付いたもの — 四月 は 4 番目の月、二十日 は 20 日目 — なので、向きは数字と同じです。
+
+- **タイピング** は **月曜日** を出して **Monday**、**二十日** を出して **20** を入力（設定を
+  Reading にすると `getsuyōbi`・`hatsuka` を出します）。
+- **選択** は同じ問いを 4 択で。外れは前後の日付か、残りの曜日です。
+- **書き取り** は **20日** を出して **はつか**、**Monday** を出して **げつようび** を入力。
+  ここもローマ字で構いません（`hatsuka`、`getsuyōbi`）。長音の書き方は問いません — `juuni`、
+  `jūni`、`juni` はすべて同じ答えです。
+
+- **Weekdays** は 7 つ。どれも ようび で終わり、前に付く漢字がその日です。月・火・水・木・金・
+  土・日。どれも同じ ようび で終わるので、書き取りは前の部分だけでも正解になります（火曜日 なら
+  **か** や `ka`、もちろん **かようび** でも）。
+- **Months** は 一月 から 十二月。数字に がつ が付くだけですが、**四月 しがつ**、**七月 しちがつ**、
+  **九月 くがつ** だけは よん・なな・きゅう を取りません。
+- **Days of the month** が難所です。一日 から 十日 は数字とは似ても似つかない和語 — ついたち、
+  ふつか、みっか、よっか、いつか、むいか、なのか、ようか、ここのか、とおか — で、**二十日 は
+  はつか**。十四日 と 二十四日 も よっか のままです。残りは数字に にち が付きます。
+- **Native dates** はその 13 個だけを集めたもの — 一日〜十日、十四日、二十日、二十四日。にち で
+  終わらず、言葉として読む日付です。出題も採点も 3 つの解答方式も通常版と同じで、数えれば分かる
+  残り 18 日を聞かないだけです。
+- **Hours** は 一時 から 十二時。数字に じ が付くだけですが、ここでも 4・7・9 が問題です
+  — **四時 よじ**、**七時 しちじ**、**九時 くじ**。
+- **Minutes** は 分 の形が変わるところ。2・5・7 の後は ふん、それ以外は ぷん になり、前の数字も
+  一緒に変わります（一分 **いっぷん**、六分 **ろっぷん**、八分 **はっぷん**、十分
+  **じゅっぷん**）。出題は 1〜10 と、そこから 5 分刻みです。
+- **Clock times** は両方をつなげたもの。三時四十五分 は **さんじよんじゅうごふん**、時が先で分が
+  後です。1 回 20 問、どの時も必ず出るように配ります。30 分には **半** という言い方があり
+  （三時半 **さんじはん**）、書き取りはどちらでも正解。入力は **3:45** でも **345** でも通るので、
+  スマホのテンキーでも答えられます。
+
+**五十音表 → 日時** はその全部を並べたものです。曜日、12 か月、変わる 3 つ、1〜10 日、11〜31 日、
+和語のまま残る 3 つ、12 の時、分、そして時刻をいくつか分解したもの。
+
+**フリック入力のドリル — スマートフォンとタブレットのみ。** タッチ端末では、デッキ一覧の下にフリック
 入力のドリルが 2 つ出ます。日本語のケータイキーボードは五十音の行ごとに 10 個のキーがあり、母音は
 フリックの方向で決まります。中央が **あ**、左が **い**、上が **う**、右が **え**、下が **お** です。
 各ドリルは 20 問で、日本語キーボードが必要です。デスクトップでは表示されません。物理キーボードでは
@@ -411,6 +599,12 @@ python -m http.server 8000
 ボタンだけです。ほかのもの（答え方、フォント、一覧表、進捗、アカウント）はすべてそのボタンの中に
 あります。設定を積み上げるとスマートフォンの画面の 3 分の 1 が消えてしまい、本当に使いたいデッキ
 一覧が狭くなるからです。Options ボタンには今の答え方が表示され、デッキの行にもラベルが付きます。
+Options・フォント・一覧表はポップアップではなく画面なので、下に隠れて戻れないということがありません。
+
+**画面が広いときはメニューが左に残ります。** 1100px あたりから、デッキ一覧が左に固定され、右側に
+今やっていること（練習、一覧表、Options、進捗）が入ります。練習中は書き取りの枠と入力欄が縦に
+積まれず横に並びます。何も走っていないときは右側に一覧表が出るので、調べたい表が最初から開いた
+状態です。スマートフォンとタブレットはこれまでどおり、1 画面ずつです。
 
 **一覧表。**「All characters & romaji」で五十音表が開きます。標準的な並びで、参照用の拡張カタカナ
 （ファ ティ ヴァ など）も入っています。
@@ -468,7 +662,7 @@ Dark は固定です。ダークは色を反転したものではなく、同じ
 サインアウトされ、変更した端末だけがそのまま残ります。
 
 **進捗レポートはデッキごとです。** いちばん上はスマートフォンかデスクトップかの切り替えで、これは
-一度選ぶだけです。その下にメニューと同じひらがな・カタカナの印があり、レポートをスクロールしても
+一度選ぶだけです。その下にメニューと同じ印があり、レポートをスクロールしても
 上に貼り付いたままなので、戻らずに文字種を切り替えられます。開いたときはメニューで選んでいる
 文字種になるので、カタカナを練習してから進捗を見ればカタカナが出ます。ここで印を切り替えても
 変わるのは見ている内容だけで、メニュー側はそのままです。さらに下にその文字種のデッキが並び
@@ -509,7 +703,7 @@ Dark は固定です。ダークは色を反転したものではなく、同じ
 ## ファイル構成
 
 ```
-index.html         6 つの画面と 3 つのダイアログ
+index.html         9 つの画面、モーダルなし
 styles.css         スタイル全部、モバイルファースト
 kana.json          内容全部 — デッキ、カード、表のレイアウト、フォント
 app.js             フロント側のロジック全部、IIFE 1 つ
