@@ -51,13 +51,14 @@
     statsBackBtn: $("statsBackBtn"), deckPick: $("deckPick"),
     statsScriptSwitch: $("statsScriptSwitch"),
     themeColor: document.querySelector('meta[name="theme-color"]'),
-    // Four switches now share .seg__btn. Never select that class document-wide:
+    // Five switches now share .seg__btn. Never select that class document-wide:
     // the device switch has no data-mode, so a global query wires
     // setMode(undefined) onto it and blanks its aria-checked every time the
     // answer mode changes. Each switch has an id of its own for that reason.
     modeSwitch: $("modeSwitch"),
     promptSwitch: $("promptSwitch"),
     themeSwitch: $("themeSwitch"),
+    perfSwitch: $("perfSwitch"),
     deviceSwitch: document.querySelector(".seg--device")
   };
 
@@ -71,6 +72,9 @@
                                    // business making that round trip
   const THEME_KEY = "kana.theme";  // light/dark: outside it too, and for a
                                    // second reason — see the theme section
+  const PERF_KEY = "kana.perf";    // outside it for the theme's reason exactly:
+                                   // whether animation costs this device
+                                   // anything is a fact about this device
 
   // Renaming a key silently wipes every record anyone has set, so nothing is
   // renamed without moving what was there. Runs immediately rather than at boot:
@@ -88,6 +92,12 @@
   })();
 
   const REVEAL_DELAY = 620;   // ms the 〇 stamp stays before advancing
+
+  // ...and nothing in Fast, where there is no stamp to stay. A wrong answer is
+  // untouched by this: it waits for you either way, because the correction is
+  // the part worth reading and skipping it would make the mode a way to answer
+  // badly and never find out.
+  const revealDelay = () => (state.perf ? 0 : REVEAL_DELAY);
 
   // Phones and tablets: typing romaji on a virtual keyboard is slow and the
   // keyboard eats half the screen, so first-time visitors start in Choosing.
@@ -381,6 +391,7 @@
     missed: [],        // unique wrong cards, chart order
     graded: false,     // answer already scored — waiting to advance
     kbDismissed: false, // user put the on-screen keyboard away; don't force it back
+    perf: false,       // Fast: no animation, and no pause after a right answer
     flick: null,       // "vowel" | "key" while a flick drill is running
     numbers: null,     // "count" | "random" while a number drill is running
     calendar: null,    // "week" | "month" | "day" while a calendar drill is running
@@ -680,6 +691,37 @@
   if (prefersDark.addEventListener) prefersDark.addEventListener("change", paintTheme);
 
   /* ---------- sheets ---------- */
+  /* ---------- performance mode ---------- */
+  /* Two switches, one setting each, and the same reasoning behind both: the
+     theme is a fact about the screen and this is a fact about the device, so
+     neither has any business following an account between them. Both are read
+     and written directly rather than through `store`, which is precisely what
+     keeps them out of the blob that syncs.
+
+     Unlike the theme it has no `auto`. The OS already has a way to ask for less
+     motion and the stylesheet obeys it unconditionally; what this adds on top
+     is the pause after a right answer, which is pacing rather than motion and
+     is not something a system setting has any opinion about. Inferring it would
+     mean quietly changing how fast someone's drill runs because of an
+     accessibility preference they set for a different reason. */
+  function readPerf() {
+    try { return localStorage.getItem(PERF_KEY) === "on"; }
+    catch (e) { return false; }
+  }
+
+  function paintPerf() {
+    document.documentElement.dataset.perf = state.perf ? "on" : "off";
+    Array.from(el.perfSwitch.children).forEach((b) =>
+      b.setAttribute("aria-checked", String((b.dataset.perf === "on") === state.perf)));
+  }
+
+  function setPerf(on) {
+    state.perf = Boolean(on);
+    try { localStorage.setItem(PERF_KEY, state.perf ? "on" : "off"); }
+    catch (e) { /* private mode — it just won't persist */ }
+    paintPerf();
+  }
+
   function openFontPicker() {
     buildFontList();
     navTo(el.fontPicker);
@@ -2294,7 +2336,7 @@
       : '<span class="ok">Correct — <b lang="ja">' + shown +
         '</b> is “' + c.a + '”.</span>';
     updateStats();
-    state.timer = setTimeout(next, REVEAL_DELAY);
+    state.timer = setTimeout(next, revealDelay());
   }
 
   function markWrong(c, viaReveal, typed) {
@@ -2383,8 +2425,18 @@
     const mode = activeMode();
     const isRecord = !state.isDrill && store.setBest(state.deck.id, mode, pct);
     const best = store.best(state.deck.id, mode);
-    // a clean sweep is what earns a time; reveals count as misses, so this
-    // can't be gamed by rushing
+    // A clean sweep is what earns a time; reveals count as misses, so this
+    // can't be gamed by rushing.
+    //
+    // Fast runs count, and there is one records pool. They are quicker by about
+    // the stamp delay per card — half a minute over a 50-card deck — so in
+    // practice the record ends up being a Fast one. That is a deliberate
+    // choice and not an oversight: splitting the pool would mean two "fastest"
+    // figures per deck per mode on a screen that already carries two, and
+    // refusing the time outright is worse still — it throws away a run you
+    // actually did and sat through. If the two ever need comparing, the fix is
+    // to stop counting the app's own pause towards the clock, not to start
+    // rejecting runs.
     const flawless = !state.isDrill && pct === 100;
     const isFastest = flawless && store.setBestTime(state.deck.id, mode, took);
     const bestMs = state.isDrill ? 0 : store.bestTime(state.deck.id, mode);
@@ -2555,6 +2607,9 @@
 
   Array.from(el.themeSwitch.children).forEach((b) =>
     b.addEventListener("click", () => setTheme(b.dataset.theme)));
+
+  Array.from(el.perfSwitch.children).forEach((b) =>
+    b.addEventListener("click", () => setPerf(b.dataset.perf === "on")));
 
   Array.from(el.scriptSwitch.children).forEach((b) =>
     b.addEventListener("click", () => setScript(b.dataset.script)));
@@ -3148,6 +3203,8 @@
   // <head> already put data-theme on the page before first paint; this catches
   // the switch up with it, and owns it from here on.
   paintTheme();
+  state.perf = readPerf();
+  paintPerf();
   setAuthMode("login");
 
   // Is there a backend at all? Everything account-shaped stays hidden until

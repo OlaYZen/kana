@@ -798,7 +798,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 
 /* ── panels: options, the font picker, the chart ──────────────────────────
    These were <dialog> sheets, and the reason they are not is that a modal has
-   to cap its own height. Options is the tallest of the three — three segmented
+   to cap its own height. Options is the tallest of the three — four segmented
    controls and four rows, the last of which is Account, i.e. the way to Sign
    out — so the cap was what decided whether the way out was on screen. A
    screen has no cap: it scrolls, exactly like the progress screen next to it,
@@ -1648,7 +1648,30 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   .square{ width:min(52dvh, 400px); }
 }
 
-/* ══ motion ═══════════════════════════════════════════════════════════ */
+/* ══ motion ═══════════════════════════════════════════════════════════
+   Two ways in, and they are not the same question. The media query is the OS
+   asking on the user's behalf and is always obeyed. `data-perf` is the user
+   asking here, and it goes further: it also drops the pause after a right
+   answer, which is pacing rather than motion and so has no business being
+   inferred from a system setting. Where they overlap, they agree.           */
 @media (prefers-reduced-motion:reduce){
   *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
 }
+
+:root[data-perf="on"] *,
+:root[data-perf="on"] *::before,
+:root[data-perf="on"] *::after{
+  animation-duration:.001ms !important;
+  animation-delay:0s !important;
+  animation-iteration-count:1 !important;
+  transition-duration:.001ms !important;
+  transition-delay:0s !important;
+}
+:root[data-perf="on"]{ scroll-behavior:auto !important; }
+
+/* The 〇 is the one animation that is not decoration — it is a half-second
+   reward, and the whole point of Fast is not waiting through it. Killing the
+   duration alone would leave it stamped on the square for that half second
+   instead, so it is taken out rather than sped up. The red/green square and
+   the feedback line still say what happened. */
+:root[data-perf="on"] .maru{ display:none !important; }

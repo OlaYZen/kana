@@ -377,6 +377,16 @@
         </div>
       </div>
 
+      <!-- Like the theme, this belongs to the device rather than the account: a
+           phone that stutters is a fact about that phone. -->
+      <div class="modebar modebar--stack">
+        <span class="modebar__label">Performance</span>
+        <div class="seg" id="perfSwitch" role="radiogroup" aria-label="Performance mode">
+          <button type="button" class="seg__btn" data-perf="off" role="radio" aria-checked="true">Normal</button>
+          <button type="button" class="seg__btn" data-perf="on" role="radio" aria-checked="false">Fast</button>
+        </div>
+      </div>
+
       <button type="button" class="wide" id="menuFontBtn">
         <span class="wide__mark wide__mark--kana" lang="ja">あ</span>
         <span class="wide__label">Character font · <span id="menuFontName">Mincho</span></span>
