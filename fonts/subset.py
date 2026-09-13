@@ -9,7 +9,7 @@ newer upstream release:
     python fonts/subset.py
 
 The upstream faces are 3.6-13 MB each because they carry thousands of kanji.
-This app renders kana, forty kanji of interface chrome, and Latin — 474
+This app renders kana, forty kanji of interface chrome, and Latin — 477
 characters — so each face is cut to that and lands at 32-110 KB.
 
 The cut is defined by *ranges*, never by the current contents of kana.json:
@@ -37,6 +37,7 @@ RANGES = [
     "U+014D,U+016B",  # ō ū — the long vowels the readings are spelt with
     "U+00B7",         # ·  the separator in deck subtitles
     "U+2192",         # →  the progress report's "mistaken for" arrow
+    "U+00D7,U+00F7,U+2212",  # × ÷ −  the signs the arithmetic drill asks with
     "U+3000-303F",    # CJK punctuation
     "U+3040-309F",    # hiragana, incl. ゛ ゜ ゝ ゞ
     "U+30A0-30FF",    # katakana, incl. ヴ ・ ー ヽ ヾ
