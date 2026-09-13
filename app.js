@@ -22,12 +22,13 @@
     choices: $("choices"), chooseTools: $("chooseTools"), chooseHint: $("chooseHint"),
     barFill: $("barFill"), mProgress: $("mProgress"), mStreak: $("mStreak"), mAcc: $("mAcc"),
     menuBtn: $("menuBtn"), restartBtn: $("restartBtn"),
-    fontSheet: $("fontSheet"), fontList: $("fontList"), fontNote: $("fontNote"),
-    fontCloseBtn: $("fontCloseBtn"), playFontBtn: $("playFontBtn"),
+    fontPicker: $("fontPicker"), fontList: $("fontList"), fontNote: $("fontNote"),
+    fontBackBtn: $("fontBackBtn"),
+    playFontBtn: $("playFontBtn"),
     menuFontBtn: $("menuFontBtn"), menuFontName: $("menuFontName"),
-    chartSheet: $("chartSheet"), chartBody: $("chartBody"),
+    chart: $("chart"), chartBody: $("chartBody"), chartBackBtn: $("chartBackBtn"),
     chartSwitch: document.querySelector(".chart__switch"),
-    chartBtn: $("chartBtn"), chartCloseBtn: $("chartCloseBtn"),
+    chartBtn: $("chartBtn"),
     endMark: $("endMark"), endLabel: $("endLabel"),
     endScore: $("endScore"), endSub: $("endSub"), endBest: $("endBest"),
     endBestChip: $("endBestChip"),
@@ -43,7 +44,7 @@
     pwCurrent: $("pwCurrent"), pwNew: $("pwNew"), pwConfirm: $("pwConfirm"),
     pwSubmit: $("pwSubmit"), pwCancel: $("pwCancel"),
     accountBtn: $("accountBtn"), accountName: $("accountName"),
-    moreBtn: $("moreBtn"), moreSheet: $("moreSheet"), moreCloseBtn: $("moreCloseBtn"),
+    moreBtn: $("moreBtn"), options: $("options"), optionsBackBtn: $("optionsBackBtn"),
     moreMode: $("moreMode"),
     stats: $("stats"), statsBtn: $("statsBtn"), statsBody: $("statsBody"),
     statsBackBtn: $("statsBackBtn"), deckPick: $("deckPick"),
@@ -387,11 +388,64 @@
     state.finishedMs = keep ? performance.now() - state.startedAt : 0;
   }
 
-  const show = (screen) => {
-    [el.menu, el.play, el.end, el.fatal, el.auth, el.stats]
-      .forEach((s) => s.classList.add("hidden"));
-    screen.classList.remove("hidden");
-  };
+  /* ---------- screens ----------
+     Every view is a screen; nothing is a modal. Options, the font picker and
+     the chart were <dialog> sheets until a sheet's height cap turned out to be
+     the thing deciding whether Sign out was reachable — see CLAUDE.md. As
+     screens they scroll like the rest, and on a wide window they are the pane
+     beside the deck rail rather than a panel floating over it.
+
+     `data-screen` on <body> is how the stylesheet knows which one is up, which
+     is what lets the wide layout keep the menu on screen beside it. */
+  const SCREENS = [el.menu, el.play, el.end, el.fatal, el.auth, el.stats,
+                   el.options, el.fontPicker, el.chart];
+
+  function paint(screen) {
+    SCREENS.forEach((s) => s.classList.toggle("hidden", s !== screen));
+    document.body.dataset.screen = screen.id;
+    // On a wide window the pane is empty while nothing is running, and the
+    // chart is what belongs there: the reference table beside the deck list.
+    // The stylesheet decides whether it is visible; this only keeps it built.
+    if (screen === el.menu && state.charts.length) renderChart(state.script);
+  }
+
+  // A plain move — the way you got here stops mattering, so the trail is cut.
+  const show = (screen) => { trail.length = 0; paint(screen); };
+
+  /* Going somewhere you can come back from. The trail replaces what <dialog>
+     gave for free, and it has to remember two things per step: the screen, and
+     what had focus — Escape out of the font picker has to put the caret back in
+     the answer box, or on a phone the keyboard stays down for the rest of the
+     card. That was the bug the sheets' `close` handler existed for. */
+  const trail = [];
+
+  function navTo(screen) {
+    trail.push({ screen: activeScreen(), focus: document.activeElement });
+    paint(screen);
+  }
+
+  function navBack() {
+    const from = trail.pop();
+    paint(from ? from.screen : el.menu);
+    // Mid-card the answer field wins over whatever opened the panel: the
+    // on-screen keyboard follows focus, and the point is to get it back up.
+    if (!el.play.classList.contains("hidden") && state.mode !== "choose") {
+      focusField(typedField().input);
+      return;
+    }
+    if (from && from.focus && document.contains(from.focus)) {
+      try { from.focus.focus({ preventScroll: true }); }
+      catch (e) { from.focus.focus(); }
+    }
+  }
+
+  const activeScreen = () =>
+    SCREENS.find((s) => !s.classList.contains("hidden")) || el.menu;
+
+  // The three that are reached from somewhere and returned from: Escape leaves
+  // them, and while one is up it owns the keyboard.
+  const PANELS = [el.options, el.fontPicker, el.chart];
+  const onPanel = () => PANELS.indexOf(activeScreen()) >= 0;
 
   // Which pool this run's timings belong to. Typing romaji on a keyboard and
   // flicking on glass are different physical acts, so the server never pools
@@ -518,26 +572,9 @@
   if (prefersDark.addEventListener) prefersDark.addEventListener("change", paintTheme);
 
   /* ---------- sheets ---------- */
-  function openSheet(dialog) {
-    if (typeof dialog.showModal === "function") dialog.showModal();
-    else dialog.setAttribute("open", "");   // no <dialog> support: inert fallback
-  }
-
-  function closeSheet(dialog) {
-    if (typeof dialog.close === "function") dialog.close();
-    else dialog.removeAttribute("open");
-    // a sheet steals focus while it is up; hand it back so the keyboard returns
-    // with it rather than staying down for the rest of the card
-    if (!el.play.classList.contains("hidden") && state.mode !== "choose") {
-      focusField(typedField().input);
-    }
-  }
-
-  const sheetIsOpen = () => Boolean(document.querySelector("dialog[open]"));
-
-  function openFontSheet() {
+  function openFontPicker() {
     buildFontList();
-    openSheet(el.fontSheet);
+    navTo(el.fontPicker);
     const checked = el.fontList.querySelector('[aria-checked="true"]') || el.fontList.firstElementChild;
     if (checked) checked.focus();
   }
@@ -577,7 +614,7 @@
       typeof item === "string" ? (readings.get(item) || "?") : (item.a || readings.get(item.q) || "?");
     const kanaOf = (item) => (typeof item === "string" ? item : item.q);
 
-    el.chartSheet.dataset.script = chart.id;
+    el.chart.dataset.script = chart.id;
     Array.from(el.chartSwitch.children).forEach((b) =>
       b.setAttribute("aria-checked", String(b.dataset.chart === chart.id)));
 
@@ -625,10 +662,10 @@
     add(note, "span", "chart__notetext", "Rows follow the standard gojūon ordering.");
   }
 
-  function openChartSheet() {
+  function openChart() {
     // opens on whichever script the menu is showing
     renderChart(state.script);
-    openSheet(el.chartSheet);
+    navTo(el.chart);
     el.chartBody.focus();     // so arrow keys / space scroll the tables
   }
 
@@ -963,8 +1000,8 @@
     else render();
   }
 
-  // Which script's decks the menu is showing. The accent flips with it, the same
-  // vermilion/indigo pairing the chart sheet uses.
+  // Which script's decks the menu is showing. The accent flips with it, the
+  // same vermilion/indigo pairing the chart uses.
   function setScript(id) {
     state.script = id;
     el.menu.dataset.script = id;
@@ -973,6 +1010,12 @@
     store.write({ script: id });
     buildMenu();
     el.menuScroll.scrollTop = 0;
+    // On a wide window the chart is the pane while the menu is the rail, so a
+    // stamp has to move both — the deck list and the table beside it.
+    if (activeScreen() === el.menu && state.charts.length) {
+      renderChart(id);
+      el.chartBody.scrollTop = 0;
+    }
   }
 
   /* ---------- run ---------- */
@@ -1125,7 +1168,10 @@
   // forcing the keyboard back up until they put the caret in a field again.
   function noteBlur() {
     if (!TOUCH) return;
-    if (sheetIsOpen()) return;              // a sheet took focus, not the user
+    // Leaving the play screen moves focus by itself — that is the app's doing
+    // and not a decision to put the keyboard away, so it must not be recorded
+    // as one. (It was `a sheet is open` while these were dialogs.)
+    if (el.play.classList.contains("hidden")) return;
     state.kbDismissed = true;
   }
 
@@ -1423,31 +1469,28 @@
   el.input.addEventListener("keydown", enterSubmits);
   el.kanaInput.addEventListener("keydown", enterSubmits);
 
-  // Everything reachable from Options closes it on the way out: a second
-  // showModal() over an open dialog stacks them, and the backdrop-close handler
-  // below would then only ever see the top one.
-  const fromMore = (fn) => () => { closeSheet(el.moreSheet); fn(); };
+  // Options is a screen, so everything it leads to is one step deeper and one
+  // step back — no sheet to close first, and nothing that can stack.
+  el.moreBtn.addEventListener("click", () => navTo(el.options));
+  el.optionsBackBtn.addEventListener("click", navBack);
 
-  el.moreBtn.addEventListener("click", () => openSheet(el.moreSheet));
-  el.moreCloseBtn.addEventListener("click", () => closeSheet(el.moreSheet));
-
-  el.playFontBtn.addEventListener("click", openFontSheet);
-  el.menuFontBtn.addEventListener("click", fromMore(openFontSheet));
-  el.fontCloseBtn.addEventListener("click", () => closeSheet(el.fontSheet));
-  el.chartBtn.addEventListener("click", fromMore(openChartSheet));
-  el.chartCloseBtn.addEventListener("click", () => closeSheet(el.chartSheet));
+  el.playFontBtn.addEventListener("click", openFontPicker);
+  el.menuFontBtn.addEventListener("click", openFontPicker);
+  el.fontBackBtn.addEventListener("click", navBack);
+  el.chartBtn.addEventListener("click", openChart);
+  el.chartBackBtn.addEventListener("click", navBack);
   Array.from(el.chartSwitch.children).forEach((b) =>
     b.addEventListener("click", () => {
       renderChart(b.dataset.chart);
       el.chartBody.scrollTop = 0;
     }));
 
-  // click outside the panel (i.e. on the backdrop) closes it
-  [el.fontSheet, el.chartSheet, el.moreSheet].forEach((sheet) =>
-    sheet.addEventListener("click", (e) => { if (e.target === sheet) closeSheet(sheet); }));
-
   document.addEventListener("keydown", (e) => {
-    if (sheetIsOpen()) return;              // an open sheet owns the keyboard
+    // Escape backs out of a panel, which is what <dialog> used to do for free.
+    if (onPanel()) {
+      if (e.key === "Escape") navBack();
+      return;                               // the panel owns the keyboard
+    }
     if (el.play.classList.contains("hidden")) return;
     if (e.key === "Escape") { toMenu(); return; }
     if (state.mode !== "choose") return;
@@ -1475,14 +1518,16 @@
   el.restartBtn.addEventListener("click", () => start(state.deck));
 
   /* account + progress */
-  el.accountBtn.addEventListener("click", fromMore(() => {
+  el.accountBtn.addEventListener("click", () => {
     authError("");
     paintAccount();
-    show(el.auth);
+    navTo(el.auth);
     if (!api.user) el.authUser.focus();
-  }));
-  el.authBackBtn.addEventListener("click", toMenu);
-  el.statsBackBtn.addEventListener("click", toMenu);
+  });
+  // Back where you came from, which is Options — the four screens behind it are
+  // one trail, not four ways of landing on the menu.
+  el.authBackBtn.addEventListener("click", navBack);
+  el.statsBackBtn.addEventListener("click", navBack);
   el.authForm.addEventListener("submit", submitAuth);
   el.authSwap.addEventListener("click", () =>
     setAuthMode(authMode === "login" ? "signup" : "login"));
@@ -1510,7 +1555,7 @@
     }).catch((err) => authError(err.message));
   });
 
-  el.statsBtn.addEventListener("click", fromMore(openStats));
+  el.statsBtn.addEventListener("click", openStats);
   Array.from(el.deviceSwitch.children).forEach((b) =>
     b.addEventListener("click", () => {
       statsDevice = b.dataset.device;
@@ -2020,7 +2065,9 @@
   // Fetch and draw, keeping whatever is currently selected. Used by the device
   // switch, which must not disturb the chosen script.
   function loadStats() {
-    show(el.stats);
+    // Only a *move* to the report starts a trail. The device switch re-fetches
+    // from here while already on it, and that must not forget where Back goes.
+    if (activeScreen() !== el.stats) navTo(el.stats);
     el.statsBody.innerHTML = "";
     el.deckPick.innerHTML = "";
     add(el.statsBody, "p", "sblock__note", "Loading…");

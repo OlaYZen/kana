@@ -136,14 +136,12 @@
 
   /* the pressed/hover wash on a control with no fill of its own */
   --press:    rgba(0,0,0,.07);
-  --backdrop: rgba(36,33,28,.42);
   /* focused text field — mixed from the accent, so it needs no dark twin */
   --focus-glow: 0 0 0 3px color-mix(in srgb, var(--shu) 16%, transparent);
 
   /* Shadows are whole values, not tints, because a dark ground needs a
      different spread and opacity, not the same shadow in another colour. */
   --shadow-fine:   0 1px 2px rgba(60,50,30,.14);          /* the seg thumb */
-  --shadow-sheet:  0 -20px 50px -22px rgba(60,50,30,.45);
   --shadow-square: 0 14px 30px -18px rgba(60,50,30,.42);
 
   /* the writing square: paper on paper, so it needs its own lift */
@@ -156,7 +154,7 @@
     radial-gradient(1100px 620px at 50% -12%, #FBF7EC 0%, transparent 62%),
     var(--paper);
 
-  --accent:      var(--shu);   /* flips per script inside the chart sheet */
+  --accent:      var(--shu);   /* flips per script inside the chart */
   --accent-dark: var(--shu-3); /* the accent's label colour, not "dark theme" */
 
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -169,7 +167,7 @@
             "MS PMincho", "Songti SC", serif;
 
   /* Every Japanese character on screen uses this. app.js overwrites it with the
-     stack picked in the font sheet; --mincho stays put for the Latin numerals
+     stack picked in the font picker; --mincho stays put for the Latin numerals
      so switching kana faces never moves the score display around. */
   --kana: var(--mincho);
 
@@ -226,12 +224,10 @@
   --guide:    #4A4335;
 
   --press:    rgba(255,255,255,.09);
-  --backdrop: rgba(0,0,0,.6);
 
   /* a shadow on a dark ground has to be near-black and tighter, or it just
      fogs the area around the element instead of lifting it */
   --shadow-fine:   0 1px 2px rgba(0,0,0,.45);
-  --shadow-sheet:  0 -20px 50px -24px rgba(0,0,0,.85);
   --shadow-square: 0 14px 30px -20px rgba(0,0,0,.75);
 
   --square-bg: linear-gradient(180deg, #2A251D 0%, #1D1A15 140%);
@@ -379,7 +375,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 }
 
 /* ── menu ─────────────────────────────────────────────────────────────── */
-/* Script switch — the same seal stamps as the chart sheet (.hanko, defined with
+/* Script switch — the same seal stamps as the chart (.hanko, defined with
    the chart), sized to share the menu's full width. It filters the deck list to
    one script rather than listing all six decks at once. */
 .scriptbar{
@@ -495,12 +491,12 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .seg__btn[aria-checked="true"]{ background:var(--paper-card); color:var(--c-ink); box-shadow:var(--shadow-fine); }
 
 /* Three options no longer fit beside the label on a phone, so these rows stack:
-   label above, buttons sharing the full width below. Both live in the Options
-   sheet, where they have no top border to sit under. */
+   label above, buttons sharing the full width below. Both live in Options,
+   where they have no top border to sit under. */
 .modebar--stack{
-  flex-direction:column; align-items:stretch; gap:7px;
+  flex-direction:column; align-items:stretch; gap:6px;
   margin-top:0; padding-top:0; border-top:none;
-  margin-bottom:16px;
+  margin-bottom:13px;
 }
 .modebar--stack .seg{ display:flex; }
 .modebar--stack .seg__btn{ flex:1 1 0; padding:0 8px; }
@@ -746,46 +742,30 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   .srow__k{ font-size:25px; }
 }
 
-/* ── sheets ───────────────────────────────────────────────────────────── */
-.sheet{
-  margin:0; padding:0; border:0;
-  position:fixed; inset:auto 0 0 0;
-  width:100%; max-width:100%;
-  max-height:84dvh;
-  background:var(--paper);
-  border-top:1px solid var(--hairline);
-  border-radius:18px 18px 0 0;
-  color:var(--c-ink);
-  flex-direction:column;
-  box-shadow:var(--shadow-sheet);
-}
-/* `display` belongs on [open] only. An author `display:flex` on .sheet itself
-   would beat the UA's `dialog:not([open]){display:none}` — author rules always
-   win over UA rules — leaving a dead, unclosable panel in the page. */
-.sheet:not([open]){ display:none; }
-.sheet[open]{ display:flex; animation:sheet-in .22s cubic-bezier(.2,.9,.3,1); }
-@keyframes sheet-in{ from{ transform:translateY(14px); opacity:.4; } to{ transform:none; opacity:1; } }
-.sheet::backdrop{ background:var(--backdrop); }
-
-.sheet__head{
-  flex:0 0 auto;
-  display:flex; align-items:center; justify-content:space-between; gap:8px;
-  padding:6px 8px 6px 18px;
-  border-bottom:1px solid var(--hairline);
-}
-.sheet__title{
-  margin:0; font-size:11px; font-weight:600;
-  letter-spacing:.12em; text-transform:uppercase; color:var(--c-ink-soft);
-}
-.sheet__body{
-  flex:1 1 auto; min-height:0;
+/* ── panels: options, the font picker, the chart ──────────────────────────
+   These were <dialog> sheets, and the reason they are not is that a modal has
+   to cap its own height. Options is the tallest of the three — two segmented
+   controls and four rows, the last of which is Account, i.e. the way to Sign
+   out — so the cap was what decided whether the way out was on screen. A
+   screen has no cap: it scrolls, exactly like the progress screen next to it,
+   and it carries the same eyebrow and the same ← Back at the foot.           */
+.panel__scroll{
+  flex:1; min-height:0;
   overflow-y:auto; -webkit-overflow-scrolling:touch;
-  padding:12px 14px calc(14px + var(--safe-b));
+  margin-inline:calc(var(--pad) * -1);
+  padding-inline:var(--pad);
+  padding-bottom:4px;
 }
-.sheet__note{
+/* Four rows in a column here, where the menu's one is alone. */
+.panel__scroll .wide{ margin-top:8px; }
+.panel__note{
   margin:14px 2px 0;
   font-size:12.5px; line-height:1.55; color:var(--c-ink-soft);
 }
+
+/* The chart brings its own scroller and its stamps sit above it, so it gives
+   back the padding the other two want. */
+.panel--chart .panel__scroll{ padding-inline:0; margin-inline:0; }
 
 .fonts{ display:grid; gap:8px; }
 
@@ -821,23 +801,11 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .font__tick{ font-size:15px; color:var(--brass); text-align:center; visibility:hidden; }
 .font[aria-checked="true"] .font__tick{ visibility:visible; }
 
-@media (min-width:600px){
-  .sheet{
-    inset:0; margin:auto;
-    width:calc(100% - 40px); max-width:410px;
-    max-height:min(78dvh, 620px);
-    border:1px solid var(--hairline); border-radius:var(--r-lg);
-  }
-  /* the reference tables want the extra width when there is any */
-  .sheet--chart{ max-width:700px; max-height:min(90dvh, 940px); }
-  @keyframes sheet-in{ from{ transform:scale(.97); opacity:.4; } to{ transform:none; opacity:1; } }
-}
-.sheet--chart{ max-height:92dvh; }
 
 /* ══ character chart ══════════════════════════════════════════════════════
    The palette is now the app's own, so the chart only re-points the accent —
    vermilion for hiragana, indigo for katakana.                              */
-.sheet--chart[data-script="katakana"]{
+.panel--chart[data-script="katakana"]{
   --accent:var(--ai);
   --accent-dark:var(--ai-2);
 }
@@ -1348,6 +1316,9 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 /* ══ tablet / desktop ═════════════════════════════════════════════════ */
 @media (min-width:600px) and (min-height:600px){
   :root{ --pad:28px; }
+  /* Between a phone and the rail layout there is no second column worth
+     having, but 440px in a 900px window is a lot of nothing either side. */
+  .stage{ max-width:620px; }
   .eyebrow{ margin-bottom:20px; }
   .playbar{ margin-bottom:6px; }
   .playbar__title{ font-size:12.5px; }
@@ -1362,6 +1333,134 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   .metric__n{ font-size:22px; }
   .metric__l{ font-size:11px; }
   .end__score{ font-size:60px; }
+}
+
+/* ══ wide window: a deck rail and a pane ══════════════════════════════════
+   Below this the app is one screen at a time, which is exactly right on a
+   phone and used to be all there was. On a wide window it left a 440px column
+   in the middle of 1400 with dead space either side, so the menu stops being a
+   screen you leave and becomes the rail: the stamps and the deck list stay
+   put, and whatever you are doing — a drill, the chart, Options, the report —
+   fills the pane beside it.
+
+   Nothing here is a second copy of anything. #menu is the same element the
+   phone shows, placed in the first column and exempted from .hidden; app.js
+   still thinks in one screen at a time and `activeScreen()` still reads the
+   class, not what is painted. The pane is every other screen in column two.
+
+   `data-screen` on <body> is what app.js writes, and the one thing it decides
+   here is the idle pane: with nothing running, a chart is what belongs beside
+   a deck list, so the pane holds it and its Back link is dropped.
+
+   Height is guarded as well as width, or a landscape phone with the keyboard
+   up — 900×400, and reporting `orientation:landscape` — would be handed a rail
+   it has no room for.                                                        */
+@media (min-width:1100px) and (min-height:560px){
+  :root{ --pad:30px; }
+
+  /* fill the window instead of floating a card in the middle of it */
+  body{ align-items:stretch; }
+  .stage{
+    max-width:none;
+    min-height:var(--avail);
+    display:grid;
+    /* The floor is what the seal stamps need side by side — below it the bar
+       overflows before the labels are legible, which is why the rail layout
+       starts at 1100 rather than 1000. */
+    grid-template-columns:clamp(336px, 26vw, 392px) minmax(0, 1120px);
+    column-gap:clamp(22px, 3vw, 44px);
+    align-items:stretch;
+    /* On an ultrawide the answer is not a pane a metre across — the two
+       columns stay together and the pair is centred. */
+    justify-content:center;
+  }
+
+  /* ── the rail ─────────────────────────────────────────────────────────
+     .hidden carries !important — it has to, or a later display: rule like
+     .play's grid would beat it — so the two exemptions below need it too.
+     Specificity settles which important rule wins, and an id beats a class. */
+  #menu{
+    grid-column:1; min-width:0;
+    border-right:1px solid var(--hairline);
+    padding-right:clamp(16px, 1.6vw, 24px);
+  }
+  #menu.hidden{ display:flex !important; }
+
+  /* The rail is about as wide as a small phone, so the stamps and the deck
+     rows take the compact sizing rather than the tablet block's larger one. */
+  #menu .scriptbar{ gap:6px; }
+  #menu .scriptbar .hanko{ min-height:58px; }
+  #menu .scriptbar .hanko__glyph{ --stamp:23px; }
+  #menu .scriptbar .hanko__label{ font-size:10.5px; letter-spacing:0; }
+  #menu .deck{ grid-template-columns:46px 1fr auto; gap:11px; min-height:64px; padding:11px 12px; }
+  #menu .deck__sample{ height:42px; font-size:23px; }
+  #menu .deck--combo .deck__sample{ font-size:17px; }
+  #menu .deck__name{ font-size:14.5px; }
+  #menu .deck__meta{ font-size:11.5px; }
+  #menu .deck__best{ font-size:15px; }
+  /* the list bleeds to the stage edges on a phone; in the rail it stays inside
+     the hairline, so the negative margin that does that comes off */
+  #menu .menu__scroll{ margin-inline:0; padding-inline:0; }
+
+  /* ── the pane ─────────────────────────────────────────────────────────── */
+  #play, #end, #stats, #auth, #options, #fontPicker, #chart{
+    grid-column:2; min-width:0;
+  }
+  /* A measure, not the whole width: only the chart is a reference table that
+     wants every pixel there is. */
+  #end, #stats, #auth, #options, #fontPicker{
+    width:100%; max-width:540px; margin-inline:auto;
+  }
+  #chart{ width:100%; max-width:880px; margin-inline:auto; }
+
+  /* nothing running → the chart is the pane, and has nowhere to go back to */
+  body[data-screen="menu"] #chart.hidden{ display:flex !important; }
+  body[data-screen="menu"] #chartBackBtn{ display:none; }
+
+  /* The load error is the one screen with no menu behind it: there are no
+     decks, so a rail would be an empty column beside the explanation. */
+  body[data-screen="fatal"] .stage{
+    display:flex; max-width:560px; margin-inline:auto;
+  }
+  body[data-screen="fatal"] #menu.hidden{ display:none !important; }
+
+  /* ── the drill, square beside the answer ──────────────────────────────
+     The same two-column shape the landscape block uses, with room to make the
+     square the size it deserves. */
+  .play{
+    display:grid;
+    grid-template-columns:auto minmax(0, 1fr);
+    grid-template-areas:
+      "bar  bar"
+      "main dock";
+    align-items:center;
+    column-gap:clamp(24px, 3vw, 52px);
+  }
+  .playbar{ grid-area:bar; }
+  .playmain{ grid-area:main; padding:0; }
+  .dock{ grid-area:dock; }
+  /* This grid has no row for the reveal bar: left visible on a touch laptop it
+     would be auto-placed and shove the square out of its cell. There is room
+     beside the hint here, which is where reveal goes instead. */
+  .revealbar{ display:none; }
+  #typedTools .link{ display:inline-flex; }
+  #typedTools{ justify-content:space-between; min-height:var(--tap); }
+
+  /* The square takes the pane's left column and the answer takes what is
+     left, so at the narrow end of this layout a 400px square is what squeezes
+     the dock. Two steps rather than a formula: the column width isn't a thing
+     CSS can measure from in here. */
+  .square{ width:min(46dvh, 300px); }
+  .feedback{ min-height:44px; margin-top:0; }
+
+  .end__actions{ flex-direction:row; flex-wrap:wrap; justify-content:center; }
+  .end__actions .btn{ flex:1 1 200px; }
+  .end__actions .link{ flex:1 1 100%; }
+}
+
+/* Past about 1280 the pane has room for the square the glyph deserves. */
+@media (min-width:1280px) and (min-height:660px){
+  .square{ width:min(52dvh, 400px); }
 }
 
 /* ══ motion ═══════════════════════════════════════════════════════════ */

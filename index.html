@@ -70,8 +70,9 @@
     </div>
 
     <!-- Everything that used to sit stacked here — answer mode, font, chart,
-         progress, account — now lives in #moreSheet. Five blocks took a third
-         of a phone screen away from the deck list. -->
+         progress, account — now lives on the #options screen. Five blocks took
+         a third of a phone screen away from the deck list. On a wide window
+         this row is the foot of the rail and behaves exactly the same. -->
     <button type="button" class="wide wide--bar" id="moreBtn">
       <span class="wide__mark" lang="ja">設定</span>
       <span class="wide__label">Options · <span id="moreMode">Typing</span></span>
@@ -302,95 +303,100 @@
     <p class="fatal__hint">then open <code>http://localhost:8000</code>.</p>
   </section>
 
+  <!-- ───────────── OPTIONS ───────────── -->
+  <!-- These three were <dialog> sheets until they became screens like every
+       other: a modal over a phone-shaped column had to cap its own height, and
+       the tallest of them — this one — was what set that cap. A screen scrolls
+       instead, and on a wide window it is the pane beside the deck rail. -->
+  <section id="options" class="screen panel hidden" aria-labelledby="optionsTitle">
+    <p class="eyebrow" id="optionsTitle"><span class="mark" lang="ja">設定</span> Options</p>
+
+    <div class="panel__scroll">
+      <div class="modebar modebar--stack">
+        <span class="modebar__label">Answer by</span>
+        <div class="seg" id="modeSwitch" role="radiogroup" aria-label="Answer mode">
+          <button type="button" class="seg__btn" data-mode="type" role="radio" aria-checked="true">Typing</button>
+          <button type="button" class="seg__btn" data-mode="choose" role="radio" aria-checked="false">Choosing</button>
+          <button type="button" class="seg__btn" data-mode="write" role="radio" aria-checked="false">Writing</button>
+        </div>
+      </div>
+
+      <!-- Theme is this device's alone — it is never synced to an account. -->
+      <div class="modebar modebar--stack">
+        <span class="modebar__label">Theme</span>
+        <div class="seg" id="themeSwitch" role="radiogroup" aria-label="Theme">
+          <button type="button" class="seg__btn" data-theme="auto" role="radio" aria-checked="true">Auto</button>
+          <button type="button" class="seg__btn" data-theme="light" role="radio" aria-checked="false">Light</button>
+          <button type="button" class="seg__btn" data-theme="dark" role="radio" aria-checked="false">Dark</button>
+        </div>
+      </div>
+
+      <button type="button" class="wide" id="menuFontBtn">
+        <span class="wide__mark wide__mark--kana" lang="ja">あ</span>
+        <span class="wide__label">Character font · <span id="menuFontName">Mincho</span></span>
+        <span class="wide__go" aria-hidden="true">▸</span>
+      </button>
+
+      <button type="button" class="wide" id="chartBtn">
+        <span class="wide__mark" lang="ja">五十音</span>
+        <span class="wide__label">All characters &amp; romaji</span>
+        <span class="wide__go" aria-hidden="true">▸</span>
+      </button>
+
+      <!-- both hidden unless a backend answers /api/health -->
+      <button type="button" class="wide hidden" id="statsBtn">
+        <span class="wide__mark" lang="ja">記録</span>
+        <span class="wide__label">Your progress</span>
+        <span class="wide__go" aria-hidden="true">▸</span>
+      </button>
+
+      <button type="button" class="wide hidden" id="accountBtn">
+        <span class="wide__mark" lang="ja">名</span>
+        <span class="wide__label">Account · <span id="accountName">Sign in</span></span>
+        <span class="wide__go" aria-hidden="true">▸</span>
+      </button>
+    </div>
+
+    <button type="button" class="link" id="optionsBackBtn">← Back</button>
+  </section>
+
+  <!-- ───────────── FONT PICKER ───────────── -->
+  <section id="fontPicker" class="screen panel hidden" aria-labelledby="fontPickerTitle">
+    <p class="eyebrow" id="fontPickerTitle"><span class="mark" lang="ja">字</span> Character font</p>
+
+    <div class="panel__scroll">
+      <div class="fonts" id="fontList" role="radiogroup" aria-labelledby="fontPickerTitle"></div>
+      <p class="panel__note" id="fontNote"></p>
+    </div>
+
+    <button type="button" class="link" id="fontBackBtn">← Back</button>
+  </section>
+
+  <!-- ───────────── CHARACTER CHART ───────────── -->
+  <section id="chart" class="screen panel panel--chart hidden" data-script="hiragana"
+           aria-labelledby="chartTitle">
+    <p class="eyebrow" id="chartTitle"><span class="mark" lang="ja">五十音</span> All characters</p>
+
+    <div class="chart__switch" role="radiogroup" aria-label="Script">
+      <button type="button" class="hanko" data-chart="hiragana" role="radio" aria-checked="true">
+        <span class="hanko__glyph" lang="ja">あ</span>
+        <span class="hanko__label">Hiragana</span>
+      </button>
+      <button type="button" class="hanko" data-chart="katakana" role="radio" aria-checked="false">
+        <span class="hanko__glyph" lang="ja">ア</span>
+        <span class="hanko__label">Katakana</span>
+      </button>
+    </div>
+
+    <!-- masthead + tables are built by app.js from kana.json's `charts` -->
+    <div class="panel__scroll chart__body" id="chartBody" tabindex="-1"></div>
+
+    <!-- On a wide window the chart is what fills the pane while nothing is
+         running, and there is nowhere to go back to — CSS drops this there. -->
+    <button type="button" class="link" id="chartBackBtn">← Back</button>
+  </section>
+
 </main>
-
-<!-- ───────────── OPTIONS ───────────── -->
-<dialog id="moreSheet" class="sheet" aria-labelledby="moreSheetTitle">
-  <div class="sheet__head">
-    <h2 class="sheet__title" id="moreSheetTitle">Options</h2>
-    <button type="button" class="iconbtn" id="moreCloseBtn" aria-label="Close">✕</button>
-  </div>
-  <div class="sheet__body">
-    <div class="modebar modebar--stack">
-      <span class="modebar__label">Answer by</span>
-      <div class="seg" id="modeSwitch" role="radiogroup" aria-label="Answer mode">
-        <button type="button" class="seg__btn" data-mode="type" role="radio" aria-checked="true">Typing</button>
-        <button type="button" class="seg__btn" data-mode="choose" role="radio" aria-checked="false">Choosing</button>
-        <button type="button" class="seg__btn" data-mode="write" role="radio" aria-checked="false">Writing</button>
-      </div>
-    </div>
-
-    <!-- Theme is this device's alone — it is never synced to an account. -->
-    <div class="modebar modebar--stack">
-      <span class="modebar__label">Theme</span>
-      <div class="seg" id="themeSwitch" role="radiogroup" aria-label="Theme">
-        <button type="button" class="seg__btn" data-theme="auto" role="radio" aria-checked="true">Auto</button>
-        <button type="button" class="seg__btn" data-theme="light" role="radio" aria-checked="false">Light</button>
-        <button type="button" class="seg__btn" data-theme="dark" role="radio" aria-checked="false">Dark</button>
-      </div>
-    </div>
-
-    <button type="button" class="wide" id="menuFontBtn">
-      <span class="wide__mark wide__mark--kana" lang="ja">あ</span>
-      <span class="wide__label">Character font · <span id="menuFontName">Mincho</span></span>
-      <span class="wide__go" aria-hidden="true">▸</span>
-    </button>
-
-    <button type="button" class="wide" id="chartBtn">
-      <span class="wide__mark" lang="ja">五十音</span>
-      <span class="wide__label">All characters &amp; romaji</span>
-      <span class="wide__go" aria-hidden="true">▸</span>
-    </button>
-
-    <!-- both hidden unless a backend answers /api/health -->
-    <button type="button" class="wide hidden" id="statsBtn">
-      <span class="wide__mark" lang="ja">記録</span>
-      <span class="wide__label">Your progress</span>
-      <span class="wide__go" aria-hidden="true">▸</span>
-    </button>
-
-    <button type="button" class="wide hidden" id="accountBtn">
-      <span class="wide__mark" lang="ja">名</span>
-      <span class="wide__label">Account · <span id="accountName">Sign in</span></span>
-      <span class="wide__go" aria-hidden="true">▸</span>
-    </button>
-  </div>
-</dialog>
-
-<!-- ───────────── FONT PICKER ───────────── -->
-<dialog id="fontSheet" class="sheet" aria-labelledby="fontSheetTitle">
-  <div class="sheet__head">
-    <h2 class="sheet__title" id="fontSheetTitle">Character font</h2>
-    <button type="button" class="iconbtn" id="fontCloseBtn" aria-label="Close">✕</button>
-  </div>
-  <div class="sheet__body">
-    <div class="fonts" id="fontList" role="radiogroup" aria-labelledby="fontSheetTitle"></div>
-    <p class="sheet__note" id="fontNote"></p>
-  </div>
-</dialog>
-
-<!-- ───────────── CHARACTER CHART ───────────── -->
-<dialog id="chartSheet" class="sheet sheet--chart" data-script="hiragana"
-        aria-labelledby="chartSheetTitle">
-  <div class="sheet__head">
-    <h2 class="sheet__title" id="chartSheetTitle">All characters</h2>
-    <button type="button" class="iconbtn" id="chartCloseBtn" aria-label="Close">✕</button>
-  </div>
-
-  <div class="chart__switch" role="radiogroup" aria-label="Script">
-    <button type="button" class="hanko" data-chart="hiragana" role="radio" aria-checked="true">
-      <span class="hanko__glyph" lang="ja">あ</span>
-      <span class="hanko__label">Hiragana</span>
-    </button>
-    <button type="button" class="hanko" data-chart="katakana" role="radio" aria-checked="false">
-      <span class="hanko__glyph" lang="ja">ア</span>
-      <span class="hanko__label">Katakana</span>
-    </button>
-  </div>
-
-  <!-- masthead + tables are built by app.js from kana.json's `charts` -->
-  <div class="sheet__body chart__body" id="chartBody" tabindex="-1"></div>
-</dialog>
 
 <script src="app.js"></script>
 </body>
