@@ -1239,7 +1239,11 @@
         n: n,
         parts: numParts(chunks),      // flat, for numKanaAccepts
         digits: digits, kanji: kanjiNumber(n),
-        reading: numReading(chunks), kana: numKana(chunks)
+        reading: numReading(chunks), kana: numKana(chunks),
+        // What Writing asks with, and what the feedback says the value is. A
+        // plain number is both of those by itself; a sum is not — see mathCard.
+        ask: digits, ident: digits,
+        ord: n                        // counting order, for the misses
       }
     };
   }
@@ -1271,8 +1275,137 @@
   // the mode decides that at render time, so switching mode mid-run would flip
   // every remaining prompt rather than leaving a half-dealt run inconsistent.
   function numberQueue(deck) {
+    if (deck.numbers === "math") return mathQueue(deck);
     return shuffle(numberValues(deck)).map(numberCard);
   }
+
+  /* ---------- arithmetic ----------
+     Plus, minus, times, divide and percent. A sum is read as the two numbers
+     it is made of, each composed exactly as readNumber() already composes it,
+     with the operator said between them: 三たす四 is "san tasu yon". Percent is
+     the other way round — said after its number and joined to the whole with
+     の, 二百の二十五パーセント — and, like a calendar counter, it has values whose
+     reading changes as a whole: 十 before パ closes up to じゅっ. kana.json
+     carries the words, the signs and the ranges; nothing here spells a sound.
+
+     The answer is the *result*. That keeps the mode rule intact — Typing and
+     Choosing read the Japanese and answer with a number on the keypad, Writing
+     is shown the sum in signs and answers with how it is said — and it makes
+     reading the operator the thing being tested: 八わる二 answered with 16 is a
+     word misread, not a slip.
+
+     The operators are in kana, 三たす四 rather than 三足す四. Arithmetic read
+     aloud is written that way in teaching material, and it keeps the square
+     inside the bundled subsets without four more kanji. */
+  const numOp = (id) =>
+    ((NUM && NUM.operators) || []).find((o) => o.id === id) || null;
+
+  // A kind a drill may name: one of the operators, or percent.
+  const mathKind = (id) => (id === "percent" ? Boolean(NUM && NUM.percent) : Boolean(numOp(id)));
+
+  const between = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+
+  // The two operands and the result. The ranges are kana.json's; which pairs
+  // are allowed is arithmetic, and is here — a minus that stays above zero and
+  // a divide that comes out whole, built from its answer rather than filtered.
+  function mathOperands(op) {
+    if (op.id === "minus") {
+      const a = between(op.min + 1, op.max);
+      const b = between(op.min, a - 1);
+      return { a: a, b: b, n: a - b };
+    }
+    if (op.id === "divide") {
+      const b = between(op.min, op.max), q = between(op.min, op.max);
+      return { a: b * q, b: b, n: q };
+    }
+    const a = between(op.min, op.max), b = between(op.min, op.max);
+    return { a: a, b: b, n: op.id === "times" ? a * b : a + b };
+  }
+
+  // The card shared by both shapes. `key` is the operator rather than the
+  // values: twenty sums are never the same twenty twice, but the five words
+  // come round every run, so the report can rank what is actually recurring —
+  // that わる is slow — where ranking "20 ÷ 4" would say nothing.
+  function mathShape(kind, ord, chunks, kanji, ask, n) {
+    const digits = fmtDigits(n);
+    return {
+      q: numReading(chunks),
+      a: digits,
+      key: kind,
+      num: {
+        n: n,
+        parts: numParts(chunks),
+        digits: digits, kanji: kanji,
+        reading: numReading(chunks), kana: numKana(chunks),
+        ask: ask, ident: ask + " = " + digits,
+        ord: ord * 100000 + n         // grouped by kind, then by result
+      }
+    };
+  }
+
+  function mathCard(kind, ord) {
+    if (kind === "percent") return percentCard(ord);
+    const op = numOp(kind);
+    const v = mathOperands(op);
+    // The operator is a part like any other — an object from kana.json with
+    // `k`/`r` and their alternates — so numKanaAccepts() walks it without being
+    // told it is a word rather than a digit, and プラス is accepted for たす.
+    const chunks = readNumber(v.a).concat([[op]], readNumber(v.b));
+    return mathShape(kind, ord, chunks,
+      kanjiNumber(v.a) + op.k + kanjiNumber(v.b),
+      fmtDigits(v.a) + " " + op.sym + " " + fmtDigits(v.b), v.n);
+  }
+
+  // "b% of a". Writing asks in that English order and the answer is in the
+  // Japanese one, a first — which is the thing about percent worth learning,
+  // and the feedback shows both. The bases are multiples of `step`, which with
+  // the shipped values keeps every result a whole number; a value that would
+  // not is redrawn rather than rounded.
+  function percentCard(ord) {
+    const pc = NUM.percent;
+    const steps = Math.floor((pc.bases.max - pc.bases.min) / pc.bases.step);
+    let a = 0, b = 0;
+    for (let guard = 0; guard < 40; guard++) {
+      a = pc.bases.min + between(0, steps) * pc.bases.step;
+      b = pc.values[between(0, pc.values.length - 1)];
+      if ((a * b) % 100 === 0) break;
+    }
+    const irregular = pc.irregular && pc.irregular[String(b)];
+    const tail = irregular ? [[irregular]] : readNumber(b).concat([[pc]]);
+    const chunks = readNumber(a).concat([[pc.of]], tail);
+    return mathShape("percent", ord, chunks,
+      kanjiNumber(a) + pc.of.k + kanjiNumber(b) + pc.k,
+      b + pc.sym + " of " + fmtDigits(a), (a * b) / 100);
+  }
+
+  // Dealt, not sampled: each kind the drill names comes up len / kinds times,
+  // for the flick drills' reason — twenty draws at random can leave divide out
+  // of a run altogether. The same sum twice in one run is redrawn.
+  function mathQueue(deck) {
+    const kinds = deck.ops;
+    const out = [], seen = new Set();
+    for (let i = 0, guard = 0; out.length < deck.len && guard < deck.len * 40; guard++) {
+      const kind = kinds[i % kinds.length];
+      const c = mathCard(kind, kinds.indexOf(kind));
+      if (seen.has(c.num.ident)) continue;
+      seen.add(c.num.ident);
+      out.push(c);
+      i++;
+    }
+    return shuffle(out);
+  }
+
+  // What each kind of number drill says, per mode. Counting asks for the value;
+  // a sum asks for the result, which has to be worked out and says so.
+  const NUM_ASK = {
+    count: { type: "Type the number this reads.",
+             choose: "Pick the number this reads.",
+             write: "Write this number in kana." },
+    math:  { type: "Work it out, then type the answer.",
+             choose: "Work it out, then pick the answer.",
+             write: "Write how this is read, in kana." }
+  };
+  const numAsk = () => NUM_ASK[state.numbers === "math" ? "math" : "count"];
 
   // The prompt spans one character to about fifty — 六 and "rokujūrokuman
   // rokusen kyūhyaku kyūjū kyū" land in the same slot, which nothing else in
@@ -1625,7 +1758,7 @@
   const says = (written, what) =>
     '<span lang="ja">' + written + "</span> is " + what + " — ";
   const calSays = (c) => says(c.cal.face, c.cal.en);
-  const numSays = (c) => says(c.num.kanji, c.num.digits);
+  const numSays = (c) => says(c.num.kanji, c.num.ident);
 
   /* ==========================================================================
      Derived decks
@@ -1959,7 +2092,7 @@
     const reading = state.prompt === "reading";
     const text =
       calendaring ? (writing ? c.cal.ask : reading ? c.cal.reading : c.cal.face) :
-      numbering ? (writing ? c.num.digits : reading ? c.num.reading : c.num.kanji) :
+      numbering ? (writing ? c.num.ask : reading ? c.num.reading : c.num.kanji) :
       flicking ? c.q : writing ? c.a : c.q;
     // Latin prompt in every case but reading Japanese. Both generated subjects
     // read the same way round: Typing and Choosing show the kanji — 六, 二十日,
@@ -1987,9 +2120,7 @@
       numbering || calendaring ? numFit(text) : "");
     el.feedback.textContent =
       calendaring ? CAL_ASK[state.calendar][state.mode] :
-      numbering ? (writing ? "Write this number in kana." :
-                   choosing ? "Pick the number this reads."
-                            : "Type the number this reads.") :
+      numbering ? numAsk()[state.mode] :
       flicking ? (state.flick === "vowel"
                     ? "Any character that ends in this vowel."
                     : "Any character from this key.") :
@@ -2060,7 +2191,7 @@
   // writeAccepts() holds the answer to the same scope. A deck inside one script
   // — including Mixed hiragana — has nothing to disambiguate and says nothing.
   function writeAsk() {
-    if (state.numbers) return "Write this number in kana.";
+    if (state.numbers) return numAsk().write;
     if (state.calendar) return CAL_ASK[state.calendar].write;
     const g = cardGroup(card());
     return state.deck.spansScripts && g.script
@@ -2478,7 +2609,7 @@
       ? state.missed.filter((c, i) =>
           state.missed.findIndex((x) => x.flick.group === c.flick.group) === i)
       : state.numbers
-      ? state.missed.slice().sort((a, b) => a.num.n - b.num.n)
+      ? state.missed.slice().sort((a, b) => a.num.ord - b.num.ord)
       // a calendar run has no cards either, and its order is the week's or the
       // month's — `ord` is that, the number for a date and the weekday's place
       // in kana.json for a day of the week
@@ -2519,7 +2650,8 @@
       ? "Practice " + FLICK_LEN + " more"     // a fresh random run, not the same one
       // "again" only where it is the same material a second time: the random
       // drill deals twenty it has never asked before.
-      : state.numbers === "random" ? "Practice " + state.deck.len + " more"
+      : state.numbers === "random" || state.numbers === "math"
+        ? "Practice " + state.deck.len + " more"
       // `max` where there is one: a drill of ten asked both ways is "all 10
       // again", not all 20 — the prompts are twenty, the material is ten.
       : state.numbers ? "Practice all " + (state.deck.max || state.deck.len) + " again"
@@ -3321,7 +3453,14 @@
       // derived deck under かな; `numbers` mirrors `flick` as the flag every
       // branch tests, so the two read the same way.
       NUMBER_DECKS = NUM && NUM.drills
-        ? NUM.drills.map((d) => Object.assign({}, d, { numbers: d.kind, script: "number" }))
+        ? NUM.drills
+            .map((d) => Object.assign({}, d, {
+              numbers: d.kind, script: "number",
+              // the kinds kana.json still carries; a sum drill left with none
+              // is dropped below rather than offered as a run with no cards
+              ops: d.kind === "math" ? (d.ops || []).filter(mathKind) : d.ops
+            }))
+            .filter((d) => d.numbers !== "math" || (d.ops.length > 0 && d.len > 0))
         : [];
       // The calendar: four more deck-shaped drills, under a stamp of their
       // own. A drill whose counter has gone from kana.json is dropped rather

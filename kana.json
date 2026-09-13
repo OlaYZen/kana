@@ -310,6 +310,48 @@
             { "n": "250,000",  "x": "二十五万",          "q": "にじゅうごまん",                      "a": "nijūgoman" },
             { "n": "1,000,000", "x": "百万",              "q": "ひゃくまん",                          "a": "hyakuman" }
           ]
+        },
+        {
+          "type": "numbers",
+          "title": "Plus, minus, times, divide",
+          "en": "the words said between two numbers, and the one said after",
+          "items": [
+            { "n": "plus", "x": "+", "q": "たす・プラス", "a": "tasu · purasu" },
+            { "n": "minus", "x": "−", "q": "ひく・マイナス", "a": "hiku · mainasu" },
+            { "n": "times", "x": "×", "q": "かける", "a": "kakeru" },
+            { "n": "divided by", "x": "÷", "q": "わる", "a": "waru" },
+            { "n": "percent", "x": "%", "q": "パーセント", "a": "pāsento" },
+            { "n": "of", "x": "の", "q": "の", "a": "no" }
+          ]
+        },
+        {
+          "type": "numbers",
+          "title": "十 before パーセント",
+          "en": "jū closes up to jup, and jip is heard too",
+          "items": [
+            { "n": "10%", "x": "十パーセント", "q": "じゅっパーセント・じっパーセント", "a": "juppāsento · jippāsento" },
+            { "n": "20%", "x": "二十パーセント", "q": "にじゅっパーセント・にじっパーセント", "a": "nijuppāsento · nijippāsento" },
+            { "n": "50%", "x": "五十パーセント", "q": "ごじゅっパーセント・ごじっパーセント", "a": "gojuppāsento · gojippāsento" }
+          ]
+        },
+        {
+          "type": "numbers", "wide": true,
+          "title": "Sums, read aloud",
+          "en": "each number is read whole, then the word, then the next — a percent comes after its number, joined with の",
+          "items": [
+            { "n": "3 + 4 = 7", "x": "三たす四", "q": "さんたすよん", "a": "san tasu yon" },
+            { "n": "28 + 15 = 43", "x": "二十八たす十五", "q": "にじゅうはちたすじゅうご", "a": "nijū hachi tasu jū go" },
+            { "n": "15 − 8 = 7", "x": "十五ひく八", "q": "じゅうごひくはち", "a": "jū go hiku hachi" },
+            { "n": "90 − 36 = 54", "x": "九十ひく三十六", "q": "きゅうじゅうひくさんじゅうろく", "a": "kyūjū hiku sanjū roku" },
+            { "n": "6 × 7 = 42", "x": "六かける七", "q": "ろくかけるなな", "a": "roku kakeru nana" },
+            { "n": "8 × 9 = 72", "x": "八かける九", "q": "はちかけるきゅう", "a": "hachi kakeru kyū" },
+            { "n": "20 ÷ 4 = 5", "x": "二十わる四", "q": "にじゅうわるよん", "a": "nijū waru yon" },
+            { "n": "72 ÷ 8 = 9", "x": "七十二わる八", "q": "ななじゅうにわるはち", "a": "nanajū ni waru hachi" },
+            { "n": "25% of 200 = 50", "x": "二百の二十五パーセント", "q": "にひゃくのにじゅうごパーセント", "a": "nihyaku no nijū go pāsento" },
+            { "n": "50% of 40 = 20", "x": "四十の五十パーセント", "q": "よんじゅうのごじゅっパーセント", "a": "yonjū no gojuppāsento" },
+            { "n": "10% of 120 = 12", "x": "百二十の十パーセント", "q": "ひゃくにじゅうのじゅっパーセント", "a": "hyaku nijū no juppāsento" },
+            { "n": "75% of 160 = 120", "x": "百六十の七十五パーセント", "q": "ひゃくろくじゅうのななじゅうごパーセント", "a": "hyaku rokujū no nanajū go pāsento" }
+          ]
         }
       ]
     },
@@ -826,7 +868,7 @@
     }
   ],
 
-  "//numbers": "The number drills, and the one section here that is not a list of cards — 1 to 1,000,000 cannot be enumerated, so app.js *composes* a reading out of these parts and the drills generate their prompts from it. `ones` are the digits 1–9 read alone; `alt` and `altk` are the other readings that are also right (四 is yon or shi, 七 nana or shichi, 九 kyuu or ku) — see below for which of the two is graded. `places` are 千 百 十 within a group of four digits, biggest first, each carrying the `forms` its own sound changes produce — 三百 is sanbyaku, 六百 roppyaku, 八千 hassen. `groups` are the multipliers above 9999. The difference between the two is the leading 一: a place drops it (10 is juu, never ichijuu) and a group keeps it (10,000 is ichiman, never man), which is the whole reason they are separate lists rather than one. Reaching 億 or 兆 is one more `groups` entry plus a wider band in NUM_BANDS; nothing else changes. A drill is `{id, kind, len, max, label, sample, subtitle}` — `kind` is \"count\" (1 to `max`, each value once) or \"random\" (`len` values dealt across the magnitude bands); `len` is how many prompts a run is. Which way round a prompt goes is the answer mode's to decide, never the drill's. `alt` is the romaji and `altk` the kana; Writing accepts either, so both are graded — see CLAUDE.md for why romaji is an answer here and never is for a deck. Note that neither is carried into a compound — 40 is yonjū and 400 yonhyaku, never shijū or shihyaku — so the drill teaches the counting forms rather than accepting everything that has ever been said.",
+  "//numbers": "The number drills, and the one section here that is not a list of cards — 1 to 1,000,000 cannot be enumerated, so app.js *composes* a reading out of these parts and the drills generate their prompts from it. `ones` are the digits 1–9 read alone; `alt` and `altk` are the other readings that are also right (四 is yon or shi, 七 nana or shichi, 九 kyuu or ku) — see below for which of the two is graded. `places` are 千 百 十 within a group of four digits, biggest first, each carrying the `forms` its own sound changes produce — 三百 is sanbyaku, 六百 roppyaku, 八千 hassen. `groups` are the multipliers above 9999. The difference between the two is the leading 一: a place drops it (10 is juu, never ichijuu) and a group keeps it (10,000 is ichiman, never man), which is the whole reason they are separate lists rather than one. Reaching 億 or 兆 is one more `groups` entry plus a wider band in NUM_BANDS; nothing else changes. A drill is `{id, kind, len, max, label, sample, subtitle}` — `kind` is \"count\" (1 to `max`, each value once) or \"random\" (`len` values dealt across the magnitude bands); `len` is how many prompts a run is. Which way round a prompt goes is the answer mode's to decide, never the drill's. `alt` is the romaji and `altk` the kana; Writing accepts either, so both are graded — see CLAUDE.md for why romaji is an answer here and never is for a deck. Note that neither is carried into a compound — 40 is yonjū and 400 yonhyaku, never shijū or shihyaku — so the drill teaches the counting forms rather than accepting everything that has ever been said. `operators` and `percent` are what the \"math\" drill reads a sum with: each operator is a word said between two composed numbers — 三たす四 is san tasu yon — with `sym` the sign Writing asks with and `min`/`max` the range its operands are drawn from; which pairs are allowed (a minus that stays positive, a divide that comes out whole) is arithmetic and lives in app.js. `percent` is said *after* its number and joined to the whole with の — 二百の二十五パーセント, 25% of 200 — and like a calendar counter it lists in `irregular` the values whose reading changes as a whole: 十 before パ is じゅっ (or じっ), so 10, 20 and 50 are written out. Only the `values` a drill can ask need listing, and none of them ends in 4, 7 or 9. A \"math\" drill names the kinds it deals in `ops` and deals them evenly across `len`; its answer is the result, and a card files under its operator, so the report can say you are slow on わる.",
   "numbers": {
     "ones": [
       { "n": 1, "j": "一", "r": "ichi",  "k": "いち" },
@@ -860,6 +902,23 @@
     "groups": [
       { "value": 10000, "j": "万", "r": "man", "k": "まん" }
     ],
+    "operators": [
+      { "id": "plus",   "sym": "+", "en": "plus",       "k": "たす",   "r": "tasu",   "altk": ["プラス"],   "alt": ["purasu"],  "min": 1, "max": 50 },
+      { "id": "minus",  "sym": "−", "en": "minus",      "k": "ひく",   "r": "hiku",   "altk": ["マイナス"], "alt": ["mainasu"], "min": 1, "max": 99 },
+      { "id": "times",  "sym": "×", "en": "times",      "k": "かける", "r": "kakeru", "min": 2, "max": 9 },
+      { "id": "divide", "sym": "÷", "en": "divided by", "k": "わる",   "r": "waru",   "min": 2, "max": 9 }
+    ],
+    "percent": {
+      "sym": "%", "en": "percent", "k": "パーセント", "r": "pāsento",
+      "of": { "k": "の", "r": "no" },
+      "values": [5, 10, 20, 25, 50, 75],
+      "bases": { "min": 20, "max": 200, "step": 20 },
+      "irregular": {
+        "10": { "k": "じゅっパーセント",   "r": "juppāsento",   "altk": ["じっパーセント"],   "alt": ["jippāsento"] },
+        "20": { "k": "にじゅっパーセント", "r": "nijuppāsento", "altk": ["にじっパーセント"], "alt": ["nijippāsento"] },
+        "50": { "k": "ごじゅっパーセント", "r": "gojuppāsento", "altk": ["ごじっパーセント"], "alt": ["gojippāsento"] }
+      }
+    },
     "drills": [
       {
         "id": "num-10", "kind": "count", "len": 10, "max": 10,
@@ -875,6 +934,12 @@
         "id": "num-random", "kind": "random", "len": 20,
         "label": "Random numbers", "sample": "万",
         "subtitle": "20 drawn from 一 to 百万"
+      },
+      {
+        "id": "num-math", "kind": "math", "len": 20,
+        "label": "Arithmetic", "sample": "たす",
+        "subtitle": "Plus, minus, times, divide and percent",
+        "ops": ["plus", "minus", "times", "divide", "percent"]
       }
     ]
   },
