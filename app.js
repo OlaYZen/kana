@@ -51,11 +51,12 @@
     statsBackBtn: $("statsBackBtn"), deckPick: $("deckPick"),
     statsScriptSwitch: $("statsScriptSwitch"),
     themeColor: document.querySelector('meta[name="theme-color"]'),
-    // Three switches now share .seg__btn. Never select that class document-wide:
+    // Four switches now share .seg__btn. Never select that class document-wide:
     // the device switch has no data-mode, so a global query wires
     // setMode(undefined) onto it and blanks its aria-checked every time the
     // answer mode changes. Each switch has an id of its own for that reason.
     modeSwitch: $("modeSwitch"),
+    promptSwitch: $("promptSwitch"),
     themeSwitch: $("themeSwitch"),
     deviceSwitch: document.querySelector(".seg--device")
   };
@@ -102,15 +103,48 @@
 
   const MODES = ["type", "choose", "write"];
 
+  // Which script the generated drills ask in, when they are the ones asking:
+  // 六 or "roku", 二十日 or "hatsuka". Both are worth practising and they are
+  // different questions, so this is a setting rather than a decision made for
+  // you — and it belongs to what you are learning rather than to this screen,
+  // so it lives in `store` and follows an account, where the theme does not.
+  //
+  // Writing is untouched by it: that direction asks with the identity, 6 or
+  // 20日 or Monday, and answers in kana. There is no reading to ask with.
+  const PROMPTS = ["kanji", "reading"];
   // "flick" is not a selectable answer mode — the flick drills are their own
   // runs, and they record under it so their scores never mix with a deck's.
   // The number drills are not here: they answer to the three above like a deck.
-  const MODE_LABEL = { type: "Typing", choose: "Choosing", write: "Writing", flick: "Flick" };
+  const MODE_LABEL = {
+    type: "Typing", choose: "Choosing", write: "Writing", flick: "Flick"
+  };
+
+  // A generated drill's record mode carries the prompt form after it —
+  // "type-kanji" — so the label has to come apart the same way. Run rows sent
+  // back by the server arrive as these strings too, which is why this parses
+  // one rather than taking the pieces.
+  function modeLabel(mode) {
+    const cut = String(mode).indexOf("-");
+    if (cut < 0) return MODE_LABEL[mode] || mode;
+    const base = MODE_LABEL[mode.slice(0, cut)];
+    return base ? base + " · " + mode.slice(cut + 1) : mode;
+  }
 
   // Reading kana, picking from four, and writing kana from a sound are three
   // different skills, so each keeps its own records — a record belongs to a
   // deck *and* a mode, never to a deck alone.
   const recordKey = (deckId, mode) => deckId + "|" + mode;
+
+  // …and for the generated drills, to the prompt form as well. 六 → 6 and
+  // "roku" → 6 are not the same question — the kanji gives itself away to
+  // anyone who has met ten of them — so pooling the two would let the easier
+  // one set a score the harder can never beat, which is the whole reason
+  // records split by mode in the first place. Both forms are suffixed, and
+  // `rev 4` moves the records that predate the split onto "-reading".
+  const promptApplies = (deck, mode) =>
+    Boolean(deck && (deck.numbers || deck.calendar)) && mode !== "write";
+  const recordMode = (deck, mode, prompt) =>
+    promptApplies(deck, mode) ? mode + "-" + prompt : mode;
 
   /* ---------- persisted preferences + best scores ---------- */
   const store = {
@@ -132,7 +166,7 @@
     // separate and much more dangerous act, handled once by renameKeys().
     migrate() {
       const data = store.read();
-      if (data.rev >= 3) return;
+      if (data.rev >= 4) return;
       const mode = MODES.includes(data.mode) ? data.mode : "type";
       const patch = {};
 
@@ -158,9 +192,24 @@
         });
         return out;
       };
-      const move = (table) => unreserve(rekey(table));
+      // rev 4: the generated drills asked only in romaji before the kanji
+      // prompt existed, so every record they hold was earned on "reading" and
+      // is moved onto that key. Suffixing both forms rather than leaving one
+      // bare is what keeps the deck row from labelling a record "Typing" when
+      // the other form would also be "Typing".
+      const byPrompt = (table) => {
+        const out = {};
+        Object.keys(table || {}).forEach((k) => {
+          const cut = k.lastIndexOf("|");
+          const id = k.slice(0, cut), m = k.slice(cut + 1);
+          const generated = id.indexOf("num-") === 0 || id.indexOf("cal-") === 0;
+          out[generated && (m === "type" || m === "choose") ? k + "-reading" : k] = table[k];
+        });
+        return out;
+      };
+      const move = (table) => byPrompt(unreserve(rekey(table)));
 
-      patch.rev = 3;
+      patch.rev = 4;
       patch.best = move(data.best);
       patch.bestTime = move(data.bestTime);
       store.write(patch);
@@ -326,6 +375,8 @@
     mode: MODES.includes(store.read().mode)
       ? store.read().mode
       : (TOUCH ? "choose" : "type"),
+    // how the number and calendar drills ask, in the two modes that read
+    prompt: PROMPTS.includes(store.read().prompt) ? store.read().prompt : "kanji",
     answered: 0, correct: 0, streak: 0, bestStreak: 0,
     missed: [],        // unique wrong cards, chart order
     graded: false,     // answer already scored — waiting to advance
@@ -384,12 +435,14 @@
 
   // What the current run scores as. A flick drill is the only thing that is not
   // one of the three answer modes; a number or calendar drill answers to them
-  // like a deck, so its records are keyed by the mode that earned them.
-  const activeMode = () => (state.flick ? "flick" : state.mode);
+  // like a deck, so its records are keyed by the mode that earned them — and by
+  // the prompt form, which is a second thing that changes the question.
+  const activeMode = () =>
+    (state.flick ? "flick" : recordMode(state.deck, state.mode, state.prompt));
 
-  // Whether the card on screen is answered by picking. Not `state.mode` alone,
-  // which a flick run ignores — a flick answer is always typed whatever the
-  // mode says.
+  // Whether the card on screen is answered by picking. Not `activeMode()`,
+  // which now carries a suffix, and not `state.mode` alone, which a flick run
+  // ignores — a flick answer is always typed whatever the mode says.
   const choosingNow = () => !state.flick && state.mode === "choose";
 
   // The answer is kana in write and flick alike, so both use the IME field —
@@ -1695,7 +1748,7 @@
     // A flick run is its own skill and always scores as "flick", whatever the
     // answer mode is set to; a deck's figures are the selected mode's, which is
     // why switching mode rebuilds the list.
-    const mode = deck.flick ? "flick" : state.mode;
+    const mode = deck.flick ? "flick" : recordMode(deck, state.mode, state.prompt);
     const size = deckSize(deck);
     // A generated run deals prompts; only a deck has cards to count.
     const unit = deck.flick || deck.numbers || deck.calendar ? " prompts" : " cards";
@@ -1703,7 +1756,7 @@
     const bestMs = store.bestTime(deck.id, mode);
 
     b.setAttribute("aria-label", deck.label + " — " + size + unit +
-      ", " + MODE_LABEL[mode].toLowerCase() +
+      ", " + modeLabel(mode).toLowerCase() +
       (best ? ", best " + best + "%" : ", no attempts yet") +
       (bestMs ? ", fastest clean run " + fmtTime(bestMs) : ""));
 
@@ -1711,13 +1764,13 @@
       '<span class="deck__sample" lang="ja">' + deck.sample + "</span>" +
       '<span><span class="deck__name">' + deck.label + "</span>" +
       '<span class="deck__meta">' + deck.subtitle + " · " + size + unit + "</span></span>" +
-      '<span class="deck__best" title="Your best in ' + MODE_LABEL[mode] + '">' +
+      '<span class="deck__best" title="Your best in ' + modeLabel(mode) + '">' +
         '<span class="deck__pct">' + (best ? best + "%" : "—") + "</span>" +
         (bestMs ? '<span class="deck__time" title="Fastest run with no mistakes">' +
                   fmtTime(bestMs) + "</span>" : "") +
         // the mode names the figure: each mode keeps its own records, and an
         // unlabelled percentage would silently look like the deck's only score
-        "<small>" + MODE_LABEL[mode] + "</small>" +
+        "<small>" + modeLabel(mode) + "</small>" +
       "</span>";
 
     b.addEventListener("click", () => start(deck));
@@ -1744,6 +1797,20 @@
     // carries the current value — otherwise it is invisible from the menu
     el.moreMode.textContent = MODE_LABEL[mode] || mode;
     // the deck list shows this mode's records, so it has to be rebuilt too
+    if (el.play.classList.contains("hidden")) buildMenu();
+    else render();
+  }
+
+  // Which script the generated drills ask in. Like setMode(), this has to
+  // rebuild the deck list rather than only re-render: each form keeps its own
+  // records, so every figure under 十 and 日時 changes with it. Mid-run it
+  // re-renders instead, which flips every remaining prompt — the same
+  // behaviour, and for the same reason, as changing the answer mode does.
+  function setPrompt(prompt) {
+    state.prompt = prompt;
+    Array.from(el.promptSwitch.children).forEach((b) =>
+      b.setAttribute("aria-checked", String(b.dataset.prompt === prompt)));
+    store.write({ prompt: prompt });
     if (el.play.classList.contains("hidden")) buildMenu();
     else render();
   }
@@ -1844,18 +1911,22 @@
     const flicking = state.flick !== null;
     const writing = !flicking && state.mode === "write";
     const choosing = !flicking && state.mode === "choose";
-    // Both generated subjects ask the same way round: Typing and Choosing show
-    // the reading — "roku", "hatsuka" — and answer with what it stands for,
-    // and Writing shows that identity and answers in kana.
+    // The generated drills ask in whichever script the Prompt setting says —
+    // 二十日 or "hatsuka", 六 or "roku". Writing is untouched by it: that
+    // direction asks with the identity and answers in kana.
+    const reading = state.prompt === "reading";
     const text =
-      calendaring ? (writing ? c.cal.ask : c.cal.reading) :
-      numbering ? (writing ? c.num.digits : c.num.reading) :
+      calendaring ? (writing ? c.cal.ask : reading ? c.cal.reading : c.cal.face) :
+      numbering ? (writing ? c.num.digits : reading ? c.num.reading : c.num.kanji) :
       flicking ? c.q : writing ? c.a : c.q;
-    // Latin prompt in every case but a deck read in Japanese: a generated
-    // prompt is romaji or digits, and a weekday's identity is a word.
+    // Latin prompt in every case but reading Japanese. Both generated subjects
+    // read the same way round: Typing and Choosing show the kanji — 六, 二十日,
+    // 月曜日 — and answer with what it stands for, and Writing shows that and
+    // answers in kana. So only Writing is Latin here, and for a weekday, whose
+    // identity is a word rather than a number, only Writing's prompt is.
     const latinPrompt = calendaring
-      ? (writing ? c.cal.askLang === "en" : true)
-      : numbering ? true
+      ? (writing ? c.cal.askLang === "en" : reading)
+      : numbering ? (writing || reading)
       : flicking || writing;
 
     el.square.classList.remove("is-correct", "is-wrong", "is-graded");
@@ -2334,11 +2405,11 @@
     if (bestMs && !isFastest) parts.push("<b>" + fmtTime(bestMs) + "</b>");
     el.endBestChip.classList.toggle("hidden", !parts.length);
     if (parts.length) {
-      el.endBestChip.innerHTML = MODE_LABEL[mode].toLowerCase() + " best " + parts.join(" · ");
+      el.endBestChip.innerHTML = modeLabel(mode).toLowerCase() + " best " + parts.join(" · ");
     }
 
     const news = [];
-    if (isRecord) news.push("New " + MODE_LABEL[mode] + " best for this " +
+    if (isRecord) news.push("New " + modeLabel(mode) + " best for this " +
       (state.flick ? "drill." : "deck."));
     if (isFastest) news.push(isRecord ? "Fastest clean run too." : "Fastest clean run yet.");
     el.endBest.classList.toggle("hidden", !news.length);
@@ -2478,6 +2549,9 @@
 
   Array.from(el.modeSwitch.children).forEach((b) =>
     b.addEventListener("click", () => setMode(b.dataset.mode)));
+
+  Array.from(el.promptSwitch.children).forEach((b) =>
+    b.addEventListener("click", () => setPrompt(b.dataset.prompt)));
 
   Array.from(el.themeSwitch.children).forEach((b) =>
     b.addEventListener("click", () => setTheme(b.dataset.theme)));
@@ -2717,6 +2791,7 @@
   function applyStoredPrefs() {
     const saved = store.read();
     applyFont(saved.font);
+    if (PROMPTS.includes(saved.prompt)) setPrompt(saved.prompt);
     if (MODES.includes(saved.mode)) setMode(saved.mode);
     const known = SCRIPTS.indexOf(saved.script) > -1;
     const hasDecks = allDecks().some((d) => d.script === saved.script);
@@ -2841,7 +2916,7 @@
       // the run *was*, as against how it went.
       const when = fmtWhen(r.created_at);
       statRow(b, [
-        { text: MODE_LABEL[r.mode] || r.mode, cls: "srow__r srow__r--wide",
+        { text: modeLabel(r.mode), cls: "srow__r srow__r--wide",
           sub: when || null },
         { text: r.correct + "/" + r.total, cls: "srow__s" },
         { text: fmtExact(r.duration_ms), cls: "srow__s srow__s--time" },
@@ -3025,7 +3100,7 @@
     if (report.by_mode.length > 1) {
       const b = statBlock("By answer mode", "Same deck, different skill.");
       report.by_mode.forEach((m) => statRow(b, [
-        { text: MODE_LABEL[m.mode] || m.mode, cls: "srow__r srow__r--wide" },
+        { text: modeLabel(m.mode), cls: "srow__r srow__r--wide" },
         { text: fmtMs(m.median_ms), cls: "srow__v" },
         { text: m.accuracy + "%", cls: "srow__s" }
       ]));
@@ -3147,6 +3222,7 @@
       state.fonts = fonts.list;
       state.fontsMissing = fonts.missing;
       applyFont(store.read().font);
+      setPrompt(state.prompt);   // before setMode: buildMenu() reads it
       setMode(state.mode);
 
       // A script with no decks in kana.json gets no button, and never gets

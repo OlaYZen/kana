@@ -355,6 +355,18 @@
         </div>
       </div>
 
+      <!-- Only the number and calendar drills read this: 六 or "roku", 二十日 or
+           "hatsuka". Both are worth practising and they are different questions,
+           so each prompt form keeps its own records. Writing ignores it — that
+           direction asks with 6 or 20日 and answers in kana. -->
+      <div class="modebar modebar--stack">
+        <span class="modebar__label">Numbers &amp; dates ask with</span>
+        <div class="seg" id="promptSwitch" role="radiogroup" aria-label="Number and date prompts">
+          <button type="button" class="seg__btn" data-prompt="kanji" role="radio" aria-checked="true">Kanji</button>
+          <button type="button" class="seg__btn" data-prompt="reading" role="radio" aria-checked="false">Reading</button>
+        </div>
+      </div>
+
       <!-- Theme is this device's alone — it is never synced to an account. -->
       <div class="modebar modebar--stack">
         <span class="modebar__label">Theme</span>

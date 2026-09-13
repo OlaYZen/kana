@@ -798,7 +798,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 
 /* ── panels: options, the font picker, the chart ──────────────────────────
    These were <dialog> sheets, and the reason they are not is that a modal has
-   to cap its own height. Options is the tallest of the three — two segmented
+   to cap its own height. Options is the tallest of the three — three segmented
    controls and four rows, the last of which is Account, i.e. the way to Sign
    out — so the cap was what decided whether the way out was on screen. A
    screen has no cap: it scrolls, exactly like the progress screen next to it,
