@@ -9,7 +9,7 @@ newer upstream release:
     python fonts/subset.py
 
 The upstream faces are 3.6-13 MB each because they carry thousands of kanji.
-This app renders kana, eighteen kanji of interface chrome, and Latin — 244
+This app renders kana, forty kanji of interface chrome, and Latin — 474
 characters — so each face is cut to that and lands at 32-110 KB.
 
 The cut is defined by *ranges*, never by the current contents of kana.json:
@@ -18,6 +18,7 @@ kanji list is the one thing here that is enumerated, because it is interface
 text rather than content; `check()` below re-derives it from the source files
 and fails if it has drifted.
 """
+import json
 import re
 import subprocess
 import sys
@@ -33,6 +34,7 @@ RAW = "https://raw.githubusercontent.com/google/fonts/main/ofl/"
 # Whole blocks, so any kana added to kana.json is already covered.
 RANGES = [
     "U+0020-007E",    # Latin: the romaji an IME shows while composing
+    "U+014D,U+016B",  # ō ū — the long vowels the readings are spelt with
     "U+00B7",         # ·  the separator in deck subtitles
     "U+2192",         # →  the progress report's "mistaken for" arrow
     "U+3000-303F",    # CJK punctuation
@@ -43,8 +45,12 @@ RANGES = [
 ]
 
 # Every kanji the interface itself renders: 設定 記録 五十音 名 字, the font
-# picker's 明朝 教科書体 丸 等幅. Verified against the sources by check().
-KANJI = "丸五体十名字定幅教明書朝科等記設録音"
+# picker's 明朝 教科書体 丸 等幅, the numerals 一二三四五六七八九十百千万 that
+# both generated subjects write their values in, and the 月火水木金土日曜 時分半
+# the time stamp needs — the seven weekdays, and the counters a date, a month,
+# an hour and a minute end in, plus the 半 of half past.
+# Verified against the sources by check().
+KANJI = "一七万三丸九二五体八六分十千半名四土字定幅教日明時曜書月朝木水火百科等記設金録音"
 
 # No vert/vrt2/palt: the app never sets writing-mode or font-feature-settings,
 # and dropping them prunes every vertical alternate glyph along with them — 30%
@@ -68,12 +74,45 @@ FONTS = [
 ]
 
 
+def _outside(text: str, opener: str, closer: str) -> str:
+    """Everything not between the two markers — i.e. the file minus its comments."""
+    out, i = [], 0
+    while True:
+        j = text.find(opener, i)
+        if j < 0:
+            out.append(text[i:])
+            return "".join(out)
+        out.append(text[i:j])
+        k = text.find(closer, j + len(opener))
+        if k < 0:
+            return "".join(out)
+        i = k + len(closer)
+
+
+def _rendered(node) -> str:
+    """kana.json's content, minus the `//` keys, which are prose about it."""
+    if isinstance(node, dict):
+        return "".join(_rendered(v) for k, v in node.items() if not k.startswith("//"))
+    if isinstance(node, list):
+        return "".join(_rendered(v) for v in node)
+    return node if isinstance(node, str) else ""
+
+
 def check() -> None:
-    """Re-derive the interface kanji from the sources; fail if KANJI has drifted."""
-    found = set()
-    for name in ("index.html", "app.js", "styles.css", "kana.json"):
-        found |= set(re.findall(r"[一-鿿]",
-                                (ROOT / name).read_text(encoding="utf-8")))
+    """Re-derive the interface kanji from the sources; fail if KANJI has drifted.
+
+    Comments are cut out first, and so are kana.json's `//` keys. Both discuss
+    characters the app never draws — 万 and 億 in the prose about how a number is
+    read, 納戸 and 栗 beside the colours named after them — and a kanji that is
+    only ever *written about* cannot come out as tofu. Counting them would grow
+    every one of the eight files by glyphs nothing renders.
+    """
+    html = _outside((ROOT / "index.html").read_text(encoding="utf-8"), "<!--", "-->")
+    js = _outside((ROOT / "app.js").read_text(encoding="utf-8"), "/*", "*/")
+    js = re.sub(r"(?m)//.*$", "", js)
+    css = _outside((ROOT / "styles.css").read_text(encoding="utf-8"), "/*", "*/")
+    data = json.loads((ROOT / "kana.json").read_text(encoding="utf-8"))
+    found = set(re.findall(r"[一-鿿]", html + js + css + _rendered(data)))
     missing = found - set(KANJI)
     if missing:
         sys.exit(f"KANJI is out of date — the sources also use {''.join(sorted(missing))}")
