@@ -94,10 +94,11 @@
 
   // The seal stamps, in the order index.html lists them. Only the first two are
   // scripts anyone writes in: "kana" is the stamp for material that is both at
-  // once, and "number" is the counting drills, which are not kana at all. Both
-  // are a script as far as everything downstream is concerned, which is what
-  // keeps every deck filter to a single comparison — see CLAUDE.md.
-  const SCRIPTS = ["hiragana", "katakana", "kana", "number"];
+  // once, "number" is counting and "calendar" is weekdays, months and dates,
+  // neither of which is kana at all. All four are a script as far as everything
+  // downstream is concerned, which is what keeps every deck filter to a single
+  // comparison — see CLAUDE.md.
+  const SCRIPTS = ["hiragana", "katakana", "kana", "number", "calendar"];
 
   const MODES = ["type", "choose", "write"];
 
@@ -331,6 +332,7 @@
     kbDismissed: false, // user put the on-screen keyboard away; don't force it back
     flick: null,       // "vowel" | "key" while a flick drill is running
     numbers: null,     // "count" | "random" while a number drill is running
+    calendar: null,    // "week" | "month" | "day" while a calendar drill is running
     isDrill: false,
     timer: 0,          // pending auto-advance, cleared whenever the card changes
     answers: [],       // per-card log for this run, posted at the end
@@ -381,8 +383,8 @@
     cardGroup(c).cards.some((x) => x.a === c.a && normKana(x.q) === value);
 
   // What the current run scores as. A flick drill is the only thing that is not
-  // one of the three answer modes; a number drill answers to them like a deck,
-  // so its records are keyed by the mode that earned them.
+  // one of the three answer modes; a number or calendar drill answers to them
+  // like a deck, so its records are keyed by the mode that earned them.
   const activeMode = () => (state.flick ? "flick" : state.mode);
 
   // Whether the card on screen is answered by picking. Not `state.mode` alone,
@@ -401,10 +403,16 @@
   // inputmode on a live field does not reliably re-trigger the on-screen
   // keyboard, which is the same reason #kanaInput is separate.
   //
-  // Whether the answer is a *number* is the question rather than which drill
-  // is running, so this stays one test as more generated subjects arrive.
-  // Choosing asks it too, where it decides how an option is set.
-  const numericAnswer = () => !kanaAnswer() && state.numbers !== null;
+  // Whether the answer is a *number* is the question, not which drill is
+  // running: a month and a date are answered with theirs exactly as a number
+  // is, and so is a clock time — 3:45 is typed as digits, the colon being a
+  // separator rather than a character the keypad would have to carry. A weekday
+  // is the one generated prompt that isn't: it answers with its English name,
+  // so it takes the plain field a deck takes. Choosing asks this too, where it
+  // decides how an option is set.
+  const numericAnswer = () =>
+    !kanaAnswer() &&
+    (state.numbers !== null || (state.calendar !== null && state.calendar !== "week"));
 
   const typedField = () =>
     kanaAnswer()
@@ -1211,13 +1219,318 @@
 
   const deckSize = (deck) =>
     deck.flick ? FLICK_LEN
-      : deck.numbers ? deck.len
+      : deck.numbers || deck.calendar ? deck.len
       : deck.cards.length;
 
-  // The value, then how it is said, whichever direction the card was asked in.
-  // The pair is the fact worth repeating; which half was on the square is not.
-  const numSays = (c) =>
-    '<span lang="ja">' + c.num.kanji + "</span> is " + c.num.digits + " — ";
+  /* ==========================================================================
+     The calendar
+
+     Weekdays, months and dates. Two thirds of it is counting with something on
+     the end: 4月 is the number four plus a counter, 20日 the number twenty plus
+     another. So a reading is *composed* exactly as a number's is — readNumber()
+     for the value, then the counter — and kana.json writes down only what
+     composition gets wrong. That list is `irregular`, keyed by the whole value
+     rather than by a digit, because these replace the entire reading and not
+     one part of it: 1日 is tsuitachi, 20日 hatsuka, 4月 shigatsu.
+
+     Which values have to be in it is not a matter of taste. 4, 7 and 9 carry
+     alternates in `numbers` (yon/shi, nana/shichi, kyuu/ku) and a bare trailing
+     digit takes them, so every value ending in one of the three is written out
+     — otherwise 17日 would quietly accept juunananichi, which no calendar says.
+
+     Weekdays are not counting at all and are simply listed. What makes them the
+     same kind of thing as a date is that both have an *identity* that isn't
+     Japanese — the number for a month or a day, the English name for a weekday
+     — and that identity is what Typing and Choosing answer with, exactly as the
+     number drills answer with digits. Writing runs it the other way and takes
+     the kana. That is the rule the whole app turns on: type is a plain
+     keyboard, write is the IME, choose is a pick — which is why this is three
+     more decks and not a fourth answer mode.
+     ========================================================================== */
+  let CAL = null;            // the calendar block of kana.json
+  let CALENDAR_DECKS = [];   // its drills[], in file order
+
+  const calCounter = (kind) =>
+    ((CAL && CAL.counters) || []).find((c) => c.id === kind) || null;
+
+  // What each drill says it wants, per answer mode. Type and choose share a
+  // direction and write is the reverse of both, as everywhere else.
+  const CAL_ASK = {
+    // The weekdays are the one drill that takes a stem — every one of them ends
+    // in the same ようび, so what is being asked for is the part in front. Said
+    // in general terms rather than by example: naming the stem would name the
+    // answer. See kana.json's `altk` on each weekday.
+    week:  { type: "Type the day this reads.",
+             choose: "Pick the day this reads.",
+             write: "Write this day — its first part is enough." },
+    month: { type: "Type the month this reads.",
+             choose: "Pick the month this reads.",
+             write: "Write this month in kana." },
+    day:   { type: "Type the date this reads.",
+             choose: "Pick the date this reads.",
+             write: "Write this date in kana." },
+    hour:  { type: "Type the hour this reads.",
+             choose: "Pick the hour this reads.",
+             write: "Write this hour in kana." },
+    minute:{ type: "Type the minutes this reads.",
+             choose: "Pick the minutes this reads.",
+             write: "Write these minutes in kana." },
+    // The clock's identity has a colon in it and a numeric keypad has no colon
+    // key, so the field takes the digits either way — see readClock(). The
+    // placeholder is what says so, rather than this line naming a format.
+    time:  { type: "Type the time this reads.",
+             choose: "Pick the time this reads.",
+             write: "Write this time in kana." }
+  };
+
+  // The reading as the flat list of parts numKanaAccepts() walks. An irregular
+  // value is a single part — the whole word — which is also what puts its
+  // `altk` in the right place: alternates belong to what is actually said, and
+  // nothing composed here has any, because everything that would have taken one
+  // is listed instead.
+  function calParts(kind, n) {
+    const counter = calCounter(kind);
+    const irregular = counter.irregular && counter.irregular[String(n)];
+    if (irregular) return [irregular];
+    return numParts(readNumber(n)).concat([counter]);
+  }
+
+  // A date is one word — nijuuyokka, never "nijuu yokka". Numbers space their
+  // chunks apart to show how the value is built; the counter welds it into a
+  // unit, so that spacing would be describing a structure the word no longer
+  // has. Nothing is graded on it either way; nothing here is answered in romaji.
+  const calJoin = (parts, key) => parts.map((p) => p[key]).join("");
+
+  // A clock time is the exception, and it is two words rather than one: 三時
+  // 四十五分 is "sanji yonjūgofun", the hour said and then the minute. So a
+  // reading is built from *chunks* the way a number's is — one chunk per
+  // counter — and only the romaji keeps the space between them. The kana runs
+  // together as it is written, and grading never sees either: partsAccept()
+  // walks the parts flat and normRomaji drops spaces anyway.
+  const chunkJoin = (chunks, key, sep) =>
+    chunks.map((c) => calJoin(c, key)).join(sep);
+
+  const clockIdent = (h, m) => h + ":" + (m < 10 ? "0" : "") + m;
+
+  // The two counters a clock time is built from, named by the drill rather than
+  // written in here: an id belongs to the content, like every reading it
+  // carries. Both are composed exactly as a month or a date is — 四時 is the
+  // number four plus 時, 四十五分 the number forty-five plus 分 — so the clock
+  // adds no way of reading a value, only the joining of two of them.
+  //
+  // 半 is an alternate on the minute and not a second reading of the time: 三時
+  // 半 and 三時三十分 are the same clock face. It is merged onto a *copy*, since
+  // kana.json shares its part objects between cards and caches their spellings
+  // on them, and only where the minute is a single part — which is what being
+  // listed in `irregular` makes it. A bare 三十分 is さんじゅっぷん and never
+  // はん, so this must not reach the minutes drill, and it doesn't.
+  function timeChunks(deck, h, m) {
+    const chunks = [calParts(deck.counters[0], h)];
+    if (!m) return chunks;                       // 三時, with nothing after it
+    const parts = calParts(deck.counters[1], m);
+    const half = calCounter(deck.counters[1]).half;
+    if (half && m === half.n && parts.length === 1) {
+      const only = parts[0];
+      chunks.push([{
+        r: only.r, k: only.k,
+        alt: (only.alt || []).concat([half.r]),
+        altk: (only.altk || []).concat([half.k])
+      }]);
+      return chunks;
+    }
+    chunks.push(parts);
+    return chunks;
+  }
+
+  // A typed clock time, as {h, m}, or null. The minutes are the last two digits
+  // and the hour is whatever is in front of them, so 3:45, 345 and 03:45 all
+  // arrive as the same pair. That is what lets the numeric keypad answer a
+  // prompt whose identity has a colon in it: a phone keyboard has no colon key,
+  // and asking for one would leave the drill unanswerable on the device it is
+  // most likely to be used on.
+  function readClock(digits) {
+    if (digits.length < 3 || digits.length > 4) return null;
+    return { h: Number(digits.slice(0, -2)), m: Number(digits.slice(-2)) };
+  }
+
+  // One card per value. Which way round it is asked is not on the card — the
+  // mode decides that at render time, exactly as it does for a number.
+  //
+  // `key` is the identity, which is what the card is *about*: the report should
+  // say you are slow on the 20th, not rank "hatsuka" against "20".
+  // The English a value stands for: a weekday and a month have a name, a date
+  // has an ordinal, which is a rule about the number rather than a word to be
+  // written down — the same reason fmtDigits() is code and not content.
+  function calEnglish(kind, entry) {
+    if (kind === "week") return entry.en;
+    if (kind === "time") return clockIdent(entry.h, entry.m);
+    const names = calCounter(kind).names;
+    if (names) return names[entry.n - 1];
+    // An hour is named by the clock face it makes and a minute by how many of
+    // them there are — both rules about the number, like the ordinal below, and
+    // neither a word anyone had to write down.
+    if (kind === "hour") return clockIdent(entry.n, 0);
+    if (kind === "minute") return entry.n + " min";
+    const n = entry.n, tens = n % 100;
+    const suffix = tens > 10 && tens < 14 ? "th"
+      : n % 10 === 1 ? "st" : n % 10 === 2 ? "nd" : n % 10 === 3 ? "rd" : "th";
+    return "the " + n + suffix;
+  }
+
+  function calendarCard(deck, entry) {
+    const kind = deck.calendar;
+    const week = kind === "week";
+    const time = kind === "time";
+    // One chunk per counter, which is one chunk for everything but the clock.
+    const chunks = time ? timeChunks(deck, entry.h, entry.m)
+      : [week ? [entry] : calParts(kind, entry.n)];
+    const parts = chunks.reduce((all, c) => all.concat(c), []);
+    const ident = time ? clockIdent(entry.h, entry.m)
+      : week ? entry.en : String(entry.n);
+    // How it is written: 月曜日 as listed, or the value in kanji with its
+    // counter — 二十日, 四月, and 三時四十五分, which is two of them. Nothing
+    // writes those out; `j` in `numbers` already says how a value is written
+    // and kanjiNumber() composes it. An o'clock has no minute to write.
+    const face = week ? entry.ja
+      : time ? kanjiNumber(entry.h) + calCounter(deck.counters[0]).suffix +
+               (entry.m ? kanjiNumber(entry.m) + calCounter(deck.counters[1]).suffix : "")
+      : kanjiNumber(entry.n) + calCounter(kind).suffix;
+    return {
+      // the deck-shaped pair every shared path expects: the romaji reading two
+      // of the three modes prompt with, and the identity they take
+      q: chunkJoin(chunks, "r", " "),
+      a: ident,
+      key: ident,
+      cal: {
+        kind: kind,
+        // the counted value, where there is exactly one of them: a weekday
+        // isn't counted at all and a clock time is counted twice, so both
+        // carry null here and are told apart by `kind` rather than by this
+        n: week || time ? null : entry.n,
+        h: time ? entry.h : null,
+        m: time ? entry.m : null,
+        ord: week ? entry.i                // the order the material has
+          : time ? entry.h * 60 + entry.m  // round the face, 1:00 to 12:55
+          : entry.n,
+        ident: ident,
+        en: calEnglish(kind, entry),       // Monday, April, the 20th, 3:45
+        face: face,                        // 月曜日, 四月, 二十日, 三時四十五分
+        // Writing asks with the identity, in the plain script — Monday, 3:45,
+        // or the value with its counter after it, 20日 and 4月. Asking with
+        // 二十日 there would be the same question the other two modes ask,
+        // since the kanji is what they show; the counter still has to be named,
+        // or "20" could want either はつか or にじゅう. A clock time needs no
+        // such help: nothing else is written 3:45.
+        ask: week || time ? ident : entry.n + calCounter(kind).suffix,
+        askLang: week || time ? "en" : "ja",
+        parts: parts,
+        kana: chunkJoin(chunks, "k", ""),
+        reading: chunkJoin(chunks, "r", " ")
+      }
+    };
+  }
+
+  // What a drill asks: the whole range of its counter, or the values kana.json
+  // names for it. A drill with `values` is a subset of the same material and
+  // not a second kind of thing — the native dates are thirteen of the same
+  // thirty-one, composed, graded and reported exactly as they are in the full
+  // drill, and the only thing that changes is which of them come up.
+  const calPool = (deck) => {
+    if (deck.values) return deck.values;
+    const out = [];
+    for (let n = 1; n <= calCounter(deck.calendar).max; n++) out.push(n);
+    return out;
+  };
+
+  // Every value once, shuffled. A calendar is a fixed set — seven days, twelve
+  // months, thirty-one dates, or the thirteen a drill picks out of them — so
+  // there is nothing to sample and no magnitude band to deal across.
+  function calendarQueue(deck) {
+    const kind = deck.calendar;
+    if (kind === "week") {
+      return shuffle((CAL.weekdays || []).map((w, i) =>
+        calendarCard(deck, Object.assign({ i: i }, w))));
+    }
+    if (kind === "time") {
+      return shuffle(timeValues(deck).map((v) => calendarCard(deck, v)));
+    }
+    return shuffle(calPool(deck).map((n) => calendarCard(deck, { n: n })));
+  }
+
+  // The clock is the one calendar drill with more values than a run: twelve
+  // hours against twelve marks is 144 faces, and a run asks twenty. So they are
+  // *dealt* rather than sampled — each list cycled through in a shuffled order,
+  // so every hour is asked before any hour is asked twice and the same for the
+  // marks. Sampling twenty of 144 at random can leave 四時 or 七時 out of a run
+  // altogether, which is the same argument that deals the flick prompts.
+  function timeValues(deck) {
+    const hours = [];
+    for (let h = 1; h <= calCounter(deck.counters[0]).max; h++) hours.push(h);
+    const out = [], seen = new Set();
+    let hs = [], ms = [];
+    for (let guard = 0; out.length < deck.len && guard < deck.len * 40; guard++) {
+      if (!hs.length) hs = shuffle(hours.slice());
+      if (!ms.length) ms = shuffle(deck.minutes.slice());
+      const h = hs.pop(), m = ms.pop();
+      const id = clockIdent(h, m);
+      if (seen.has(id)) continue;       // the same face twice in one run
+      seen.add(id);
+      out.push({ h: h, m: m });
+    }
+    return out;
+  }
+
+  // Wrong times worth offering: the marks either side, then the same minute an
+  // hour or two away, then the hours that sound alike — 四時 against 七時. The
+  // face wraps, so 12:55 is five minutes from 1:00 and is offered as one.
+  // Everything is checked back against the drill's own marks, for the reason
+  // calNeighbours() deals from its pool.
+  const CLOCK_FACE = 12 * 60;
+  function timeNeighbours(deck, h, m) {
+    const out = [], self = clockIdent(h, m);
+    const at = (h % 12) * 60 + m;
+    const keep = (t) => {
+      t = ((t % CLOCK_FACE) + CLOCK_FACE) % CLOCK_FACE;
+      const mm = t % 60;
+      if (deck.minutes.indexOf(mm) < 0) return;
+      const id = clockIdent(Math.floor(t / 60) || 12, mm);
+      if (id !== self && out.indexOf(id) < 0) out.push(id);
+    };
+    [5, -5, 60, -60, 10, -10, 120, -120, 180, -180, 15, -15]
+      .forEach((d) => keep(at + d));
+    return out;
+  }
+
+  // Wrong answers worth offering in Choosing: the dates around this one, then
+  // the one a week or ten days away. Nearest-first rather than numNeighbours'
+  // digit surgery, which over a range of 31 would offer 10 and 30 for the 20th
+  // and never 19 — the two you actually mix up.
+  //
+  // They are drawn from `pool` — the values this drill asks — and not from the
+  // counter's whole range. Offering the 19th against はつか in a drill that
+  // only ever asks thirteen dates answers the question for anyone who knows
+  // which thirteen those are, which is the same giveaway numNeighbours() tops
+  // up its band to avoid.
+  function calNeighbours(n, pool) {
+    const out = [];
+    const keep = (v) => {
+      if (v !== n && pool.indexOf(v) >= 0 && out.indexOf(v) < 0) out.push(v);
+    };
+    [1, -1, 2, -2, 7, -7, 10, -10, 3, -3].forEach((d) => keep(n + d));
+    // a pool too small or too sparse for those offsets to fill: nearest first,
+    // so a subset falls back to the values around this one rather than to 1
+    pool.slice().sort((a, b) => Math.abs(a - n) - Math.abs(b - n)).forEach(keep);
+    return out;
+  }
+
+  // How it is written, then what it is, then how it is said — the same three
+  // in the same order for a number and for a date, and in whichever direction
+  // the card was asked. The pair is the fact worth repeating; which half was on
+  // the square is not.
+  const says = (written, what) =>
+    '<span lang="ja">' + written + "</span> is " + what + " — ";
+  const calSays = (c) => says(c.cal.face, c.cal.en);
+  const numSays = (c) => says(c.num.kanji, c.num.digits);
 
   /* ==========================================================================
      Derived decks
@@ -1283,10 +1596,11 @@
 
   // Every deck the menu can start, real and derived.
   // Every deck the menu can start, and the one list the stamp filters run over.
-  // The number drills join it because they carry a `script` like anything
-  // else; they are safe here for the reason the rule below is about — they
-  // have no `cards` at all, and nothing that counts characters uses this.
-  const allDecks = () => state.decks.concat(state.derived, NUMBER_DECKS);
+  // The number and calendar drills join it because they carry a `script` like
+  // anything else; they are safe here for the reason the rule below is about —
+  // they have no `cards` at all, and nothing that counts characters uses this.
+  const allDecks = () =>
+    state.decks.concat(state.derived, NUMBER_DECKS, CALENDAR_DECKS);
 
   /* Can what is left in hand still be laid out under the run limit at all? m
      cards of one category need the others as separators: r of them open r+1
@@ -1384,7 +1698,7 @@
     const mode = deck.flick ? "flick" : state.mode;
     const size = deckSize(deck);
     // A generated run deals prompts; only a deck has cards to count.
-    const unit = deck.flick || deck.numbers ? " prompts" : " cards";
+    const unit = deck.flick || deck.numbers || deck.calendar ? " prompts" : " cards";
     const best = store.best(deck.id, mode);
     const bestMs = store.bestTime(deck.id, mode);
 
@@ -1416,6 +1730,7 @@
     state.graded = false;
     state.flick = null;        // back to the selected answer mode
     state.numbers = null;
+    state.calendar = null;
     buildMenu();
     show(el.menu);
   }
@@ -1435,17 +1750,17 @@
 
   // Whether the chart is worth offering under the stamp on screen. Every stamp
   // but かな wants its own table and nothing else will do: falling back under 十
-  // would hand over a kana table in answer to a question about counting. かな is
-  // the one place a fallback is right — there is no combined table and both
-  // scripts' are relevant. "Are there charts at all" is the same question and
-  // lives here too, so the two can never disagree.
+  // or 日時 would hand over a kana table in answer to a question about counting
+  // or about dates. かな is the one place a fallback is right — there is no
+  // combined table and both scripts' are relevant. "Are there charts at all" is
+  // the same question and lives here too, so the two can never disagree.
   const chartApplies = () =>
     state.charts.length > 0 &&
     (state.script === "kana" || state.charts.some((c) => c.id === state.script));
 
   // Which script's decks the menu is showing. The accent flips with it — the
-  // vermilion/indigo pairing the chart uses, purple for かな, and 納戸 for the
-  // counting drills.
+  // vermilion/indigo pairing the chart sheet uses, purple for かな, and 納戸 for
+  // the counting drills.
   function setScript(id) {
     state.script = id;
     el.menu.dataset.script = id;
@@ -1468,6 +1783,7 @@
     state.deck = deck;
     state.flick = deck.flick || null;
     state.numbers = deck.numbers || null;
+    state.calendar = deck.calendar || null;
     state.isDrill = Boolean(cards);
     // A flick run is generated, not dealt from a deck; a drill of one narrows
     // the generator to the groups that were missed. A drill is a plain shuffle
@@ -1481,6 +1797,7 @@
       // dealt again — the cards above — so this sits below that branch, where
       // flick's sits above it.
       : state.numbers ? numberQueue(deck)
+      : state.calendar ? calendarQueue(deck)
       : deck.mix ? mixedQueue(deck)
       : shuffle(deck.cards);
     state.i = 0;
@@ -1520,21 +1837,26 @@
     clearTimeout(state.timer);
     state.cardAt = performance.now();
 
-    // A number run is one of the three modes like a deck is; only the flick
-    // drills sit outside them.
+    // A number or a calendar run is one of the three modes like a deck is;
+    // only the flick drills sit outside them.
     const numbering = state.numbers !== null;
+    const calendaring = state.calendar !== null;
     const flicking = state.flick !== null;
     const writing = !flicking && state.mode === "write";
     const choosing = !flicking && state.mode === "choose";
-    // Numbers ask the same way round whichever mode is on: Typing and Choosing
-    // show the reading — "roku" — and answer with the digits, and Writing shows
-    // the digits and answers in kana.
+    // Both generated subjects ask the same way round: Typing and Choosing show
+    // the reading — "roku", "hatsuka" — and answer with what it stands for,
+    // and Writing shows that identity and answers in kana.
     const text =
+      calendaring ? (writing ? c.cal.ask : c.cal.reading) :
       numbering ? (writing ? c.num.digits : c.num.reading) :
       flicking ? c.q : writing ? c.a : c.q;
-    // Latin prompt in every case but a deck read in Japanese: a number prompt
-    // is romaji or digits either way round.
-    const latinPrompt = numbering || flicking || writing;
+    // Latin prompt in every case but a deck read in Japanese: a generated
+    // prompt is romaji or digits, and a weekday's identity is a word.
+    const latinPrompt = calendaring
+      ? (writing ? c.cal.askLang === "en" : true)
+      : numbering ? true
+      : flicking || writing;
 
     el.square.classList.remove("is-correct", "is-wrong", "is-graded");
     el.glyph.textContent = text;
@@ -1542,14 +1864,16 @@
     // Two kana in the square — きゃ — and not two of anything else: a generated
     // prompt is long by nature and sizes itself through --fit just below.
     el.glyph.classList.toggle("is-pair",
-      !latinPrompt && !numbering && text.length > 1);
+      !latinPrompt && !numbering && !calendaring && text.length > 1);
     el.glyph.classList.toggle("is-romaji", latinPrompt);
     // Nothing else in the app has a prompt that runs from one character to
     // forty-five, so a generated prompt is the one that picks its own size —
     // measured off what is actually on screen, which differs by mode.
-    el.glyph.classList.toggle("is-number", numbering);
-    el.glyph.style.setProperty("--fit", numbering ? numFit(text) : "");
+    el.glyph.classList.toggle("is-number", numbering || calendaring);
+    el.glyph.style.setProperty("--fit",
+      numbering || calendaring ? numFit(text) : "");
     el.feedback.textContent =
+      calendaring ? CAL_ASK[state.calendar][state.mode] :
       numbering ? (writing ? "Write this number in kana." :
                    choosing ? "Pick the number this reads."
                             : "Type the number this reads.") :
@@ -1590,13 +1914,23 @@
       // takes romaji as well, and says so: without that line the mode looks
       // broken on a machine with no Japanese input installed.
       const ime = kanaAnswer();
-      const either = ime && numbering;
+      const either = ime && (numbering || calendaring);
       el.typedHint.textContent = !ime ? "Enter ↵ to check"
         : either ? "Kana or romaji" : "Japanese keyboard";
       el.typedHint.className = ime ? "hint hint--ime" : "hint hint--keys";
 
       const f = typedField();
       f.input.value = "";
+      // The keypad is shared by three subjects that want different shapes of
+      // number, and the clock is the one whose answer has two parts — say so
+      // here rather than in the instruction line, which would be naming the
+      // format of the answer right above the question.
+      if (keypad) {
+        const clock = state.calendar === "time";
+        el.numInput.placeholder = clock ? "h:mm…" : "digits…";
+        el.numInput.setAttribute("aria-label",
+          clock ? "Type the time in digits" : "Type the number in digits");
+      }
       f.submit.textContent = "Check";
       // Never disable or blur the field: on a phone that dismisses the
       // keyboard between every card. state.graded gates input instead.
@@ -1614,6 +1948,7 @@
   // — including Mixed hiragana — has nothing to disambiguate and says nothing.
   function writeAsk() {
     if (state.numbers) return "Write this number in kana.";
+    if (state.calendar) return CAL_ASK[state.calendar].write;
     const g = cardGroup(card());
     return state.deck.spansScripts && g.script
       ? "Write the " + g.script + " for this sound."
@@ -1667,6 +2002,24 @@
     // generated: the same value with one digit changed or two swapped. Drawing
     // any four numbers would make the option obvious from its length alone —
     // "roku" beside 6, 400 and 12,000 is not a question about the reading.
+    // The calendar generates its distractors too: the dates either side of this
+    // one, or the rest of the week. Four dates drawn at random would be
+    // answerable from the length of the reading alone.
+    if (state.calendar) {
+      // `kind`, never `n`: a weekday and a clock time both carry null there,
+      // one because it is not counted and the other because it is counted twice
+      const near = c.cal.kind === "week"
+        ? shuffle((CAL.weekdays || []).filter((w) => w.en !== c.cal.ident))
+            .map((w) => w.en)
+        : c.cal.kind === "time"
+        ? shuffle(timeNeighbours(state.deck, c.cal.h, c.cal.m).slice(0, 6))
+        : shuffle(calNeighbours(c.cal.n, calPool(state.deck)).slice(0, 6))
+            .map(String);
+      buildChoiceButtons(
+        shuffle(near.slice(0, 3).map((a) => ({ a: a })).concat({ a: c.a })), c);
+      return;
+    }
+
     if (state.numbers) {
       const taken = new Set([c.a]);
       const pool = [];
@@ -1740,6 +2093,41 @@
     // accepts every reading the value has — 4 is よん or し — while Typing takes
     // the digits and drops anything that is not one, so 1,000,000 and 1000000
     // are the same answer.
+    // The calendar, in whichever of the two typed modes. Writing takes the kana
+    // and accepts every reading the value has — 17日 is juushichinichi or
+    // juunananichi — while Typing takes the identity, which is the number for a
+    // month or a date and the English name for a weekday.
+    if (state.calendar) {
+      const field = typedField().input;
+      let value, right;
+      if (state.mode === "write") {
+        value = normKana(field.value);
+        if (!value) return;
+        // kana if there is an IME, romaji if there isn't — the prompt is 20日,
+        // so はつか and "hatsuka" are both answers to it rather than echoes
+        right = numKanaAccepts(c.cal.parts, value) ||
+                numRomajiAccepts(c.cal.parts, normRomaji(field.value));
+      } else if (c.cal.kind === "week") {
+        value = norm(field.value);
+        if (!value) return;
+        right = value === norm(c.cal.ident);
+      } else if (c.cal.kind === "time") {
+        // the digits either way — "3:45" and "345" are one answer, because a
+        // numeric keypad cannot type the colon the identity is written with
+        value = normDigits(field.value);
+        if (!value) return;
+        const t = readClock(value);
+        right = Boolean(t) && t.h === c.cal.h && t.m === c.cal.m;
+      } else {
+        value = normDigits(field.value);
+        if (!value) return;
+        right = Number(value) === c.cal.n;
+      }
+      logAnswer(c, value.slice(0, 64), right, false);
+      if (right) markCorrect(); else markWrong(c, false);
+      return;
+    }
+
     if (state.numbers) {
       const field = typedField().input;
       if (state.mode === "write") {
@@ -1823,7 +2211,10 @@
     // A number is always confirmed the same way round — digits, then kana, then
     // reading — whichever direction it was asked in. The pair is the fact worth
     // repeating; which half was on the card is not.
-    el.feedback.innerHTML = state.numbers
+    el.feedback.innerHTML = state.calendar
+      ? '<span class="ok">Correct — ' + calSays(c) + '<b lang="ja">' +
+        c.cal.kana + '</b> “' + c.cal.reading + '”.</span>'
+      : state.numbers
       ? '<span class="ok">Correct — ' + numSays(c) + '<b lang="ja">' +
         c.num.kana + '</b> “' + c.num.reading + '”.</span>'
       : state.flick
@@ -1847,7 +2238,12 @@
     const tail = TOUCH ? "Tap to continue."
       : !choosingNow() ? "Press Enter to continue." : "";
 
-    if (state.numbers) {
+    if (state.calendar) {
+      el.feedback.innerHTML =
+        (viaReveal ? "" : '<span class="no">Not quite. </span>') +
+        calSays(c) + '<b lang="ja">' + c.cal.kana + '</b> “<span class="no">' +
+        c.cal.reading + '</span>”. ' + tail;
+    } else if (state.numbers) {
       el.feedback.innerHTML =
         (viaReveal ? "" : '<span class="no">Not quite. </span>') +
         numSays(c) + '<b lang="ja">' + c.num.kana + '</b> “<span class="no">' +
@@ -1880,6 +2276,7 @@
       // for flick, the kana when writing, the romaji when typing
       f.input.value = state.flick ? c.a.split(" ")[0]
         : state.numbers ? (state.mode === "write" ? c.num.kana : c.num.digits)
+        : state.calendar ? (state.mode === "write" ? c.cal.kana : c.cal.ident)
         : state.mode === "write" ? c.q : c.a;
       focusField(f.input);
       // selecting shows drag handles on a phone, which reads as an invitation
@@ -1959,6 +2356,11 @@
           state.missed.findIndex((x) => x.flick.group === c.flick.group) === i)
       : state.numbers
       ? state.missed.slice().sort((a, b) => a.num.n - b.num.n)
+      // a calendar run has no cards either, and its order is the week's or the
+      // month's — `ord` is that, the number for a date and the weekday's place
+      // in kana.json for a day of the week
+      : state.calendar
+      ? state.missed.slice().sort((a, b) => a.cal.ord - b.cal.ord)
       : state.deck.cards.filter((c) => state.missed.includes(c));
 
     if (missed.length) {
@@ -1968,10 +2370,13 @@
         const d = document.createElement("div");
         // A missed number is reviewed the one useful way round — the value,
         // then how it is said — never as whichever half happened to be asked.
-        d.className = "miss" + (state.numbers ? " miss--num" : "");
+        d.className = "miss" + (state.numbers || state.calendar ? " miss--num" : "");
         // reviewed as the material, not as whichever direction it was asked
         // in: how it is written, then how it is said
-        d.innerHTML = state.numbers
+        d.innerHTML = state.calendar
+          ? '<span class="miss__k" lang="ja">' + c.cal.face + '</span>' +
+            '<span class="miss__r" lang="ja">' + c.cal.kana + "</span>"
+          : state.numbers
           ? '<span class="miss__k" lang="ja">' + c.num.kanji + '</span>' +
             '<span class="miss__r" lang="ja">' + c.num.kana + "</span>"
           : '<span class="miss__k" lang="ja">' + c.q + '</span>' +
@@ -1995,6 +2400,10 @@
       // `max` where there is one: a drill of ten asked both ways is "all 10
       // again", not all 20 — the prompts are twenty, the material is ten.
       : state.numbers ? "Practice all " + (state.deck.max || state.deck.len) + " again"
+      // the clock deals twenty of 144 faces, so a second run is twenty it has
+      // mostly not asked — "again" belongs to the drills that are a fixed set
+      : state.calendar === "time" ? "Practice " + state.deck.len + " more"
+      : state.calendar ? "Practice all " + state.deck.len + " again"
       : "Practice all " + state.deck.cards.length + " again";
     el.againBtn.onclick = () => start(state.deck);
     show(el.end);
@@ -2704,6 +3113,29 @@
       // branch tests, so the two read the same way.
       NUMBER_DECKS = NUM && NUM.drills
         ? NUM.drills.map((d) => Object.assign({}, d, { numbers: d.kind, script: "number" }))
+        : [];
+      // The calendar: four more deck-shaped drills, under a stamp of their
+      // own. A drill whose counter has gone from kana.json is dropped rather
+      // than offered as a run that cannot generate a card — the same rule that
+      // drops a derived deck with nothing left to derive from.
+      CAL = data.calendar || null;
+      CALENDAR_DECKS = CAL && CAL.drills
+        ? CAL.drills
+            .map((d) => Object.assign({}, d, {
+              calendar: d.kind,
+              script: "calendar",
+              // a drill that names the values it asks carries no `len`: two
+              // copies of the same count are one of them waiting to go stale
+              len: d.values ? d.values.length : d.len
+            }))
+            .filter((d) => (d.calendar === "week"
+              ? ((CAL.weekdays || []).length > 0)
+              // the clock is built from two counters and a list of marks, and
+              // is dropped unless kana.json still carries all three
+              : d.calendar === "time"
+              ? ((d.counters || []).length === 2 &&
+                 d.counters.every(calCounter) && (d.minutes || []).length > 0)
+              : Boolean(calCounter(d.calendar)) && d.len > 0))
         : [];
       buildFlickIndex();   // needs both decks and charts
       // built from decks, and deliberately after everything that walks them:

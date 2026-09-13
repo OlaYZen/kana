@@ -43,7 +43,7 @@
   <section id="menu" class="screen menu">
     <p class="eyebrow"><span class="mark" lang="ja">かな</span> Kana Practice</p>
 
-    <!-- The deck list below shows one stamp at a time. Only two of these are
+    <!-- The deck list below shows one stamp at a time. Only two of the four are
          scripts anyone writes in: あア is where the decks spanning both live, so
          they are found in one place instead of twice, and 十 is the counting
          drills, which are not kana at all. Both are a `script` downstream — see
@@ -64,6 +64,10 @@
       <button type="button" class="hanko" data-script="number" role="radio" aria-checked="false">
         <span class="hanko__glyph" lang="ja">十</span>
         <span class="hanko__label">Numbers</span>
+      </button>
+      <button type="button" class="hanko" data-script="calendar" role="radio" aria-checked="false">
+        <span class="hanko__glyph hanko__glyph--pair" lang="ja">日時</span>
+        <span class="hanko__label">Time</span>
       </button>
     </div>
 
@@ -190,6 +194,10 @@
           <span class="hanko__glyph" lang="ja">十</span>
           <span class="hanko__label">Numbers</span>
         </button>
+        <button type="button" class="hanko" data-script="calendar" role="radio" aria-checked="false">
+          <span class="hanko__glyph hanko__glyph--pair" lang="ja">日時</span>
+          <span class="hanko__label">Time</span>
+        </button>
       </div>
 
       <!-- hidden when there is only one deck to pick — see renderDeckPicker -->
@@ -242,9 +250,9 @@
       </div>
 
       <!-- writing: the kana is typed, which needs a Japanese IME. The number
-           drills take romaji here as well — they ask with 6, so "roku" is an
-           answer to that and not the prompt echoed back — and app.js swaps the
-           hint under the field to say so. -->
+           and calendar drills take romaji here as well — they ask with 6 or
+           20日, so "roku" is an answer to that and not the prompt echoed
+           back — and app.js swaps the hint under the field to say so. -->
       <div id="writeMode" class="hidden">
         <div class="answer">
           <input id="kanaInput" type="text" inputmode="text" lang="ja" enterkeyhint="go"
@@ -415,6 +423,10 @@
       <button type="button" class="hanko" data-chart="number" role="radio" aria-checked="false">
         <span class="hanko__glyph" lang="ja">十</span>
         <span class="hanko__label">Numbers</span>
+      </button>
+      <button type="button" class="hanko" data-chart="calendar" role="radio" aria-checked="false">
+        <span class="hanko__glyph hanko__glyph--pair" lang="ja">日時</span>
+        <span class="hanko__label">Time</span>
       </button>
     </div>
 

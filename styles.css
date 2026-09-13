@@ -138,6 +138,15 @@
      gold "your record" everywhere else, and a stamp is neither. */
   --nando:      #236E70;
   --nando-2:    #185657;
+  /* 栗 — the calendar accent. The hue circle was full by the time it was
+     needed: shu, brass, matcha, nando, ai and murasaki leave nothing but the
+     browns. So this one is told apart by being the unsaturated one — bark
+     against six dyes — and it suits the subject, since a calendar is the one
+     stamp about time rather than about writing. Not brass, which is gold and
+     already means "your record" everywhere else; this is darker and redder
+     than gold, and the two are never on screen together. */
+  --kuri:       #7A5230;
+  --kuri-2:     #5C4227;
   --guide:    #C8BFA6;  /* practice-square cross guides */
 
   /* the pressed/hover wash on a control with no fill of its own */
@@ -229,6 +238,8 @@
   --murasaki-2: #C6ACE6;
   --nando:      #6BB8B9;
   --nando-2:    #86C7C8;
+  --kuri:       #C99A70;
+  --kuri-2:     #D6AE86;
   --guide:    #4A4335;
 
   --press:    rgba(255,255,255,.09);
@@ -391,9 +402,9 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   display:flex; gap:8px;
   margin-bottom:13px;
 }
-/* Four stamps share the width three used to, so the label is what runs out of
-   room first — "Hiragana", "Katakana" and "Numbers" are seven or eight
-   characters each against a quarter of the bar. Keep it on one line and let the
+/* Five stamps share the width three used to, so the label is what runs out of
+   room first — "Hiragana", "Katakana" and "Calendar" are eight or nine
+   characters each against a fifth of the bar. Keep it on one line and let the
    letter-spacing go, then the size, before it is ever allowed to wrap: a stamp
    whose label runs to two lines is taller than its neighbours and the row stops
    reading as a row of seals. */
@@ -407,7 +418,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   .scriptbar .hanko__label{ font-size:10px; letter-spacing:-.01em; }
   /* A pair can no longer break between its two characters — it must not — so
      on the narrowest phone it gives back the width that costs by shrinking.
-     The single-glyph stamps keep their size; only あア moves. */
+     The single-glyph stamps keep their size; only あア and 日時 move. */
   .scriptbar .hanko__glyph--pair{ font-size:calc(var(--stamp, 34px) * .56); }
 }
 .scriptbar .hanko{ flex:1 1 0; width:auto; min-height:62px; gap:5px; }
@@ -426,6 +437,10 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .menu[data-script="number"]{
   --accent:var(--nando);
   --accent-dark:var(--nando-2);
+}
+.menu[data-script="calendar"]{
+  --accent:var(--kuri);
+  --accent-dark:var(--kuri-2);
 }
 
 .menu__scroll{
@@ -664,6 +679,10 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   --accent:var(--nando);
   --accent-dark:var(--nando-2);
 }
+.stats[data-script="calendar"]{
+  --accent:var(--kuri);
+  --accent-dark:var(--kuri-2);
+}
 
 /* the phone/desktop split — figures from one are never comparable to the other */
 .seg--device{ flex:0 0 auto; display:flex; margin-bottom:10px; }
@@ -848,6 +867,10 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   --accent:var(--nando);
   --accent-dark:var(--nando-2);
 }
+.panel--chart[data-script="calendar"]{
+  --accent:var(--kuri);
+  --accent-dark:var(--kuri-2);
+}
 
 /* ── seal-stamp script switcher ───────────────────────────────────────── */
 .chart__switch{
@@ -856,7 +879,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   padding:14px 14px 12px;
   border-bottom:1px solid var(--hairline);
 }
-/* The sheet is narrower than the menu on a phone and carries the same four
+/* The sheet is narrower than the menu on a phone and carries the same five
    stamps, so they shrink from their 96px rather than overflowing — and the
    label is held to one line here for the reason it is there. */
 .chart__switch .hanko{ flex:0 1 96px; min-width:0; }
@@ -886,8 +909,8 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .hanko__glyph{
   font-family:var(--kana); font-size:var(--stamp, 34px);
   line-height:1; color:var(--c-ink);
-  /* a two-character stamp — あア — breaking over two lines makes the stamp
-     taller than its neighbours and the row stops reading as a row */
+  /* a two-character stamp — あア, 日時 — breaking over two lines makes the
+     stamp taller than its neighbours and the row stops reading as a row */
   white-space:nowrap;
 }
 /* あア is two full-width glyphs in a stamp built for one — at full size the pair
@@ -1526,7 +1549,7 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
     max-width:none;
     min-height:var(--avail);
     display:grid;
-    /* The floor is what the seal stamps need side by side — below it the bar
+    /* The floor is what five seal stamps need side by side — below it the bar
        overflows before the labels are legible, which is why the rail layout
        starts at 1100 rather than 1000. */
     grid-template-columns:clamp(336px, 26vw, 392px) minmax(0, 1120px);
