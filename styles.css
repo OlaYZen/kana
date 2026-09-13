@@ -738,6 +738,40 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   color:var(--c-ink);
 }
 
+/* ── the report, before it has numbers ────────────────────────────────────
+   Placeholders in the shape of what is coming — a row of deck chips, then two
+   blocks of rows — rather than a spinner, which says only that something is
+   happening. See loadStats() for why they wait a quarter-second before showing
+   at all: on a LAN the report answers faster than one frame.
+
+   The pulse ends on the resting colour rather than starting there, so that the
+   two global animation killers — prefers-reduced-motion and Fast, both of which
+   cut every animation to .001ms — leave a visible placeholder rather than a
+   half-faded one. */
+@keyframes skel-pulse{ from{ opacity:.68; } to{ opacity:1; } }
+.skel__line,
+.skel__chip{
+  display:block;
+  /* Mixed from the ink rather than taken from --paper-sunk, which is an *inset*
+     colour: a step down from a card, and on the page ground itself it lands at
+     1.08:1 in both themes — invisible. A mix needs no dark twin and reads the
+     same either way round. */
+  /* 1.4:1 on the page in light, 1.7:1 in dark, and no lower than 1.3:1 at the
+     pulse's dimmest. Quiet on purpose — a placeholder should read as absence
+     rather than as content — but nowhere near --paper-sunk's 1.08:1, which is
+     not there at all. Text floors don't apply; this is not text. */
+  background:color-mix(in srgb, var(--c-ink) 18%, transparent);
+  border-radius:5px;
+  animation:skel-pulse 1.1s ease-in-out infinite alternate;
+}
+.skel__line{ height:13px; margin:0 0 10px; }
+.skel__line--title{ height:16px; width:42%; margin-bottom:14px; }
+.skel__line:nth-child(3){ width:88%; }
+.skel__line:nth-child(4){ width:71%; }
+.skel__line:nth-child(5){ width:80%; }
+.skel__chips{ display:flex; gap:8px; margin-bottom:20px; }
+.skel__chip{ height:34px; border-radius:8px; }
+
 .sblock{ margin-bottom:24px; }
 .sblock h3{
   margin:0 0 3px;

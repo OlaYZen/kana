@@ -3197,21 +3197,67 @@
 
   // Fetch and draw, keeping whatever is currently selected. Used by the device
   // switch, which must not disturb the chosen script.
+  /* The report has a shape before it has any numbers — a row of deck chips and
+     two blocks of rows — so what stands in for it is that shape, not a word.
+     A spinner says "something is happening"; this says what is coming.
+
+     Two timings around it, and both exist because the server is usually on the
+     same LAN and answers in about ten milliseconds:
+
+     - nothing at all for the first quarter-second, so a fast load goes straight
+       from the menu to the report. A placeholder that appears and vanishes
+       inside one frame reads as a glitch, not as loading.
+     - once it *is* up it stays a moment, so a reply landing at 260ms doesn't
+       replace it before it has been seen. */
+  const SKEL_WAIT = 250;   // ms before a placeholder is worth showing at all
+  const SKEL_HOLD = 300;   // …and the least time it stays once it is up
+  let skelTimer = 0, skelShown = 0;
+
+  function statsSkeleton() {
+    el.statsBody.innerHTML = "";
+    const chips = add(el.statsBody, "div", "skel__chips");
+    [72, 96, 64].forEach((w) => {
+      add(chips, "span", "skel__chip").style.width = w + "px";
+    });
+    [3, 4].forEach((rows) => {
+      const block = add(el.statsBody, "section", "sblock");
+      add(block, "span", "skel__line skel__line--title");
+      for (let i = 0; i < rows; i++) add(block, "span", "skel__line");
+    });
+    el.statsBody.setAttribute("aria-busy", "true");
+  }
+
   function loadStats() {
     // Only a *move* to the report starts a trail. The device switch re-fetches
     // from here while already on it, and that must not forget where Back goes.
     if (activeScreen() !== el.stats) navTo(el.stats);
     el.statsBody.innerHTML = "";
     el.deckPick.innerHTML = "";
-    add(el.statsBody, "p", "sblock__note", "Loading…");
+    clearTimeout(skelTimer);
+    skelShown = 0;
+    skelTimer = setTimeout(() => {
+      skelShown = Date.now();
+      statsSkeleton();
+    }, SKEL_WAIT);
+
+    // whatever answers, paint it — but never before the placeholder has had its
+    // moment, and never leave the timer armed to overwrite what was painted
+    const settle = (paint) => {
+      clearTimeout(skelTimer);
+      const seen = skelShown ? Date.now() - skelShown : SKEL_HOLD;
+      const wait = Math.max(0, SKEL_HOLD - seen);
+      const done = () => { el.statsBody.removeAttribute("aria-busy"); paint(); };
+      if (wait) setTimeout(done, wait); else done();
+    };
+
     Array.from(el.deviceSwitch.children).forEach((b) =>
       b.setAttribute("aria-checked", String(b.dataset.device === statsDevice)));
     api.call("GET", "/api/analytics?device=" + statsDevice)
-      .then((data) => renderStats(data[statsDevice] || { decks: [] }))
-      .catch((err) => {
+      .then((data) => settle(() => renderStats(data[statsDevice] || { decks: [] })))
+      .catch((err) => settle(() => {
         el.statsBody.innerHTML = "";
         add(el.statsBody, "p", "sblock__note", "Couldn’t load: " + err.message);
-      });
+      }));
   }
 
   // Entering from the menu. The script follows the menu **every time**, not just
