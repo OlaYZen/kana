@@ -42,6 +42,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 FLICK_PREFIX = "flick-"   # decks whose prompts are directions, not characters
 
+# The random number drill draws twenty values out of a million, so no value is
+# ever seen twice and "slowest to recall" over them is a list of things you will
+# not be asked again. The clock drill is the same shape for the same reason: it
+# deals twenty of the 144 faces a twelve-hour clock makes at five-minute marks,
+# so one face comes round every seventh run or so and ranking them says nothing.
+# The 1-50 drill is the opposite case and is analysed like any deck: it is fifty
+# fixed prompts, and which of them you are slow on is exactly what the report is
+# for. So are the hours and the minutes, which are twelve and nineteen.
+UNANALYSABLE = {"num-random", "cal-time"}
+
 MIN_RUNS = 3           # complete, non-drill runs of one deck before reporting
 MAX_CARD_MS = 10_000   # over this, the timing is discarded as "distracted"
 MIN_ATTEMPTS = 3       # per-character minimum before it can be called slow/weak
@@ -109,7 +119,7 @@ def report(conn: sqlite3.Connection, user_id: int, device: str, deck_id: str) ->
         (user_id, device, deck_id),
     ).fetchone()["n"]
 
-    analysable = not deck_id.startswith(FLICK_PREFIX)
+    analysable = not deck_id.startswith(FLICK_PREFIX) and deck_id not in UNANALYSABLE
     enough = runs >= MIN_RUNS
 
     out: dict = {
@@ -118,7 +128,7 @@ def report(conn: sqlite3.Connection, user_id: int, device: str, deck_id: str) ->
         "runs": runs,
         "runs_needed": max(0, MIN_RUNS - runs),
         "enough": enough,
-        "analysable": analysable,      # false for the flick drills
+        "analysable": analysable,      # false for the flick and random-number drills
         "ready": enough and analysable,
         "min_runs": MIN_RUNS,
         "max_card_ms": MAX_CARD_MS,
