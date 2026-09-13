@@ -15,6 +15,7 @@
     playMark: $("playMark"), playLabel: $("playLabel"),
     square: $("square"), glyph: $("glyph"), feedback: $("feedback"),
     typeMode: $("typeMode"), chooseMode: $("chooseMode"), writeMode: $("writeMode"),
+    numberMode: $("numberMode"), numInput: $("numInput"), numSubmitBtn: $("numSubmitBtn"),
     input: $("input"), submitBtn: $("submitBtn"),
     kanaInput: $("kanaInput"), writeSubmitBtn: $("writeSubmitBtn"),
     revealBtn: $("revealBtn"), revealBtnTop: $("revealBtnTop"), revealBar: $("revealBar"),
@@ -91,15 +92,18 @@
   // keyboard eats half the screen, so first-time visitors start in Choosing.
   const TOUCH = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 
-  // The seal stamps, in the order index.html lists them. "kana" is the third:
-  // it is not a script anyone writes in, it is the stamp for material that is
-  // both at once, and everything downstream treats it as a script so the deck
-  // filters stay a single comparison.
-  const SCRIPTS = ["hiragana", "katakana", "kana"];
+  // The seal stamps, in the order index.html lists them. Only the first two are
+  // scripts anyone writes in: "kana" is the stamp for material that is both at
+  // once, and "number" is the counting drills, which are not kana at all. Both
+  // are a script as far as everything downstream is concerned, which is what
+  // keeps every deck filter to a single comparison — see CLAUDE.md.
+  const SCRIPTS = ["hiragana", "katakana", "kana", "number"];
 
   const MODES = ["type", "choose", "write"];
+
   // "flick" is not a selectable answer mode — the flick drills are their own
   // runs, and they record under it so their scores never mix with a deck's.
+  // The number drills are not here: they answer to the three above like a deck.
   const MODE_LABEL = { type: "Typing", choose: "Choosing", write: "Writing", flick: "Flick" };
 
   // Reading kana, picking from four, and writing kana from a sound are three
@@ -127,8 +131,12 @@
     // separate and much more dangerous act, handled once by renameKeys().
     migrate() {
       const data = store.read();
-      if (data.rev >= 2) return;
+      if (data.rev >= 3) return;
       const mode = MODES.includes(data.mode) ? data.mode : "type";
+      const patch = {};
+
+      // rev 2: records keyed by bare deck id predate the split by mode. The
+      // mode last selected is the only evidence of which one earned them.
       const rekey = (table) => {
         const out = {};
         Object.keys(table || {}).forEach((k) => {
@@ -136,7 +144,25 @@
         });
         return out;
       };
-      store.write({ rev: 2, best: rekey(data.best), bestTime: rekey(data.bestTime) });
+      // rev 3: the number drills briefly scored under a reserved mode of their
+      // own before they answered to the three real ones. Those records are
+      // moved to the mode that was selected, rather than dropped — the same
+      // reasoning and the same evidence as rev 2 — and only where that mode has
+      // no record already, so a real one is never overwritten by a stale one.
+      const unreserve = (table) => {
+        const out = {};
+        Object.keys(table || {}).forEach((k) => {
+          const to = k.slice(-7) === "|number" ? recordKey(k.slice(0, -7), mode) : k;
+          if (to === k || out[to] === undefined) out[to] = table[k];
+        });
+        return out;
+      };
+      const move = (table) => unreserve(rekey(table));
+
+      patch.rev = 3;
+      patch.best = move(data.best);
+      patch.bestTime = move(data.bestTime);
+      store.write(patch);
     },
 
     best(deckId, mode) { return (store.read().best || {})[recordKey(deckId, mode)] || 0; },
@@ -304,6 +330,7 @@
     graded: false,     // answer already scored — waiting to advance
     kbDismissed: false, // user put the on-screen keyboard away; don't force it back
     flick: null,       // "vowel" | "key" while a flick drill is running
+    numbers: null,     // "count" | "random" while a number drill is running
     isDrill: false,
     timer: 0,          // pending auto-advance, cleared whenever the card changes
     answers: [],       // per-card log for this run, posted at the end
@@ -353,18 +380,38 @@
   const writeAccepts = (c, value) =>
     cardGroup(c).cards.some((x) => x.a === c.a && normKana(x.q) === value);
 
-  // What the current run scores as. A flick drill ignores the answer mode.
+  // What the current run scores as. A flick drill is the only thing that is not
+  // one of the three answer modes; a number drill answers to them like a deck,
+  // so its records are keyed by the mode that earned them.
   const activeMode = () => (state.flick ? "flick" : state.mode);
 
-  // The answer is kana in write and flick alike, so both use the IME field.
+  // Whether the card on screen is answered by picking. Not `state.mode` alone,
+  // which a flick run ignores — a flick answer is always typed whatever the
+  // mode says.
+  const choosingNow = () => !state.flick && state.mode === "choose";
+
+  // The answer is kana in write and flick alike, so both use the IME field —
+  // and writing a number means writing ろく, so numbers are in this too.
   const kanaAnswer = () => state.flick !== null || state.mode === "write";
 
   // typing and writing are one interaction with the prompt reversed, so they
-  // share a submit path — only the field and what counts as correct differ
+  // share a submit path — only the field and what counts as correct differ.
+  // Typing a *number* answers in digits rather than romaji, and a numeric
+  // keypad is a third field rather than an inputmode swap on #input: changing
+  // inputmode on a live field does not reliably re-trigger the on-screen
+  // keyboard, which is the same reason #kanaInput is separate.
+  //
+  // Whether the answer is a *number* is the question rather than which drill
+  // is running, so this stays one test as more generated subjects arrive.
+  // Choosing asks it too, where it decides how an option is set.
+  const numericAnswer = () => !kanaAnswer() && state.numbers !== null;
+
   const typedField = () =>
     kanaAnswer()
       ? { input: el.kanaInput, submit: el.writeSubmitBtn }
-      : { input: el.input, submit: el.submitBtn };
+      : numericAnswer()
+        ? { input: el.numInput, submit: el.numSubmitBtn }
+        : { input: el.input, submit: el.submitBtn };
 
   /* ---------- clock ---------- */
   // The run is timed, but deliberately never shown while practising — a ticking
@@ -429,7 +476,7 @@
     paint(from ? from.screen : el.menu);
     // Mid-card the answer field wins over whatever opened the panel: the
     // on-screen keyboard follows focus, and the point is to get it back up.
-    if (!el.play.classList.contains("hidden") && state.mode !== "choose") {
+    if (!el.play.classList.contains("hidden") && !choosingNow()) {
       focusField(typedField().input);
       return;
     }
@@ -634,6 +681,30 @@
         return;
       }
 
+      // Numbers are the one chart whose readings cannot be looked up — there is
+      // no deck of them to look them up *from* — so an item carries all three
+      // parts itself. What keeps it honest is that the shipped entries were
+      // generated by readNumber(), not typed; the suite regenerates them and
+      // fails if the file has drifted.
+      if (sec.type === "numbers") {
+        // `wide` is one item per row, for readings too long to sit beside
+        // another — 12,345 is eighteen kana.
+        const list = add(block, "div", "chart--num" + (sec.wide ? " chart--num--wide" : ""));
+        (sec.items || []).forEach((item) => {
+          const row = add(list, "div", "nrow");
+          // Four facts, three columns: the leading cell carries both what the
+          // row is — 6, Monday, the 20th — and how that is written, which is
+          // what the drill now shows. `x` is optional, so a chart that has no
+          // written form for a row simply names it.
+          const lead = add(row, "span", "nrow__n");
+          if (item.x) add(lead, "span", "nrow__x", item.x).lang = "ja";
+          add(lead, "span", "nrow__id", item.n);
+          add(row, "span", "nrow__k", item.q).lang = "ja";
+          add(row, "span", "nrow__r", item.a);
+        });
+        return;
+      }
+
       const table = add(block, "table", "chart");
       const headRow = add(add(table, "thead"), "tr");
       add(headRow, "th", null, "").setAttribute("aria-hidden", "true");   // corner
@@ -657,9 +728,13 @@
       }
     });
 
+    // The seal and the line beside it belong to the chart, not to the sheet:
+    // "rows follow the gojūon ordering" is false of a table of numbers. The
+    // two kana charts carry neither and keep what they always said.
     const note = add(el.chartBody, "p", "chart__note");
-    add(note, "span", "chart__seal", "五十音").lang = "ja";
-    add(note, "span", "chart__notetext", "Rows follow the standard gojūon ordering.");
+    add(note, "span", "chart__seal", chart.seal || "五十音").lang = "ja";
+    add(note, "span", "chart__notetext",
+        chart.note || "Rows follow the standard gojūon ordering.");
   }
 
   function openChart() {
@@ -790,7 +865,359 @@
       subtitle: "which key each row is on" }
   ];
 
-  const deckSize = (deck) => (deck.flick ? FLICK_LEN : deck.cards.length);
+  /* ==========================================================================
+     Numbers
+
+     The app's second subject, and the only one that is generated rather than
+     dealt: 1 to 1,000,000 is not a card list. kana.json carries the parts a
+     reading is built out of — the nine digits, the places 千 百 十, the group
+     万 — and readNumber() composes them. No number's sound is written here, for
+     the same reason no kana reading is.
+
+     Unlike the flick drills these are **not** their own mode: they answer to
+     the same three the decks do, and the mode is what decides which way round a
+     prompt goes. That is the whole reason they are decks under a stamp rather
+     than a section of drills.
+
+       type    the reading is shown, the digits are typed    "roku" → 6
+       choose  the reading is shown, the digits are picked   "roku" → 6
+       write   the digits are shown, the kana are typed      6 → ろく
+
+     Which mirrors the decks exactly: type and choose share a direction and
+     differ only in how the answer arrives, and write is the reverse of both and
+     the one that needs an IME. An earlier version dealt the direction per card
+     and ignored the mode — so Typing showed a number half the time and a
+     reading the other half, and the answer box changed under you mid-run. Don't
+     go back to it: "which way round am I being asked" is a property of the
+     mode, and a mode the user chose is the one place that answer belongs.
+     ========================================================================== */
+  let NUM = null;          // the numbers block of kana.json
+  let NUMBER_DECKS = [];   // its drills[], in file order
+
+  // Magnitude bands the random drill deals across. Uniform sampling of
+  // 1..1,000,000 is not what "random numbers" should mean here: nine tenths of
+  // that range is six digits long, so a run would be twenty variations on one
+  // problem and never once ask for 8 or 40. Dealing round-robin over the bands
+  // is the same reasoning as flickQueue's — the drill exists to cover the
+  // magnitudes, so covering them cannot be left to chance.
+  const NUM_BANDS = [
+    [1, 9], [10, 99], [100, 999], [1000, 9999], [10000, 99999], [100000, 1000000]
+  ];
+
+  // The ceiling, taken from the bands rather than written twice.
+  const NUM_MAX = NUM_BANDS[NUM_BANDS.length - 1][1];
+
+  /* ---------- reading a number ---------- */
+
+  // The four-digit group 1..9999, biggest place first. A place drops a leading
+  // one — 十 is juu, never ichijuu — which is what separates `places` from
+  // `groups` in kana.json, where 万 keeps it.
+  //
+  // A digit's `alt` is deliberately not carried into a compound. 四 alone is yon
+  // or shi, but 四十 is yonjuu and 四百 yonhyaku; accepting shijuu would have the
+  // drill agree with something nobody counts with.
+  function readGroup(n) {
+    const parts = [];
+    NUM.places.forEach((place) => {
+      const d = Math.floor(n / place.value) % 10;
+      if (!d) return;
+      const irregular = place.forms && place.forms[String(d)];
+      if (irregular) parts.push(irregular);
+      else if (d === 1) parts.push(place);
+      else {
+        const one = NUM.ones[d - 1];
+        parts.push({ r: one.r + place.r, k: one.k + place.k });
+      }
+    });
+    const ones = n % 10;
+    if (ones) parts.push(NUM.ones[ones - 1]);
+    return parts;
+  }
+
+  // The whole number, as a list of *chunks* — the units it is spoken in, each
+  // one a list of parts. A group takes its whole multiplier with it, because
+  // that is what the group word applies to: 999,999 is 九十九万 九千九百九十九,
+  // not ninety, nine, ten-thousand. Everything below the last group is one
+  // chunk per place.
+  //
+  // Chunks exist for the display alone; grading walks the parts flat, and the
+  // spacing between them is dropped before anything is compared.
+  function readNumber(n) {
+    let left = n;
+    let chunks = [];
+    NUM.groups.forEach((group) => {
+      const q = Math.floor(left / group.value);
+      if (!q) return;
+      chunks.push(readGroup(q).concat([group]));
+      left = left % group.value;
+    });
+    if (left) chunks = chunks.concat(readGroup(left).map((part) => [part]));
+    return chunks;
+  }
+
+  const numParts = (chunks) => chunks.reduce((all, c) => all.concat(c), []);
+
+  // How the value is *written*. Same split as the reading — a place drops a
+  // leading one (十, never 一十) and a group keeps it (一万) — which is why one
+  // pair of loops does both and why `places` and `groups` stay two lists.
+  //
+  // Deliberately built from `j` alone, with no reference to `forms`: a form
+  // changes how a place sounds (三百 is sanbyaku) and never how it is written,
+  // so the kanji cannot drift from the reading by being derived beside it.
+  function kanjiGroup(n) {
+    let out = "";
+    NUM.places.forEach((place) => {
+      const d = Math.floor(n / place.value) % 10;
+      if (!d) return;
+      out += (d === 1 ? "" : NUM.ones[d - 1].j) + place.j;
+    });
+    const ones = n % 10;
+    return ones ? out + NUM.ones[ones - 1].j : out;
+  }
+
+  function kanjiNumber(n) {
+    let left = n, out = "";
+    NUM.groups.forEach((group) => {
+      const q = Math.floor(left / group.value);
+      if (!q) return;
+      out += kanjiGroup(q) + group.j;
+      left = left % group.value;
+    });
+    return left ? out + kanjiGroup(left) : out;
+  }
+
+  // A chunk is written as one word and the chunks are spaced apart, which is
+  // how the number is actually built: "ichiman nisen sanbyaku yonjuu go" shows
+  // 一万 二千 三百 四十 五 at a glance, where the run-on romaji real Japanese
+  // uses hides the one thing the drill is teaching. Nothing is graded on the
+  // spacing — nothing is ever typed in romaji, so it costs nothing.
+  const numReading = (chunks) =>
+    chunks.map((c) => c.map((p) => p.r).join("")).join(" ");
+  const numKana = (chunks) => chunks.map((c) => c.map((p) => p.k).join("")).join("");
+
+  // Thousands separators in the prompt, so a six-digit number can be read at a
+  // glance rather than counted. Stripped again before grading.
+  const fmtDigits = (n) => String(n).replace(/\B(?=(\d{3})+$)/g, ",");
+
+  /* ---------- grading ---------- */
+
+  // Digits as typed. NFKC folds an IME's full-width ７; everything that isn't a
+  // digit goes, which is what lets 1,000,000 and 1000000 both be the answer,
+  // and what makes a stray space or a typed comma harmless.
+  const normDigits = (s) => s.normalize("NFKC").replace(/[^0-9]/g, "");
+
+  /* Romaji, folded to one spelling of each sound. In order: case, spaces and
+     the apostrophe in kin'yōbi; then macrons off, ō → o and ū → u; then the
+     y-form jyu → ju; then every way a long vowel gets written down — jū, juu,
+     jyuu and ju arrive as the same string, and so do yōka, youka and yooka.
+
+     **Vowel length is therefore not graded on this path**, and that is the
+     price of the path existing rather than a bug to fix later. A fold that
+     makes those four spellings one answer cannot also tell a long vowel from a
+     short one, and demanding a macron from someone typing on a plain keyboard
+     is asking them to guess a romanisation convention. The kana path grades
+     length exactly, which is one more reason to use the IME where there is one. */
+  const normRomaji = (s) => s
+    .toLowerCase().trim()
+    .replace(/[\s'’\-]/g, "")
+    .replace(/ō/g, "o").replace(/ū/g, "u")
+    .replace(/jy/g, "j")
+    .replace(/ou|oo/g, "o")
+    .replace(/uu/g, "u")
+    .replace(/aa/g, "a").replace(/ii/g, "i").replace(/ee/g, "e");
+
+  // Every kana spelling one part will answer to, normalised once and cached on
+  // the part itself. kana.json shares its parts across every card that uses
+  // them, so this is computed once per place rather than once per prompt.
+  function numKanaSpellings(part) {
+    if (!part._kk) {
+      part._kk = [part.k].concat(part.altk || []).map(normKana);
+    }
+    return part._kk;
+  }
+
+  /* Romaji, for the same parts and by the same rule — `alt` beside `r` where
+     `altk` sits beside `k`. This is the *second* answer a generated drill takes
+     in Writing, and it exists because the drill is otherwise unanswerable
+     without a Japanese IME installed, which is a thing about the machine rather
+     than about the person practising.
+
+     It is safe here and would not be for a deck. Writing asks a deck with the
+     reading — か is asked as "ka" — so accepting romaji there would be typing
+     the prompt back; the answer would be the question. A generated drill asks
+     with the identity instead, 6 or 20日 or Monday, so "roku" is a real answer
+     to it and not an echo. **Romaji is accepted exactly where it is not the
+     prompt**, which is the whole rule.
+
+     The cost is vowel length, and it is unavoidable rather than an oversight:
+     see normRomaji. */
+  function numRomajiSpellings(part) {
+    if (!part._rr) {
+      part._rr = [part.r].concat(part.alt || []).map(normRomaji);
+    }
+    return part._rr;
+  }
+
+  // Walk the answer against the parts rather than expanding them. 四 is よん or
+  // し, 七 なな or しち, 九 きゅう or く, so a seven-part reading has a few
+  // hundred spellings between them; matching left to right with a backtrack
+  // costs a handful of string compares, and a wrong prefix prunes the rest.
+  //
+  // Only a bare trailing digit carries alternates, because that is where they
+  // are true: 四十 is よんじゅう and never しじゅう. Compounds are built from
+  // `k` and `r` alone in readGroup(), so this needs no rule of its own.
+  function partsAccept(parts, value, spellings) {
+    if (!value) return false;
+    const walk = (i, rest) => {
+      if (i === parts.length) return rest === "";
+      return spellings(parts[i]).some(
+        (v) => v && rest.lastIndexOf(v, 0) === 0 && walk(i + 1, rest.slice(v.length)));
+    };
+    return walk(0, value);
+  }
+
+  const numKanaAccepts = (parts, value) =>
+    partsAccept(parts, value, numKanaSpellings);
+  const numRomajiAccepts = (parts, value) =>
+    partsAccept(parts, value, numRomajiSpellings);
+
+  // Wrong answers worth offering in Choosing: the same number with one digit
+  // changed, or with two adjacent digits swapped. 45 against 54 and 44 is a
+  // question about the reading; 45 against 8 and 1,300 answers itself.
+  function numNeighbours(n) {
+    const digits = String(n);
+    const out = [];
+    const keep = (v) => { if (v >= 1 && v <= NUM_MAX && v !== n) out.push(v); };
+    for (let i = 0; i < digits.length; i++) {
+      for (let d = 0; d <= 9; d++) {
+        if (String(d) === digits[i]) continue;
+        if (i === 0 && d === 0 && digits.length > 1) continue;   // no leading zero
+        keep(Number(digits.slice(0, i) + d + digits.slice(i + 1)));
+      }
+      if (i + 1 < digits.length && digits[i] !== digits[i + 1] &&
+          !(i === 0 && digits[i + 1] === "0")) {
+        const swapped = digits.split("");
+        const t = swapped[i]; swapped[i] = swapped[i + 1]; swapped[i + 1] = t;
+        keep(Number(swapped.join("")));
+      }
+    }
+
+    // The ceiling has none of the above: every digit of 1,000,000 that can be
+    // changed leaves the range, and its swaps are all zeros. Top up from the
+    // value's own magnitude band instead — a wrong answer of the right size,
+    // which is the next best thing to a one-digit miss and still never the
+    // giveaway of a number half as long.
+    if (out.length < 3) {
+      const band = NUM_BANDS.find((b) => n >= b[0] && n <= b[1]) || [1, NUM_MAX];
+      for (let guard = 0; out.length < 8 && guard < 80; guard++) {
+        const v = band[0] + Math.floor(Math.random() * (band[1] - band[0] + 1));
+        if (v !== n && out.indexOf(v) < 0) out.push(v);
+      }
+    }
+    return out;
+  }
+
+  /* ---------- dealing a run ---------- */
+
+  // `key` is the number itself in both directions, so the progress report pools
+  // them: what it has to say is which numbers you don't know, not which of the
+  // two ways of asking was slower. logAnswer() prefers it over `q`.
+  function numberCard(n) {
+    const chunks = readNumber(n);
+    const digits = fmtDigits(n);
+    return {
+      // `q` and `a` are the deck-shaped pair the shared code paths expect: the
+      // prompt two of the three modes show, and the answer they take. Write
+      // mode swaps them for its own, out of `num` below.
+      q: numReading(chunks),
+      a: digits,
+      key: String(n),
+      num: {
+        n: n,
+        parts: numParts(chunks),      // flat, for numKanaAccepts
+        digits: digits, kanji: kanjiNumber(n),
+        reading: numReading(chunks), kana: numKana(chunks)
+      }
+    };
+  }
+
+  // Distinct values for one run. `count` is the whole range and needs no
+  // choosing; `random` deals round-robin across the magnitude bands — see
+  // NUM_BANDS. The retry guard matters for the 1–9 band, which cannot hold
+  // twenty distinct values and will be asked for four or five.
+  function numberValues(deck) {
+    if (deck.numbers === "count") {
+      const all = [];
+      for (let n = 1; n <= deck.max; n++) all.push(n);
+      return all;
+    }
+    const bands = shuffle(NUM_BANDS.slice());
+    const seen = new Set();
+    const out = [];
+    for (let i = 0; out.length < deck.len && i < deck.len * 40; i++) {
+      const band = bands[i % bands.length];
+      const v = band[0] + Math.floor(Math.random() * (band[1] - band[0] + 1));
+      if (seen.has(v)) continue;
+      seen.add(v);
+      out.push(v);
+    }
+    return out;
+  }
+
+  // One card per value. Which way round it is asked is not on the card at all —
+  // the mode decides that at render time, so switching mode mid-run would flip
+  // every remaining prompt rather than leaving a half-dealt run inconsistent.
+  function numberQueue(deck) {
+    return shuffle(numberValues(deck)).map(numberCard);
+  }
+
+  // The prompt spans one character to about fifty — 六 and "rokujūrokuman
+  // rokusen kyūhyaku kyūjū kyū" land in the same slot, which nothing else in
+  // the app has to cope with. The square is a container, so the glyph is sized
+  // in cqw and JS only picks the multiplier; CSS does the arithmetic. Buckets
+  // rather than a formula: there are a handful of sizes that matter and a
+  // bucket can be looked at.
+  //
+  // Measured in columns rather than characters, because the prompt now comes in
+  // both scripts: "1,000,000" is nine narrow glyphs where 一万二千三百四十五 is
+  // nine full-width ones and wants twice the room. Everything from CJK
+  // punctuation up is two columns; Latin, digits and ō are one.
+  const fitWidth = (text) => {
+    let cols = 0;
+    for (let i = 0; i < text.length; i++) cols += text.charCodeAt(i) > 0x2E7F ? 2 : 1;
+    return cols;
+  };
+  //
+  // Seven columns has a bucket of its own because that is where the two scripts
+  // disagree most: 二十日 is three full-width glyphs and "Tuesday" is seven
+  // narrow ones, and a column of Latin is wider against the font size than half
+  // a full-width glyph is. The kanji can also wrap and be none the worse —
+  // 一万二千三百四十五 over two lines is still legible — where a word broken as
+  // "Tuesda / y" is just wrong, so the Latin case sets the size.
+  //
+  // The 12/13 boundary is measured rather than chosen: at 13cqw a thirteenth
+  // column is past the square's inner width, so everything from there up takes
+  // the next size down. It is the clock that made this visible — 十一時二十五分
+  // is fourteen columns — but it was wrong before that, and the three date
+  // readings it broke mid-word (nijūrokunichi, nijūhachinichi, sanjūichinichi)
+  // are the reason the rule above is about *words* and not about lines.
+  const NUM_FIT = [[2, 44], [4, 34], [6, 22], [7, 19], [11, 15], [12, 13],
+                   [17, 11], [20, 10], [26, 8]];
+  const numFit = (text) => {
+    const cols = fitWidth(text);
+    const hit = NUM_FIT.find((b) => cols <= b[0]);
+    return hit ? hit[1] : 6;
+  };
+
+  const deckSize = (deck) =>
+    deck.flick ? FLICK_LEN
+      : deck.numbers ? deck.len
+      : deck.cards.length;
+
+  // The value, then how it is said, whichever direction the card was asked in.
+  // The pair is the fact worth repeating; which half was on the square is not.
+  const numSays = (c) =>
+    '<span lang="ja">' + c.num.kanji + "</span> is " + c.num.digits + " — ";
 
   /* ==========================================================================
      Derived decks
@@ -855,7 +1282,11 @@
   }
 
   // Every deck the menu can start, real and derived.
-  const allDecks = () => state.decks.concat(state.derived);
+  // Every deck the menu can start, and the one list the stamp filters run over.
+  // The number drills join it because they carry a `script` like anything
+  // else; they are safe here for the reason the rule below is about — they
+  // have no `cards` at all, and nothing that counts characters uses this.
+  const allDecks = () => state.decks.concat(state.derived, NUMBER_DECKS);
 
   /* Can what is left in hand still be laid out under the run limit at all? m
      cards of one category need the others as separators: r of them open r+1
@@ -921,11 +1352,11 @@
   /* ---------- menu ---------- */
   function buildMenu() {
     el.decks.innerHTML = "";
-    // Derived decks carry a script like any other, so this stays one
-    // comparison. They come out after the real decks because `allDecks()`
-    // appends them, which is also the order they want: under あ or ア the mix
-    // sits below the three decks it is built from, and under かな the whole
-    // stamp is derived anyway.
+    // Derived decks and the number drills carry a script like any other, so
+    // this stays one comparison. They come out after the real decks because
+    // `allDecks()` appends them, which is also the order they want: under あ or
+    // ア the mix sits below the three decks it is built from, under かな the
+    // whole stamp is derived, and under 十 there is nothing else.
     allDecks().filter((d) => d.script === state.script)
       .forEach((deck) => el.decks.appendChild(deckRow(deck)));
 
@@ -952,7 +1383,8 @@
     // why switching mode rebuilds the list.
     const mode = deck.flick ? "flick" : state.mode;
     const size = deckSize(deck);
-    const unit = deck.flick ? " prompts" : " cards";
+    // A generated run deals prompts; only a deck has cards to count.
+    const unit = deck.flick || deck.numbers ? " prompts" : " cards";
     const best = store.best(deck.id, mode);
     const bestMs = store.bestTime(deck.id, mode);
 
@@ -983,6 +1415,7 @@
     stopClock(false);          // abandoned run — drop the clock, don't record it
     state.graded = false;
     state.flick = null;        // back to the selected answer mode
+    state.numbers = null;
     buildMenu();
     show(el.menu);
   }
@@ -1000,14 +1433,26 @@
     else render();
   }
 
-  // Which script's decks the menu is showing. The accent flips with it, the
-  // same vermilion/indigo pairing the chart uses.
+  // Whether the chart is worth offering under the stamp on screen. Every stamp
+  // but かな wants its own table and nothing else will do: falling back under 十
+  // would hand over a kana table in answer to a question about counting. かな is
+  // the one place a fallback is right — there is no combined table and both
+  // scripts' are relevant. "Are there charts at all" is the same question and
+  // lives here too, so the two can never disagree.
+  const chartApplies = () =>
+    state.charts.length > 0 &&
+    (state.script === "kana" || state.charts.some((c) => c.id === state.script));
+
+  // Which script's decks the menu is showing. The accent flips with it — the
+  // vermilion/indigo pairing the chart uses, purple for かな, and 納戸 for the
+  // counting drills.
   function setScript(id) {
     state.script = id;
     el.menu.dataset.script = id;
     Array.from(el.scriptSwitch.children).forEach((b) =>
       b.setAttribute("aria-checked", String(b.dataset.script === id)));
     store.write({ script: id });
+    el.chartBtn.classList.toggle("hidden", !chartApplies());
     buildMenu();
     el.menuScroll.scrollTop = 0;
     // On a wide window the chart is the pane while the menu is the rail, so a
@@ -1022,6 +1467,7 @@
   function start(deck, cards) {
     state.deck = deck;
     state.flick = deck.flick || null;
+    state.numbers = deck.numbers || null;
     state.isDrill = Boolean(cards);
     // A flick run is generated, not dealt from a deck; a drill of one narrows
     // the generator to the groups that were missed. A drill is a plain shuffle
@@ -1031,6 +1477,10 @@
     state.queue = state.flick
       ? flickQueue(state.flick, (cards || []).map((c) => c.flick.group))
       : cards && cards.length ? shuffle(cards)
+      // A number drill is generated too, but a drill of one is just its misses
+      // dealt again — the cards above — so this sits below that branch, where
+      // flick's sits above it.
+      : state.numbers ? numberQueue(deck)
       : deck.mix ? mixedQueue(deck)
       : shuffle(deck.cards);
     state.i = 0;
@@ -1052,7 +1502,10 @@
   // decides what to do with an implausible time; the client just reports it.
   function logAnswer(c, given, correct, revealed) {
     state.answers.push({
-      q: String(c.q).slice(0, 16),
+      // `key` is what a card is *about* where that isn't its prompt: a number
+      // asked both ways is one thing you either know or don't, and the report
+      // should say "you are slow on 8", not rank "8" against "hachi".
+      q: String(c.key || c.q).slice(0, 16),
       a: String(c.a).slice(0, 64),
       given: given == null ? null : String(given).slice(0, 64),
       correct: Boolean(correct),
@@ -1067,19 +1520,39 @@
     clearTimeout(state.timer);
     state.cardAt = performance.now();
 
-    // Latin prompt in three of the four cases: writing asks with romaji, and
-    // both flick drills ask with a bare letter.
+    // A number run is one of the three modes like a deck is; only the flick
+    // drills sit outside them.
+    const numbering = state.numbers !== null;
     const flicking = state.flick !== null;
     const writing = !flicking && state.mode === "write";
     const choosing = !flicking && state.mode === "choose";
-    const latinPrompt = writing || flicking;
+    // Numbers ask the same way round whichever mode is on: Typing and Choosing
+    // show the reading — "roku" — and answer with the digits, and Writing shows
+    // the digits and answers in kana.
+    const text =
+      numbering ? (writing ? c.num.digits : c.num.reading) :
+      flicking ? c.q : writing ? c.a : c.q;
+    // Latin prompt in every case but a deck read in Japanese: a number prompt
+    // is romaji or digits either way round.
+    const latinPrompt = numbering || flicking || writing;
 
     el.square.classList.remove("is-correct", "is-wrong", "is-graded");
-    el.glyph.textContent = flicking ? c.q : writing ? c.a : c.q;
+    el.glyph.textContent = text;
     el.glyph.lang = latinPrompt ? "en" : "ja";
-    el.glyph.classList.toggle("is-pair", !latinPrompt && c.q.length > 1);
+    // Two kana in the square — きゃ — and not two of anything else: a generated
+    // prompt is long by nature and sizes itself through --fit just below.
+    el.glyph.classList.toggle("is-pair",
+      !latinPrompt && !numbering && text.length > 1);
     el.glyph.classList.toggle("is-romaji", latinPrompt);
+    // Nothing else in the app has a prompt that runs from one character to
+    // forty-five, so a generated prompt is the one that picks its own size —
+    // measured off what is actually on screen, which differs by mode.
+    el.glyph.classList.toggle("is-number", numbering);
+    el.glyph.style.setProperty("--fit", numbering ? numFit(text) : "");
     el.feedback.textContent =
+      numbering ? (writing ? "Write this number in kana." :
+                   choosing ? "Pick the number this reads."
+                            : "Type the number this reads.") :
       flicking ? (state.flick === "vowel"
                     ? "Any character that ends in this vowel."
                     : "Any character from this key.") :
@@ -1090,7 +1563,14 @@
     el.mProgress.innerHTML = (state.i + 1) + "<small>/" + state.queue.length + "</small>";
     updateStats();
 
-    el.typeMode.classList.toggle("hidden", flicking || state.mode !== "type");
+    // Typing a number answers in digits, and so does typing a month or a date,
+    // so all three take the numeric field where a deck takes the romaji one — a
+    // weekday answers with its English name and takes the romaji field like a
+    // deck. Writing is kana in every case, and Choosing has no field at all.
+    const typing = !flicking && !writing && !choosing;
+    const keypad = numericAnswer();
+    el.typeMode.classList.toggle("hidden", !typing || keypad);
+    el.numberMode.classList.toggle("hidden", !typing || !keypad);
     el.writeMode.classList.toggle("hidden", !kanaAnswer());
     el.chooseMode.classList.toggle("hidden", !choosing);
     // reveal and the hint row belong to the two typing modes only
@@ -1105,8 +1585,14 @@
     } else {
       // the IME reminder has to survive on touch, where the keyboard hint is
       // deliberately suppressed — hence the different class
+      // The IME reminder has to survive on touch, where the keyboard hint is
+      // deliberately suppressed — hence the different class. A generated drill
+      // takes romaji as well, and says so: without that line the mode looks
+      // broken on a machine with no Japanese input installed.
       const ime = kanaAnswer();
-      el.typedHint.textContent = ime ? "Japanese keyboard" : "Enter ↵ to check";
+      const either = ime && numbering;
+      el.typedHint.textContent = !ime ? "Enter ↵ to check"
+        : either ? "Kana or romaji" : "Japanese keyboard";
       el.typedHint.className = ime ? "hint hint--ime" : "hint hint--keys";
 
       const f = typedField();
@@ -1127,6 +1613,7 @@
   // writeAccepts() holds the answer to the same scope. A deck inside one script
   // — including Mixed hiragana — has nothing to disambiguate and says nothing.
   function writeAsk() {
+    if (state.numbers) return "Write this number in kana.";
     const g = cardGroup(card());
     return state.deck.spansScripts && g.script
       ? "Write the " + g.script + " for this sound."
@@ -1176,6 +1663,22 @@
   }
 
   function buildChoices(c) {
+    // Numbers have no deck of cards to draw distractors from, so they are
+    // generated: the same value with one digit changed or two swapped. Drawing
+    // any four numbers would make the option obvious from its length alone —
+    // "roku" beside 6, 400 and 12,000 is not a question about the reading.
+    if (state.numbers) {
+      const taken = new Set([c.a]);
+      const pool = [];
+      shuffle(numNeighbours(c.num.n)).forEach((v) => {
+        const label = fmtDigits(v);
+        if (pool.length >= 3 || taken.has(label)) return;
+        taken.add(label); pool.push({ a: label });
+      });
+      buildChoiceButtons(shuffle(pool.concat({ a: c.a })), c);
+      return;
+    }
+
     // Distractors come from the same deck so the options stay plausible, and are
     // deduped by reading — じ and ぢ are both "ji", so picking cards blindly
     // would render two identical buttons. (The dedupe is also why the mixed
@@ -1196,13 +1699,17 @@
     });
     take(cardGroup(c).cards);
     if (pool.length < 3) take(state.deck.cards);
-    const opts = shuffle(pool.concat(c));
+    buildChoiceButtons(shuffle(pool.concat(c)), c);
+  }
 
+  // Shared by both draws above: an option is anything with an `a`, and `a` is
+  // what pick() grades against, so a generated number option needs nothing else.
+  function buildChoiceButtons(opts, c) {
     el.choices.innerHTML = "";
     opts.forEach((o, idx) => {
       const b = document.createElement("button");
       b.type = "button";
-      b.className = "choice";
+      b.className = "choice" + (numericAnswer() ? " choice--num" : "");
       b.dataset.a = o.a;
       b.innerHTML = '<span class="choice__key">' + (idx + 1) + "</span>" + o.a;
       b.addEventListener("click", () => pick(b, o, c));
@@ -1228,6 +1735,29 @@
   function submitTyped() {
     if (state.graded) { next(); return; }
     const c = card();
+
+    // Numbers, in whichever of the two typed modes. Writing takes the kana and
+    // accepts every reading the value has — 4 is よん or し — while Typing takes
+    // the digits and drops anything that is not one, so 1,000,000 and 1000000
+    // are the same answer.
+    if (state.numbers) {
+      const field = typedField().input;
+      if (state.mode === "write") {
+        const value = normKana(field.value);
+        if (!value) return;
+        const right = numKanaAccepts(c.num.parts, value) ||
+                      numRomajiAccepts(c.num.parts, normRomaji(field.value));
+        logAnswer(c, value.slice(0, 64), right, false);
+        if (right) markCorrect(); else markWrong(c, false);
+      } else {
+        const value = normDigits(field.value);
+        if (!value) return;
+        const right = Number(value) === c.num.n;
+        logAnswer(c, value, right, false);
+        if (right) markCorrect(); else markWrong(c, false);
+      }
+      return;
+    }
 
     if (state.flick) {
       const value = normKana(el.kanaInput.value);
@@ -1290,7 +1820,13 @@
     const shown = typed && typed !== normKana(c.q) ? typed : c.q;
 
     el.square.classList.add("is-correct", "is-graded");
-    el.feedback.innerHTML = state.flick
+    // A number is always confirmed the same way round — digits, then kana, then
+    // reading — whichever direction it was asked in. The pair is the fact worth
+    // repeating; which half was on the card is not.
+    el.feedback.innerHTML = state.numbers
+      ? '<span class="ok">Correct — ' + numSays(c) + '<b lang="ja">' +
+        c.num.kana + '</b> “' + c.num.reading + '”.</span>'
+      : state.flick
       ? '<span class="ok">Correct — <b lang="ja">' + shown + "</b> " +
         (state.flick === "vowel" ? "ends in " : "is on ") + c.q + ".</span>"
       : '<span class="ok">Correct — <b lang="ja">' + shown +
@@ -1309,9 +1845,14 @@
     el.square.classList.add("is-wrong", "is-graded");
 
     const tail = TOUCH ? "Tap to continue."
-      : activeMode() !== "choose" ? "Press Enter to continue." : "";
+      : !choosingNow() ? "Press Enter to continue." : "";
 
-    if (state.flick) {
+    if (state.numbers) {
+      el.feedback.innerHTML =
+        (viaReveal ? "" : '<span class="no">Not quite. </span>') +
+        numSays(c) + '<b lang="ja">' + c.num.kana + '</b> “<span class="no">' +
+        c.num.reading + '</span>”. ' + tail;
+    } else if (state.flick) {
       // name what they actually typed, so a wrong answer teaches where that
       // character really sits rather than only restating the prompt
       const info = typed ? kanaInfo(typed) : null;
@@ -1333,11 +1874,12 @@
 
     updateStats();
 
-    if (activeMode() !== "choose") {
+    if (!choosingNow()) {
       const f = typedField();
       // show the answer in the field the user was answering in: a worked example
       // for flick, the kana when writing, the romaji when typing
       f.input.value = state.flick ? c.a.split(" ")[0]
+        : state.numbers ? (state.mode === "write" ? c.num.kana : c.num.digits)
         : state.mode === "write" ? c.q : c.a;
       focusField(f.input);
       // selecting shows drag handles on a phone, which reads as an invitation
@@ -1408,9 +1950,15 @@
     // Unique misses, back in chart order. A flick run has no deck to order by,
     // and the same prompt recurs through the run as separate cards, so its
     // misses are collapsed by group instead.
+    // Unique misses, back in the order the material has. A flick run has no
+    // deck to order by and the same prompt recurs as separate cards, so its
+    // misses collapse by group; a number run has no cards either, but every
+    // value appears once and counting order is the order that means something.
     const missed = state.flick
       ? state.missed.filter((c, i) =>
           state.missed.findIndex((x) => x.flick.group === c.flick.group) === i)
+      : state.numbers
+      ? state.missed.slice().sort((a, b) => a.num.n - b.num.n)
       : state.deck.cards.filter((c) => state.missed.includes(c));
 
     if (missed.length) {
@@ -1418,9 +1966,16 @@
       el.missedGrid.innerHTML = "";
       missed.forEach((c) => {
         const d = document.createElement("div");
-        d.className = "miss";
-        d.innerHTML = '<span class="miss__k" lang="ja">' + c.q + '</span>' +
-                      '<span class="miss__r">' + c.a + "</span>";
+        // A missed number is reviewed the one useful way round — the value,
+        // then how it is said — never as whichever half happened to be asked.
+        d.className = "miss" + (state.numbers ? " miss--num" : "");
+        // reviewed as the material, not as whichever direction it was asked
+        // in: how it is written, then how it is said
+        d.innerHTML = state.numbers
+          ? '<span class="miss__k" lang="ja">' + c.num.kanji + '</span>' +
+            '<span class="miss__r" lang="ja">' + c.num.kana + "</span>"
+          : '<span class="miss__k" lang="ja">' + c.q + '</span>' +
+            '<span class="miss__r">' + c.a + "</span>";
         el.missedGrid.appendChild(d);
       });
       el.drillBtn.classList.remove("hidden");
@@ -1434,6 +1989,12 @@
 
     el.againBtn.textContent = state.flick
       ? "Practice " + FLICK_LEN + " more"     // a fresh random run, not the same one
+      // "again" only where it is the same material a second time: the random
+      // drill deals twenty it has never asked before.
+      : state.numbers === "random" ? "Practice " + state.deck.len + " more"
+      // `max` where there is one: a drill of ten asked both ways is "all 10
+      // again", not all 20 — the prompts are twenty, the material is ten.
+      : state.numbers ? "Practice all " + (state.deck.max || state.deck.len) + " again"
       : "Practice all " + state.deck.cards.length + " again";
     el.againBtn.onclick = () => start(state.deck);
     show(el.end);
@@ -1445,14 +2006,15 @@
 
   el.submitBtn.addEventListener("click", submitTyped);
   el.writeSubmitBtn.addEventListener("click", submitTyped);
+  el.numSubmitBtn.addEventListener("click", submitTyped);
   el.revealBtn.addEventListener("click", reveal);
   el.revealBtnTop.addEventListener("click", reveal);
 
   // every control that can be tapped mid-card, so none of them close the keyboard
-  [el.square, el.submitBtn, el.writeSubmitBtn, el.revealBtn, el.revealBtnTop]
-    .forEach(keepKeyboard);
+  [el.square, el.submitBtn, el.writeSubmitBtn, el.numSubmitBtn,
+   el.revealBtn, el.revealBtnTop].forEach(keepKeyboard);
 
-  [el.input, el.kanaInput].forEach((f) => {
+  [el.input, el.kanaInput, el.numInput].forEach((f) => {
     f.addEventListener("blur", noteBlur);
     f.addEventListener("focus", () => { state.kbDismissed = false; });
   });
@@ -1468,6 +2030,7 @@
   };
   el.input.addEventListener("keydown", enterSubmits);
   el.kanaInput.addEventListener("keydown", enterSubmits);
+  el.numInput.addEventListener("keydown", enterSubmits);
 
   // Options is a screen, so everything it leads to is one step deeper and one
   // step back — no sheet to close first, and nothing that can stack.
@@ -2132,7 +2695,16 @@
     .then((data) => {
       state.decks = data.decks;
       state.charts = data.charts || [];
-      el.chartBtn.classList.toggle("hidden", !state.charts.length);
+      // Numbers are content like everything else, and the drills are listed in
+      // the file beside the parts they are read out of. `numbers` mirrors
+      // `flick` as the flag every branch tests, so the two read the same way.
+      NUM = data.numbers || null;
+      // `script` is what puts them under the 十 stamp, exactly as it puts a
+      // derived deck under かな; `numbers` mirrors `flick` as the flag every
+      // branch tests, so the two read the same way.
+      NUMBER_DECKS = NUM && NUM.drills
+        ? NUM.drills.map((d) => Object.assign({}, d, { numbers: d.kind, script: "number" }))
+        : [];
       buildFlickIndex();   // needs both decks and charts
       // built from decks, and deliberately after everything that walks them:
       // their cards are the decks' own, so anything counting characters must

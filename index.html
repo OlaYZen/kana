@@ -43,9 +43,11 @@
   <section id="menu" class="screen menu">
     <p class="eyebrow"><span class="mark" lang="ja">かな</span> Kana Practice</p>
 
-    <!-- The deck list below shows one stamp at a time. The third is not a
-         script anyone writes in — it is where the decks that span both scripts
-         live, so they are found in one place instead of twice. -->
+    <!-- The deck list below shows one stamp at a time. Only two of these are
+         scripts anyone writes in: あア is where the decks spanning both live, so
+         they are found in one place instead of twice, and 十 is the counting
+         drills, which are not kana at all. Both are a `script` downstream — see
+         CLAUDE.md — which is what keeps every filter to one comparison. -->
     <div class="scriptbar" id="scriptSwitch" role="radiogroup" aria-label="Script">
       <button type="button" class="hanko" data-script="hiragana" role="radio" aria-checked="true">
         <span class="hanko__glyph" lang="ja">あ</span>
@@ -58,6 +60,10 @@
       <button type="button" class="hanko" data-script="kana" role="radio" aria-checked="false">
         <span class="hanko__glyph hanko__glyph--pair" lang="ja">あア</span>
         <span class="hanko__label">Kana</span>
+      </button>
+      <button type="button" class="hanko" data-script="number" role="radio" aria-checked="false">
+        <span class="hanko__glyph" lang="ja">十</span>
+        <span class="hanko__label">Numbers</span>
       </button>
     </div>
 
@@ -180,6 +186,10 @@
           <span class="hanko__glyph hanko__glyph--pair" lang="ja">あア</span>
           <span class="hanko__label">Kana</span>
         </button>
+        <button type="button" class="hanko" data-script="number" role="radio" aria-checked="false">
+          <span class="hanko__glyph" lang="ja">十</span>
+          <span class="hanko__label">Numbers</span>
+        </button>
       </div>
 
       <!-- hidden when there is only one deck to pick — see renderDeckPicker -->
@@ -231,7 +241,10 @@
         </div>
       </div>
 
-      <!-- writing: romaji is shown, the kana is typed (needs a Japanese IME) -->
+      <!-- writing: the kana is typed, which needs a Japanese IME. The number
+           drills take romaji here as well — they ask with 6, so "roku" is an
+           answer to that and not the prompt echoed back — and app.js swaps the
+           hint under the field to say so. -->
       <div id="writeMode" class="hidden">
         <div class="answer">
           <input id="kanaInput" type="text" inputmode="text" lang="ja" enterkeyhint="go"
@@ -241,7 +254,20 @@
         </div>
       </div>
 
-      <!-- shared by both typing modes; the hint text is set per mode -->
+      <!-- counting, digits half: a numeric keypad, which is why this is a field
+           of its own rather than #input with inputmode swapped — the same reason
+           #kanaInput is separate. type stays "text": type="number" brings
+           spinners, and drops the separators the prompt is written with. -->
+      <div id="numberMode" class="hidden">
+        <div class="answer">
+          <input id="numInput" type="text" inputmode="numeric" enterkeyhint="go"
+                 autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+                 placeholder="digits…" aria-label="Type the number in digits">
+          <button type="button" class="btn btn--primary" id="numSubmitBtn">Check</button>
+        </div>
+      </div>
+
+      <!-- shared by all three typing modes; the hint text is set per mode -->
       <div class="undertools" id="typedTools">
         <button type="button" class="link" id="revealBtn">Reveal answer</button>
         <span class="hint hint--keys" id="typedHint">Enter ↵ to check</span>
@@ -385,6 +411,10 @@
       <button type="button" class="hanko" data-chart="katakana" role="radio" aria-checked="false">
         <span class="hanko__glyph" lang="ja">ア</span>
         <span class="hanko__label">Katakana</span>
+      </button>
+      <button type="button" class="hanko" data-chart="number" role="radio" aria-checked="false">
+        <span class="hanko__glyph" lang="ja">十</span>
+        <span class="hanko__label">Numbers</span>
       </button>
     </div>
 

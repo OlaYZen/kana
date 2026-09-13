@@ -132,6 +132,12 @@
      them on contrast too rather than reading as a louder third colour. */
   --murasaki:   #5C3D7A;
   --murasaki-2: #452A5C;  /* its label colour, as ai-2 is to ai */
+  /* 納戸 — the numbers accent. Deliberately outside the shu/ai/murasaki family,
+     because numbers are a different subject rather than a third script, and
+     equally deliberately not matcha or brass: green already means "correct" and
+     gold "your record" everywhere else, and a stamp is neither. */
+  --nando:      #236E70;
+  --nando-2:    #185657;
   --guide:    #C8BFA6;  /* practice-square cross guides */
 
   /* the pressed/hover wash on a control with no fill of its own */
@@ -221,6 +227,8 @@
   --ai-2:     #A3BAE6;
   --murasaki:   #B18FD8;
   --murasaki-2: #C6ACE6;
+  --nando:      #6BB8B9;
+  --nando-2:    #86C7C8;
   --guide:    #4A4335;
 
   --press:    rgba(255,255,255,.09);
@@ -380,8 +388,27 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
    one script rather than listing all six decks at once. */
 .scriptbar{
   flex:0 0 auto;
-  display:flex; gap:10px;
+  display:flex; gap:8px;
   margin-bottom:13px;
+}
+/* Four stamps share the width three used to, so the label is what runs out of
+   room first — "Hiragana", "Katakana" and "Numbers" are seven or eight
+   characters each against a quarter of the bar. Keep it on one line and let the
+   letter-spacing go, then the size, before it is ever allowed to wrap: a stamp
+   whose label runs to two lines is taller than its neighbours and the row stops
+   reading as a row of seals. */
+.scriptbar .hanko__label{ white-space:nowrap; letter-spacing:.02em; }
+@media (max-width:409px){
+  .scriptbar{ gap:6px; }
+  .scriptbar .hanko__label{ font-size:11px; letter-spacing:0; }
+}
+@media (max-width:359px){
+  .scriptbar{ gap:5px; }
+  .scriptbar .hanko__label{ font-size:10px; letter-spacing:-.01em; }
+  /* A pair can no longer break between its two characters — it must not — so
+     on the narrowest phone it gives back the width that costs by shrinking.
+     The single-glyph stamps keep their size; only あア moves. */
+  .scriptbar .hanko__glyph--pair{ font-size:calc(var(--stamp, 34px) * .56); }
 }
 .scriptbar .hanko{ flex:1 1 0; width:auto; min-height:62px; gap:5px; }
 .scriptbar .hanko__glyph{ --stamp:26px; }
@@ -395,6 +422,10 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .menu[data-script="kana"]{
   --accent:var(--murasaki);
   --accent-dark:var(--murasaki-2);
+}
+.menu[data-script="number"]{
+  --accent:var(--nando);
+  --accent-dark:var(--nando-2);
 }
 
 .menu__scroll{
@@ -629,6 +660,10 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   --accent:var(--murasaki);
   --accent-dark:var(--murasaki-2);
 }
+.stats[data-script="number"]{
+  --accent:var(--nando);
+  --accent-dark:var(--nando-2);
+}
 
 /* the phone/desktop split — figures from one are never comparable to the other */
 .seg--device{ flex:0 0 auto; display:flex; margin-bottom:10px; }
@@ -809,13 +844,30 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   --accent:var(--ai);
   --accent-dark:var(--ai-2);
 }
+.panel--chart[data-script="number"]{
+  --accent:var(--nando);
+  --accent-dark:var(--nando-2);
+}
 
 /* ── seal-stamp script switcher ───────────────────────────────────────── */
 .chart__switch{
   flex:0 0 auto;
-  display:flex; justify-content:center; gap:12px;
+  display:flex; justify-content:center; gap:10px;
   padding:14px 14px 12px;
   border-bottom:1px solid var(--hairline);
+}
+/* The sheet is narrower than the menu on a phone and carries the same four
+   stamps, so they shrink from their 96px rather than overflowing — and the
+   label is held to one line here for the reason it is there. */
+.chart__switch .hanko{ flex:0 1 96px; min-width:0; }
+.chart__switch .hanko__label{ white-space:nowrap; }
+@media (max-width:409px){
+  .chart__switch{ gap:6px; padding-inline:10px; }
+  .chart__switch .hanko__label{ font-size:11px; letter-spacing:0; }
+}
+@media (max-width:359px){
+  .chart__switch{ gap:5px; padding-inline:8px; }
+  .chart__switch .hanko__label{ font-size:10px; letter-spacing:-.01em; }
 }
 .hanko{
   width:96px; min-height:88px;
@@ -834,6 +886,9 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .hanko__glyph{
   font-family:var(--kana); font-size:var(--stamp, 34px);
   line-height:1; color:var(--c-ink);
+  /* a two-character stamp — あア — breaking over two lines makes the stamp
+     taller than its neighbours and the row stops reading as a row */
+  white-space:nowrap;
 }
 /* あア is two full-width glyphs in a stamp built for one — at full size the pair
    is wider than the label under it and the stamp stops looking square. */
@@ -928,6 +983,81 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .kcell__r{
   font-family:var(--mono); font-size:11px; line-height:1;
   letter-spacing:.02em; color:var(--c-ink-soft);
+}
+
+/* ── the numbers chart ────────────────────────────────────────────────────
+   Three parts to a row where a kana cell has two — the numeral is the thing
+   you look up, so it leads and takes the accent, and the kana and the reading
+   stack beside it. Wider tracks than .chart--flow for the same reason the
+   number prompt sizes itself: "1,000,000" and じゅうまん are not one glyph.   */
+.chart--num{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(158px, 1fr));
+  gap:4px;
+  margin-top:10px;
+}
+/* one per row, for readings too long to sit beside another */
+.chart--num--wide{ grid-template-columns:1fr; }
+
+.nrow{
+  display:grid;
+  grid-template-columns:auto minmax(0, 1fr);
+  grid-template-areas:"n k" "n r";
+  align-items:center;
+  column-gap:11px; row-gap:2px;
+  padding:7px 11px;
+  background:var(--paper-card);
+  border:1px solid var(--hairline);
+  border-radius:6px;
+}
+/* The leading cell stacks two things: how the row is written, which is what the
+   drill puts on the square, and what it is — 6, Monday, the 20th. The written
+   form leads and takes the accent; the identity sits under it, quieter, because
+   it is the answer and the chart is not a quiz. */
+.nrow__n{
+  grid-area:n;
+  display:flex; flex-direction:column; align-items:flex-end; justify-content:center;
+  gap:1px;
+  /* Every row is its own grid, so an `auto` column is as wide as that row's
+     longest line and nothing lines up down the page — "Wednesday" pushes 水曜日
+     a dozen pixels right of 月曜日. A floor just past the longest identity either
+     chart has — "Wednesday", 71px — makes every ordinary row agree, and a row
+     whose written form is longer than that is in a `wide` section anyway, one
+     per row, with nothing beside it to line up with. */
+  min-width:72px;
+  text-align:right;
+}
+.nrow__x{
+  display:block;
+  font-family:var(--kana); font-size:17px; line-height:1.15;
+  color:var(--accent-dark);
+}
+/* Latin and digits stay mincho, which is what keeps the identity column from
+   reshuffling every time the kana face changes. */
+.nrow__id{
+  display:block;
+  font-family:var(--mincho); font-size:12px; line-height:1.15;
+  font-variant-numeric:tabular-nums; letter-spacing:.01em;
+  color:var(--c-ink-mute);
+}
+/* …and a row with no written form of its own falls back to naming itself. */
+.nrow__n:not(:has(.nrow__x)) .nrow__id{
+  font-size:18px; color:var(--accent-dark);
+}
+
+/* the three siblings each need display:block or the two stacked ones run
+   together — the same trap as .deck__name/.deck__meta */
+.nrow__k{
+  grid-area:k; display:block;
+  font-family:var(--kana); font-size:15px; line-height:1.3;
+  color:var(--c-ink);
+  overflow-wrap:anywhere;
+}
+.nrow__r{
+  grid-area:r; display:block;
+  font-family:var(--mono); font-size:11px; line-height:1.35;
+  letter-spacing:.02em; color:var(--c-ink-soft);
+  overflow-wrap:anywhere;
 }
 
 .chart__note{
@@ -1071,6 +1201,25 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   letter-spacing:.01em;
 }
 
+/* Numbers are the one prompt whose length is not known in advance — "6" and
+   "rokujuurokuman rokusen kyuuhyaku kyuujuu kyuu" arrive in the same slot, two
+   orders of magnitude apart, so a single font-size cannot serve both. app.js
+   sets --fit from the string's length and the arithmetic stays here; the
+   fallback is the shortest bucket, so a missing property under-fills rather
+   than overflowing. Wrapping is what makes the long end survive at all. */
+.glyph.is-number{
+  --fit:15;
+  font-size:min(9vw, 34px);        /* fallback where cqw is unsupported */
+  font-size:calc(var(--fit) * 1cqw);
+  white-space:normal;
+  line-height:1.18;
+  text-align:center;
+  padding:0 6%;
+  word-spacing:.14em;
+  overflow-wrap:anywhere;
+  font-variant-numeric:tabular-nums;
+}
+
 /* teacher's red 〇 correct stamp */
 .maru{
   position:absolute; inset:0; margin:auto;
@@ -1151,6 +1300,9 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 }
 .choice:active:not(:disabled){ transform:translateY(1px); }
 .choice:disabled{ cursor:default; }
+/* number options are digits, so they line up rather than wander */
+.choice--num{ font-family:var(--mincho); font-variant-numeric:tabular-nums; font-size:19px; }
+
 .choice.is-picked-ok{ background:var(--matcha); color:var(--on-fill); border-color:transparent; }
 .choice.is-picked-no{ background:var(--shu);    color:var(--on-fill); border-color:transparent; }
 .choice.is-picked-ok .choice__key,
@@ -1218,6 +1370,16 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 }
 .miss__k{ font-family:var(--kana); font-size:24px; display:block; line-height:1.1; }
 .miss__r{ font-size:12px; color:var(--shu); font-weight:700; margin-top:2px; display:block; }
+
+/* A missed number is up to seven digits where a missed kana is one glyph, and
+   its reading is the long half rather than the short one — so the sizes swap
+   round and the tile is allowed to be wider. */
+.miss--num{ min-width:76px; }
+.miss--num .miss__k{
+  font-family:var(--mincho); font-size:19px;
+  font-variant-numeric:tabular-nums;
+}
+.miss--num .miss__r{ font-family:var(--kana); font-size:13px; font-weight:400; }
 
 .end__actions{
   flex:0 0 auto;
