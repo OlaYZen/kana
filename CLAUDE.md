@@ -88,7 +88,7 @@ or font options is a JSON edit, never a code edit. Keys prefixed `//` (`"//fonts
 - derived: `{id, label, script, sample, subtitle, note, sources[]}` — a deck with **no `cards`**,
   built at boot from the decks `sources` names. `script` places it under a stamp exactly as a real
   deck's does. See **Derived decks** below.
-- numbers: `{ones[], places[], groups[], drills[]}` — the parts a number is *composed* from, not a
+- numbers: `{ones[], places[], groups[], operators[], percent{}, drills[]}` — the parts a number is *composed* from, not a
   list of them. Each part carries `j` (its kanji), `r` (romaji) and `k` (kana). See **Numbers**.
 - calendar: `{weekdays[], counters[], drills[]}` — the seven days listed, and the four counters
   months, dates, hours and minutes are composed with. See **The calendar and the clock** below.
@@ -415,7 +415,48 @@ slow on is exactly what the report is for.
 **`logAnswer()` files a number under `card.key`, not `card.q`.** A number asked both ways is one
 thing you either know or don't, so both directions pool under the value itself — the report should
 say "you are slow on 8", not rank "8" against "hachi". `key` is the general escape hatch for a card
-whose prompt is not what it is about; nothing else uses it yet.
+whose prompt is not what it is about — the calendar files under the identity, and the arithmetic
+drill files a sum under its operator.
+
+### Arithmetic
+
+**`num-math` reads a sum aloud and asks for the result.** Plus, minus, times, divide and percent,
+dealt four of each across twenty prompts — dealt rather than sampled, for the flick drills' reason.
+A sum is two numbers composed exactly as `readNumber()` already composes them, with the operator
+said between: 三たす四 is `san tasu yon`. Nothing new is spelt in `app.js`; the words, signs and
+ranges are `operators` and `percent` in `kana.json`.
+
+| mode | prompt | answer | field |
+|---|---|---|---|
+| `type` | 三たす四 or `san tasu yon` | 7 | `#numInput` |
+| `choose` | the same | 7, 1 of 4 | `#choices` |
+| `write` | `3 + 4` | さんたすよん (or romaji) | `#kanaInput` |
+
+Five things about it are deliberate:
+
+- **The answer is the result, not the expression.** It keeps the mode rule whole — the reading
+  modes answer on the keypad, Writing is shown signs and answers with how they are said — and it
+  makes the operator the thing tested: 八わる二 answered with 16 is a word misread, not a slip.
+  Writing still answers with the reading alone; the result is never part of it.
+- **An operator is a part like a digit.** It is a `kana.json` object with `k`/`r` and alternates,
+  put in the chunk list between the operands, so `numKanaAccepts()` walks it unchanged and プラス
+  is accepted for たす and マイナス for ひく with no code. Operands keep their own rules, so し for a
+  bare trailing 4 is accepted here as it is everywhere.
+- **Percent is said after its number and joined with の** — 二百の二十五パーセント, 25% of 200 —
+  and 十 before パ closes up to じゅっ (or じっ). That is a whole-reading change, so it lives in
+  `percent.irregular` exactly as a calendar counter's does, and the invariant is the same: every
+  value the drill can ask whose reading changes, or that ends in 4, 7 or 9, is listed. Writing asks
+  in English order, "25% of 200", and grades the Japanese order; that reversal is the lesson.
+- **The operators are written in kana**, 三たす四 and not 三足す四. That is how arithmetic read
+  aloud appears in teaching material, and it keeps the square inside the bundled subsets without
+  four more kanji. The signs × ÷ − are in `subset.py`'s `RANGES` for the Writing prompt and chart.
+- **A card files under its operator** (`key: "plus"`), so the drill is analysable where
+  `num-random` is not: twenty sums never recur, but five words come round every run, and "you are
+  slow on わる" is a real finding. Which pairs are allowed — a minus that stays positive, a divide
+  that comes out whole — is arithmetic and is in `mathOperands()`; the ranges are content.
+
+The chart's three new sections — the words, 十 before パーセント, and sums read aloud — were
+generated from `kana.json` and asserted against a hand-written table, like every other row of it.
 
 ### Two smaller decisions
 
@@ -919,8 +960,9 @@ enforced in `analytics.py`, and each one costs data on purpose:
   three runs. The consequence worth knowing is that there are twelve reports to fill, not six.
 - **The random number drill is listed but never analysed**, for the reason above; `num-50` is
   analysed like a deck. `UNANALYSABLE` is the set, kept beside `FLICK_PREFIX` because it is the
-  same distinction — a prompt that will not recur cannot be ranked. **The clock drill is the other
-  one in it**: twelve hours against twelve marks is 144 faces and a run deals twenty, so one face
+  same distinction — a prompt that will not recur cannot be ranked. **The arithmetic drill is not in
+  it**, because it files under its five operators, which recur every run. **The clock drill is the
+  other one in it**: twelve hours against twelve marks is 144 faces and a run deals twenty, so one face
   comes round about every seventh run and ranking them would say nothing. **Every other calendar
   drill is analysable** and needs nothing added: seven, twelve, thirteen, nineteen, twelve and
   thirty-one fixed prompts, every one of them asked every run, which is exactly the case the
@@ -1185,7 +1227,8 @@ keep working with no network at all**, on a LAN, and from a folder on a static h
   "adding a deck is a JSON edit" quietly false. The enumerated part is the forty kanji the
   interface actually draws — 設定 記録 五十音 …, the numerals 一二三四五六七八九十百千万 both
   generated subjects write their values in, the calendar's 月火水木金土日曜, and 時分半 for the
-  clock — plus `U+014D` and `U+016B` for the ō and ū the readings are spelt with. `subset.py`'s `check()` re-derives the
+  clock — plus `U+014D` and `U+016B` for the ō and ū the readings are spelt with, and
+  `U+00D7,U+00F7,U+2212` for the × ÷ − the arithmetic drill asks with. `subset.py`'s `check()` re-derives the
   kanji from the sources and fails if the list has drifted, so that can't rot silently.
   **`check()` reads only what is rendered**: comments are cut out of all four files and `kana.json`'s
   `//` keys with them. Those discuss characters the app never draws — 億 and 兆 in the prose about

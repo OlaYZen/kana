@@ -126,6 +126,11 @@ practise the other way.
   `nijū ichi` = 2×10+1) rather than fifty new words.
 - **Random numbers** deals 20 drawn from 1 to 1,000,000, spread deliberately across magnitudes so a
   run isn't twenty six-digit numbers. This is where 百 千 万 and the sound changes show up.
+- **Arithmetic** reads a sum aloud — 三たす四, `san tasu yon` — and asks for the answer: 7. Plus
+  (たす), minus (ひく), times (かける), divide (わる) and percent, four of each in a run of 20.
+  Writing shows `3 + 4` and wants how it is said, さんたすよん; プラス and マイナス count too.
+  Percent comes after its number and joins with の — 25% of 200 is 二百の二十五パーセント — and 十
+  before パ closes up: 10% is じゅっパーセント (or じっパーセント).
 
 In the table, readings are shown with the parts spaced apart — `ichiman nisen sanbyaku yonjū go`
 for 12,345, which is 一万 二千 三百 四十 五 — because seeing the structure is the whole lesson.
@@ -141,7 +146,8 @@ of 4, 7 and 9, how 十 works either side of a digit, the places (10, 100, 1,000,
 the five sound changes that break the pattern — 300 さんびゃく, 600 ろっぴゃく, 800 はっぴゃく,
 3,000 さんぜん, 8,000 はっせん — and then whole numbers taken apart, up to
 `一万二千三百四十五 いちまんにせんさんびゃくよんじゅうご`. Every row is the kanji, what it is, the
-kana and the reading.
+kana and the reading. Below those, the operator words, 十 before パーセント, and a dozen sums read
+aloud.
 
 **Time — the 日時 stamp.** Weekdays, months, dates and the clock, in seven drills with a table of
 their own. Most of it is counting with something on the end — 四月 is month four, 二十日 the
@@ -501,6 +507,10 @@ python -m http.server 8000
   （`nijū` は 2×10、`nijū ichi` は 2×10+1）です。
 - **Random numbers** は 1〜1,000,000 から 20 問。桁がばらけるように配ってあるので、6 桁ばかりが
   20 問続くことはありません。百・千・万と音便が出てくるのはこちらです。
+- **Arithmetic** は式を読んで答えを出します。三たす四（`san tasu yon`）なら 7。たす・ひく・かける・
+  わる・パーセントを 20 問中 4 問ずつ。書き取りでは `3 + 4` が出て、読み方（さんたすよん）を書きます。
+  プラス・マイナスも正解です。パーセントは数のあとに言い、全体と の でつなぎます — 200 の 25% は
+  二百の二十五パーセント。十 のあとの パ は詰まります：10% は じゅっパーセント（じっパーセント）。
 
 一覧表では読みを部分ごとに空けて表示します。12,345 なら `ichiman nisen sanbyaku yonjū go` —
 一万 二千 三百 四十 五 です。組み立てが見えることが眼目なので、実際のローマ字のように続けて
