@@ -100,17 +100,23 @@
         devices, and unlocks the progress report.
       </p>
 
-      <form class="auth__form" id="authForm" autocomplete="on">
+      <!-- novalidate, with `required` kept on the fields: the attribute is what
+           tells a screen reader the field is mandatory, but the browser's own
+           bubble would fire first and suppress the message below, which is the
+           one that is styled like the rest of the app, stays put while you fix
+           it, and marks the field with aria-invalid. Validation happens in
+           submitAuth() instead. -->
+      <form class="auth__form" id="authForm" autocomplete="on" novalidate>
         <label class="field">
           <span class="field__label">Username</span>
           <input id="authUser" type="text" name="username" autocomplete="username"
                  autocapitalize="off" autocorrect="off" spellcheck="false"
-                 inputmode="latin" required>
+                 inputmode="latin" aria-describedby="authMsg" required>
         </label>
         <label class="field">
           <span class="field__label">Password</span>
           <input id="authPass" type="password" name="password"
-                 autocomplete="current-password" required>
+                 autocomplete="current-password" aria-describedby="authMsg" required>
         </label>
 
         <p class="auth__msg hidden" id="authMsg" role="status" aria-live="polite"></p>
@@ -131,21 +137,22 @@
              came to for something else is a form asking to be filled in. -->
         <button type="button" class="btn btn--ghost" id="pwToggle">Change password</button>
 
-        <form class="auth__form auth__pw hidden" id="pwForm" autocomplete="on">
+        <!-- novalidate for the reason above: #pwMsg is the message, not a bubble -->
+        <form class="auth__form auth__pw hidden" id="pwForm" autocomplete="on" novalidate>
           <label class="field">
             <span class="field__label">Current password</span>
             <input id="pwCurrent" type="password" name="current-password"
-                   autocomplete="current-password" required>
+                   autocomplete="current-password" aria-describedby="pwMsg" required>
           </label>
           <label class="field">
             <span class="field__label">New password</span>
             <input id="pwNew" type="password" name="new-password"
-                   autocomplete="new-password" required>
+                   autocomplete="new-password" aria-describedby="pwMsg" required>
           </label>
           <label class="field">
             <span class="field__label">Confirm new password</span>
             <input id="pwConfirm" type="password" name="confirm-password"
-                   autocomplete="new-password" required>
+                   autocomplete="new-password" aria-describedby="pwMsg" required>
           </label>
 
           <button type="submit" class="btn btn--primary auth__go" id="pwSubmit">Change password</button>

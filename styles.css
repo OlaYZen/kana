@@ -610,6 +610,10 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   transition:border-color .15s, box-shadow .15s;
 }
 .field input:focus{ border-color:var(--shu); box-shadow:var(--focus-glow); }
+/* A field the submit found fault with. The message under the form says what is
+   wrong and aria-describedby points here from the field; this is the same thing
+   said in colour, for everyone not reading the message first. */
+.field input[aria-invalid="true"]{ border-color:var(--shu); }
 
 .auth__go{ width:100%; margin-top:4px; }
 .auth__go:disabled{ opacity:.6; cursor:default; }

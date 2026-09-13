@@ -2744,9 +2744,35 @@
     if (!api.user) closePasswordForm();
   }
 
+  /* A submit button is never disabled to gate a form — it is always pressable
+     and the check happens on submit, so the error can say what is actually
+     wrong instead of leaving you guessing which field the button is waiting on.
+     The one time it is disabled is *during* the request, to stop a second one,
+     and then it says so: signing in runs 600k PBKDF2 rounds, which is long
+     enough that a button that only greys out reads as a dead button. */
+  function busy(btn, label) {
+    if (label) {
+      if (btn.dataset.idle === undefined) btn.dataset.idle = btn.textContent;
+      btn.textContent = label;
+    } else if (btn.dataset.idle !== undefined) {
+      btn.textContent = btn.dataset.idle;
+      delete btn.dataset.idle;
+    }
+    btn.disabled = Boolean(label);
+    btn.setAttribute("aria-busy", String(Boolean(label)));
+  }
+
+  // The message is announced by its own live region; this is what points a
+  // screen reader at it from the field, and marks the field as the thing to fix.
+  const markInvalid = (fields, bad) => fields.forEach((f) => {
+    if (bad) f.setAttribute("aria-invalid", "true");
+    else f.removeAttribute("aria-invalid");
+  });
+
   function authError(msg) {
     el.authMsg.textContent = msg || "";
     el.authMsg.classList.toggle("hidden", !msg);
+    markInvalid([el.authUser, el.authPass], Boolean(msg));
   }
 
   /* ---------- changing a password ----------
@@ -2758,6 +2784,7 @@
     el.pwMsg.textContent = text || "";
     el.pwMsg.classList.toggle("hidden", !text);
     el.pwMsg.classList.toggle("auth__msg--ok", Boolean(good));
+    markInvalid([el.pwCurrent, el.pwNew, el.pwConfirm], Boolean(text) && !good);
   }
 
   function openPasswordForm() {
@@ -2788,7 +2815,7 @@
     // typed on this screen and nothing the server can answer.
     if (next !== again) { pwMessage("The new passwords don't match."); return; }
 
-    el.pwSubmit.disabled = true;
+    busy(el.pwSubmit, "Saving…");
     pwMessage("");
     api.call("POST", "/api/password",
              { current_password: current, new_password: next })
@@ -2800,13 +2827,17 @@
         pwMessage("Password changed. Every other device has been signed out.", true);
       })
       .catch((err) => pwMessage(err.message))
-      .then(() => { el.pwSubmit.disabled = false; });
+      .then(() => busy(el.pwSubmit, null));
   }
 
   function setAuthMode(mode) {
     authMode = mode;
     authError("");
-    el.authSubmit.textContent = mode === "login" ? "Sign in" : "Create account";
+    const idle = mode === "login" ? "Sign in" : "Create account";
+    // If a request is in flight the button is showing its busy label; write the
+    // new idle text where busy() will find it rather than over the top of it.
+    if (el.authSubmit.dataset.idle !== undefined) el.authSubmit.dataset.idle = idle;
+    else el.authSubmit.textContent = idle;
     el.authSwap.textContent = mode === "login"
       ? "No account yet? Create one"
       : "Already have an account? Sign in";
@@ -2871,13 +2902,13 @@
     const username = el.authUser.value.trim();
     const password = el.authPass.value;
     if (!username || !password) { authError("Fill in both fields."); return; }
-    el.authSubmit.disabled = true;
+    busy(el.authSubmit, authMode === "login" ? "Signing in…" : "Creating…");
     authError("");
     api.call("POST", authMode === "login" ? "/api/login" : "/api/signup",
              { username: username, password: password })
       .then(afterSignIn)
       .catch((err) => authError(err.message))
-      .then(() => { el.authSubmit.disabled = false; });
+      .then(() => busy(el.authSubmit, null));
   }
 
   /* ---------- run reporting ---------- */
