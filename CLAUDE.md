@@ -1221,7 +1221,12 @@ These each cost a real bug once. Comments in the source mark most of them.
   to handle Escape natively; a screen does not, so the document keydown handler sends it there —
   and returns early while a panel is up, or the digits that pick an answer would reach the card
   behind it. Leaving a panel any other way (calling `show()` from inside one) drops the trail and
-  strands you on the menu.
+  strands you on the menu. **`PANELS` is the list, and a new `navTo()` screen has to join it** —
+  Account and Progress were `navTo()` screens with Back buttons that never did, so Escape did
+  nothing on either until they were added. Escape goes one layer at a time: the change-password
+  form inside Account closes first, and only the next Escape leaves. The results screen takes
+  Escape to the menu. And nothing leaves on an Escape the IME is composing with, for the reason
+  Enter must not grade on one.
 - **Back into a running card refocuses the answer field.** This is the one piece of the old sheet
   `close` handler that was load-bearing rather than plumbing: the on-screen keyboard follows focus,
   so without it 字 mid-card left the keyboard down for the rest of the card. It lives in
