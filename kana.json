@@ -990,6 +990,8 @@
       },
       {
         "id": "month", "suffix": "月", "r": "gatsu", "k": "がつ", "max": 12,
+        "names": ["January", "February", "March", "April", "May", "June", "July",
+                  "August", "September", "October", "November", "December"],
         "irregular": {
           "4":  { "r": "shigatsu",         "k": "しがつ" },
           "7":  { "r": "shichigatsu",      "k": "しちがつ" },
