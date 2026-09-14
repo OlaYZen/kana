@@ -491,7 +491,11 @@ kbd{
   max-height:calc(100dvh - 2 * var(--pad));
   padding:0;
   border:1px solid var(--hairline); border-radius:var(--r-lg);
-  background:var(--paper-card); color:var(--c-ink);
+  /* The page's own paper, not --paper-card: the pinned rows sit on --paper on
+     the menu, and a checked switch is --paper-card, so on a card-coloured
+     dialog the checked button vanished into it and the whole box read as
+     white against the dimmed page. */
+  background:var(--paper); color:var(--c-ink);
   box-shadow:var(--shadow-square);
 }
 .quickdlg::backdrop{ background:var(--backdrop); }
