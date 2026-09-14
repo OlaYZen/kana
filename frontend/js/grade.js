@@ -35,19 +35,24 @@
 
 const GRADE_POINTS = 32;           // per stroke, matching strokes/build.py
 const GRADE_PERFECT = 0.06;        // mean distance at or under this scores 100
-const GRADE_ZERO = 0.32;           // …at or over this scores 0
+const GRADE_ZERO = 0.45;           // …at or over this scores 0
 const GRADE_PASS = 60;             // score needed to pass
 const GRADE_STROKE_LIMIT = 0.36;   // any one stroke further off than this fails
 // Another kana this much closer wins. Tuned on synthetic handwriting; see
 // CLAUDE.md, "Drawing", for the bench and its figures.
 const GRADE_NEIGHBOUR = 0.93;
-// Within this of each other, two kana are a tie on shape and direction decides.
-const GRADE_TIE = 0.97;
+// Closer than this on shape alone and it wins outright; between this and its
+// inverse the two are twins on shape — ソ and ン — and drawn direction decides.
+const GRADE_TWIN = 0.8;
 // Written strokes can be joined into one drawn stroke only where one ends
 // within this of an end of the next…
-const GRADE_JOIN_GAP = 0.2;
-// …and only by a drawn stroke this close in length to the path they make.
-const GRADE_JOIN_LENGTH = [0.7, 1.45];
+const GRADE_JOIN_GAP = 0.5;
+// …and only by a drawn stroke this close in steady length to the path they make.
+const GRADE_JOIN_LENGTH = [0.65, 1.6];
+// A written stroke shorter than this — a dakuten tick, a dot — is never joined
+// to another. Nobody writes one without lifting the pen, and a drawn stroke
+// allowed to stand for two ticks is how a missing tick passed.
+const GRADE_JOIN_MIN = 0.2;
 
 // A flat [x, y, x, y, …] reference stroke as points.
 const pointsOf = (flat) => {
@@ -63,6 +68,22 @@ const strokeLength = (s) => {
 };
 
 const reversed = (s) => s.slice().reverse();
+
+// Length along a stroke with the tremor taken out. A shaky hand adds length a
+// steady line does not have — enough, on a short tick, to make one stroke look
+// as long as two — so lengths are compared after a moving average over the
+// stroke resampled evenly, on both sides of the comparison alike.
+function steadyLength(s) {
+  const n = Math.max(8, Math.min(64, s.length));
+  const r = resampleStroke(s, n);
+  const smooth = r.map((p, i) => {
+    if (i === 0 || i === n - 1) return p;
+    let x = 0, y = 0, c = 0;
+    for (let k = Math.max(0, i - 2); k <= Math.min(n - 1, i + 2); k++) { x += r[k].x; y += r[k].y; c++; }
+    return { x: x / c, y: y / c };
+  });
+  return strokeLength(smooth);
+}
 
 // n points evenly spaced along a stroke, ends included.
 function resampleStroke(s, n) {
@@ -190,7 +211,7 @@ function joinFit(single, run, directed) {
     return directed ? d : Math.min(d, pairDistance(reversed(a), b));
   }
   const k = run.length, n = GRADE_POINTS * k;
-  const lenSingle = strokeLength(single);
+  const lenSingle = steadyLength(single);
   const target = resampleStroke(single, n), targetBack = reversed(target);
   let best = null;
   for (let mask = 0; mask < (directed ? 1 : 1 << k); mask++) {
@@ -205,7 +226,7 @@ function joinFit(single, run, directed) {
       path.push(...piece);
     }
     if (!joinable) continue;
-    const ratio = lenSingle / (strokeLength(path) || 1);
+    const ratio = lenSingle / (steadyLength(path) || 1);
     if (ratio < GRADE_JOIN_LENGTH[0] || ratio > GRADE_JOIN_LENGTH[1]) continue;
     const along = resampleStroke(path, n);
     const dist = directed ? pairDistance(target, along) : Math.min(pairDistance(target, along), pairDistance(targetBack, along));
@@ -227,7 +248,11 @@ function joinedFit(denseN, refN, directed) {
   const memo = new Map();
   const fit = (i, at, size) => {
     const key = i + ":" + at + ":" + size;
-    if (!memo.has(key)) memo.set(key, joinFit(few[i], many.slice(at, at + size), directed));
+    if (!memo.has(key)) {
+      const run = many.slice(at, at + size);
+      const mark = joining && size > 1 && run.some((s) => strokeLength(s) < GRADE_JOIN_MIN);
+      memo.set(key, mark ? null : joinFit(few[i], run, directed));
+    }
     return memo.get(key);
   };
   let best = null;
@@ -270,9 +295,11 @@ function nearestNeighbour(target, drawnN, refN, targetMean, references, sameScri
     const otherN = prepareReference(references[other]);
     const f = fitOf(drawnN, otherN, false);
     if (!f) return;
-    let beats = f.mean < targetMean * GRADE_NEIGHBOUR;
-    if (!beats && f.mean < targetMean / GRADE_TIE) {
-      // the same lines either way: which way they were drawn is all that differs
+    let beats = f.mean < targetMean * GRADE_TWIN;
+    if (!beats && otherN.length === drawnN.sampled.length && f.mean < targetMean / GRADE_TWIN) {
+      // twins on shape: which way the strokes were drawn is what tells them apart.
+      // Only kana written in as many strokes as were drawn — ソ and ン — are twins;
+      // one that only fits through a join is not, or り's arch lost to ろ.
       if (targetDirected === null) targetDirected = (fitOf(drawnN, refN, true) || { mean: Infinity }).mean;
       const od = fitOf(drawnN, otherN, true);
       beats = Boolean(od) && od.mean < targetDirected * GRADE_NEIGHBOUR;
