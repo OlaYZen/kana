@@ -57,6 +57,7 @@
     // answer mode changes. Each switch has an id of its own for that reason.
     modeSwitch: $("modeSwitch"),
     promptSwitch: $("promptSwitch"),
+    datesSwitch: $("datesSwitch"),
     themeSwitch: $("themeSwitch"),
     perfSwitch: $("perfSwitch"),
     deviceSwitch: document.querySelector(".seg--device")
@@ -122,6 +123,17 @@
   // Writing is untouched by it: that direction asks with the identity, 6 or
   // 20日 or Monday, and answers in kana. There is no reading to ask with.
   const PROMPTS = ["kanji", "reading"];
+  // How a month, a date or a clock time is written wherever the app shows it:
+  // 9月 and 3時45分, which is how nearly everything in Japan prints them, or
+  // 九月 and 三時四十五分, which is how a textbook does. Weekdays have no number
+  // in them and look the same either way. It follows an account for the Prompt
+  // setting's reason — it is about what you are learning to read.
+  //
+  // The numeral form changes the question as well as the look. Typing and
+  // Choosing on the kanji prompt answer with the value, and 9月 → 9 would be
+  // the answer copied off the square, so under it those two ask for how the
+  // value is said instead — see answersReading().
+  const DATE_FORMS = ["numeral", "kanji"];
   // "flick" is not a selectable answer mode — the flick drills are their own
   // runs, and they record under it so their scores never mix with a deck's.
   // The number drills are not here: they answer to the three above like a deck.
@@ -153,8 +165,14 @@
   // `rev 4` moves the records that predate the split onto "-reading".
   const promptApplies = (deck, mode) =>
     Boolean(deck && (deck.numbers || deck.calendar)) && mode !== "write";
+  // A calendar drill asked with 9月 wants the reading rather than the value, so
+  // it is a third question beside 九月 → 9 and "kugatsu" → 9, and records as
+  // "-numeral". A weekday has no number to write either way and keeps "-kanji".
+  const promptForm = (deck, prompt) =>
+    prompt === "kanji" && deck.calendar && deck.calendar !== "week" &&
+    state.dates === "numeral" ? "numeral" : prompt;
   const recordMode = (deck, mode, prompt) =>
-    promptApplies(deck, mode) ? mode + "-" + prompt : mode;
+    promptApplies(deck, mode) ? mode + "-" + promptForm(deck, prompt) : mode;
 
   /* ---------- persisted preferences + best scores ---------- */
   const store = {
@@ -387,6 +405,8 @@
       : (TOUCH ? "choose" : "type"),
     // how the number and calendar drills ask, in the two modes that read
     prompt: PROMPTS.includes(store.read().prompt) ? store.read().prompt : "kanji",
+    // how months, dates and times are written — 9月 unless 九月 was chosen
+    dates: DATE_FORMS.includes(store.read().dates) ? store.read().dates : "numeral",
     answered: 0, correct: 0, streak: 0, bestStreak: 0,
     missed: [],        // unique wrong cards, chart order
     graded: false,     // answer already scored — waiting to advance
@@ -475,8 +495,20 @@
   // so it takes the plain field a deck takes. Choosing asks this too, where it
   // decides how an option is set.
   const numericAnswer = () =>
-    !kanaAnswer() &&
+    !kanaAnswer() && !answersReading() &&
     (state.numbers !== null || (state.calendar !== null && state.calendar !== "week"));
+
+  // A month, a date or a clock time written 9月, in Typing or Choosing on the
+  // kanji prompt. The value is already on the square, so these ask for how it
+  // is said instead — romaji on the plain field, or four readings to pick from.
+  // Writing already asks with 9月 and answers in kana, and a weekday has no
+  // number in it to give away.
+  const answersReading = () =>
+    state.calendar !== null && state.calendar !== "week" && !state.flick &&
+    state.mode !== "write" && state.prompt === "kanji" && state.dates === "numeral";
+
+  // What a pick is graded against: the value, or the reading when that is asked.
+  const choiceAnswer = (c) => (answersReading() ? c.cal.reading : c.a);
 
   const typedField = () =>
     kanaAnswer()
@@ -800,7 +832,11 @@
           // what the drill now shows. `x` is optional, so a chart that has no
           // written form for a row simply names it.
           const lead = add(row, "span", "nrow__n");
-          if (item.x) add(lead, "span", "nrow__x", item.x).lang = "ja";
+          // the calendar table is written the way the Dates setting says —
+          // 4時20分 or 四時二十分 — so it matches the square beside it
+          const x = item.x && chart.id === "calendar" && state.dates === "numeral"
+            ? numeralText(item.x) : item.x;
+          if (x) add(lead, "span", "nrow__x", x).lang = "ja";
           add(lead, "span", "nrow__id", item.n);
           add(row, "span", "nrow__k", item.q).lang = "ja";
           add(row, "span", "nrow__r", item.a);
@@ -1087,6 +1123,30 @@
       left = left % group.value;
     });
     return left ? out + kanjiGroup(left) : out;
+  }
+
+  // The same text with its kanji numerals as digits — 四時二十分 → 4時20分, 月曜日
+  // untouched. Read back from `j` in `numbers`, so it knows exactly the numerals
+  // kanjiNumber() writes. Places only, not groups: the calendar is the one thing
+  // that calls it, and nothing there reaches 万.
+  function numeralText(text) {
+    const val = new Map();
+    NUM.ones.forEach((o, i) => val.set(o.j, { digit: i + 1 }));
+    NUM.places.forEach((p) => val.set(p.j, { place: p.value }));
+    let out = "", total = 0, cur = 0, run = false;
+    const flush = () => {
+      if (run) out += total + cur;
+      total = cur = 0; run = false;
+    };
+    for (const ch of text) {
+      const v = val.get(ch);
+      if (!v) { flush(); out += ch; continue; }
+      run = true;
+      if (v.digit) cur = v.digit;
+      else { total += (cur || 1) * v.place; cur = 0; }   // 十 alone is ten
+    }
+    flush();
+    return out;
   }
 
   // A chunk is written as one word and the chunks are spaced apart, which is
@@ -1493,22 +1553,32 @@
              write: "Write this day — its first part is enough." },
     month: { type: "Type the month this reads.",
              choose: "Pick the month this reads.",
-             write: "Write this month in kana." },
+             write: "Write this month in kana.",
+             sayType: "Type how this month is said.",
+             sayChoose: "Pick how this month is said." },
     day:   { type: "Type the date this reads.",
              choose: "Pick the date this reads.",
-             write: "Write this date in kana." },
+             write: "Write this date in kana.",
+             sayType: "Type how this date is said.",
+             sayChoose: "Pick how this date is said." },
     hour:  { type: "Type the hour this reads.",
              choose: "Pick the hour this reads.",
-             write: "Write this hour in kana." },
+             write: "Write this hour in kana.",
+             sayType: "Type how this hour is said.",
+             sayChoose: "Pick how this hour is said." },
     minute:{ type: "Type the minutes this reads.",
              choose: "Pick the minutes this reads.",
-             write: "Write these minutes in kana." },
+             write: "Write these minutes in kana.",
+             sayType: "Type how these minutes are said.",
+             sayChoose: "Pick how these minutes are said." },
     // The clock's identity has a colon in it and a numeric keypad has no colon
     // key, so the field takes the digits either way — see readClock(). The
     // placeholder is what says so, rather than this line naming a format.
     time:  { type: "Type the time this reads.",
              choose: "Pick the time this reads.",
-             write: "Write this time in kana." }
+             write: "Write this time in kana.",
+             sayType: "Type how this time is said.",
+             sayChoose: "Pick how this time is said." }
   };
 
   // The reading as the flat list of parts numKanaAccepts() walks. An irregular
@@ -1623,6 +1693,13 @@
       : time ? kanjiNumber(entry.h) + calCounter(deck.counters[0]).suffix +
                (entry.m ? kanjiNumber(entry.m) + calCounter(deck.counters[1]).suffix : "")
       : kanjiNumber(entry.n) + calCounter(kind).suffix;
+    // …and the same with the value in digits — 9月, 20日, 3時45分 — which is how
+    // it is printed nearly everywhere outside a textbook. The Dates setting
+    // picks between the two; see calFace().
+    const numeral = week ? entry.ja
+      : time ? entry.h + calCounter(deck.counters[0]).suffix +
+               (entry.m ? entry.m + calCounter(deck.counters[1]).suffix : "")
+      : entry.n + calCounter(kind).suffix;
     return {
       // the deck-shaped pair every shared path expects: the romaji reading two
       // of the three modes prompt with, and the identity they take
@@ -1643,13 +1720,14 @@
         ident: ident,
         en: calEnglish(kind, entry),       // Monday, April, the 20th, 3:45
         face: face,                        // 月曜日, 四月, 二十日, 三時四十五分
+        numeral: numeral,                  // 月曜日, 4月, 20日, 3時45分
         // Writing asks with the identity, in the plain script — Monday, 3:45,
         // or the value with its counter after it, 20日 and 4月. Asking with
         // 二十日 there would be the same question the other two modes ask,
         // since the kanji is what they show; the counter still has to be named,
         // or "20" could want either はつか or にじゅう. A clock time needs no
         // such help: nothing else is written 3:45.
-        ask: week || time ? ident : entry.n + calCounter(kind).suffix,
+        ask: week || time ? ident : numeral,
         askLang: week || time ? "en" : "ja",
         parts: parts,
         kana: chunkJoin(chunks, "k", ""),
@@ -1757,7 +1835,10 @@
   // the square is not.
   const says = (written, what) =>
     '<span lang="ja">' + written + "</span> is " + what + " — ";
-  const calSays = (c) => says(c.cal.face, c.cal.en);
+  // The written half in whichever form the Dates setting shows, so the answer
+  // reads the way the square did.
+  const calFace = (c) => (state.dates === "numeral" ? c.cal.numeral : c.cal.face);
+  const calSays = (c) => says(calFace(c), c.cal.en);
   const numSays = (c) => says(c.num.kanji, c.num.ident);
 
   /* ==========================================================================
@@ -1990,6 +2071,21 @@
     else render();
   }
 
+  // How months, dates and times are written. Rebuilds the menu for
+  // setPrompt()'s reason — under 9月 Typing and Choosing ask for the reading
+  // and keep their own records — and mid-run re-renders the card instead.
+  function setDates(form) {
+    state.dates = form;
+    Array.from(el.datesSwitch.children).forEach((b) =>
+      b.setAttribute("aria-checked", String(b.dataset.dates === form)));
+    store.write({ dates: form });
+    // the calendar table shows the same form, and on a wide window it is on
+    // screen beside the menu
+    if (el.chart.dataset.script) renderChart(el.chart.dataset.script);
+    if (el.play.classList.contains("hidden")) buildMenu();
+    else render();
+  }
+
   // Whether the chart is worth offering under the stamp on screen. Every stamp
   // but かな wants its own table and nothing else will do: falling back under 十
   // or 日時 would hand over a kana table in answer to a question about counting
@@ -2091,7 +2187,7 @@
     // direction asks with the identity and answers in kana.
     const reading = state.prompt === "reading";
     const text =
-      calendaring ? (writing ? c.cal.ask : reading ? c.cal.reading : c.cal.face) :
+      calendaring ? (writing ? c.cal.ask : reading ? c.cal.reading : calFace(c)) :
       numbering ? (writing ? c.num.ask : reading ? c.num.reading : c.num.kanji) :
       flicking ? c.q : writing ? c.a : c.q;
     // Latin prompt in every case but reading Japanese. Both generated subjects
@@ -2119,7 +2215,8 @@
     el.glyph.style.setProperty("--fit",
       numbering || calendaring ? numFit(text) : "");
     el.feedback.textContent =
-      calendaring ? CAL_ASK[state.calendar][state.mode] :
+      calendaring ? CAL_ASK[state.calendar][answersReading()
+        ? (choosing ? "sayChoose" : "sayType") : state.mode] :
       numbering ? numAsk()[state.mode] :
       flicking ? (state.flick === "vowel"
                     ? "Any character that ends in this vowel."
@@ -2259,8 +2356,17 @@
         ? shuffle(timeNeighbours(state.deck, c.cal.h, c.cal.m).slice(0, 6))
         : shuffle(calNeighbours(c.cal.n, calPool(state.deck)).slice(0, 6))
             .map(String);
-      buildChoiceButtons(
-        shuffle(near.slice(0, 3).map((a) => ({ a: a })).concat({ a: c.a })), c);
+      // Under 9月 the options are how the same neighbours are said, built as
+      // cards of their own so the readings come from the same composition.
+      const reads = answersReading();
+      const said = (ident) => {
+        const t = c.cal.kind === "time" ? ident.split(":").map(Number) : null;
+        return calendarCard(state.deck, t ? { h: t[0], m: t[1] } : { n: Number(ident) })
+          .cal.reading;
+      };
+      buildChoiceButtons(shuffle(near.slice(0, 3)
+        .map((a) => ({ a: reads ? said(a) : a }))
+        .concat({ a: choiceAnswer(c) })), c);
       return;
     }
 
@@ -2351,6 +2457,13 @@
         // so はつか and "hatsuka" are both answers to it rather than echoes
         right = numKanaAccepts(c.cal.parts, value) ||
                 numRomajiAccepts(c.cal.parts, normRomaji(field.value));
+      } else if (answersReading()) {
+        // 9月 on the square: the value is showing, so the answer is how it is
+        // said — romaji from a plain keyboard, or kana if an IME is to hand
+        value = field.value.trim();
+        if (!value) return;
+        right = numRomajiAccepts(c.cal.parts, normRomaji(value)) ||
+                numKanaAccepts(c.cal.parts, normKana(value));
       } else if (c.cal.kind === "week") {
         value = norm(field.value);
         if (!value) return;
@@ -2422,13 +2535,14 @@
   function pick(btn, opt, c) {
     if (state.graded) return;
     Array.from(el.choices.children).forEach((b) => { b.disabled = true; });
-    logAnswer(c, opt.a, opt.a === c.a, false);
-    if (opt.a === c.a) {
+    const want = state.calendar ? choiceAnswer(c) : c.a;
+    logAnswer(c, opt.a, opt.a === want, false);
+    if (opt.a === want) {
       btn.classList.add("is-picked-ok");
       markCorrect();
     } else {
       btn.classList.add("is-picked-no");
-      const right = Array.from(el.choices.children).find((b) => b.dataset.a === c.a);
+      const right = Array.from(el.choices.children).find((b) => b.dataset.a === want);
       if (right) right.classList.add("is-answer");
       markWrong(c, false);
     }
@@ -2520,7 +2634,8 @@
       // for flick, the kana when writing, the romaji when typing
       f.input.value = state.flick ? c.a.split(" ")[0]
         : state.numbers ? (state.mode === "write" ? c.num.kana : c.num.digits)
-        : state.calendar ? (state.mode === "write" ? c.cal.kana : c.cal.ident)
+        : state.calendar ? (state.mode === "write" ? c.cal.kana
+                              : answersReading() ? c.cal.reading : c.cal.ident)
         : state.mode === "write" ? c.q : c.a;
       focusField(f.input);
       // selecting shows drag handles on a phone, which reads as an invitation
@@ -2628,7 +2743,7 @@
         // reviewed as the material, not as whichever direction it was asked
         // in: how it is written, then how it is said
         d.innerHTML = state.calendar
-          ? '<span class="miss__k" lang="ja">' + c.cal.face + '</span>' +
+          ? '<span class="miss__k" lang="ja">' + calFace(c) + '</span>' +
             '<span class="miss__r" lang="ja">' + c.cal.kana + "</span>"
           : state.numbers
           ? '<span class="miss__k" lang="ja">' + c.num.kanji + '</span>' +
@@ -2736,6 +2851,9 @@
 
   Array.from(el.promptSwitch.children).forEach((b) =>
     b.addEventListener("click", () => setPrompt(b.dataset.prompt)));
+
+  Array.from(el.datesSwitch.children).forEach((b) =>
+    b.addEventListener("click", () => setDates(b.dataset.dates)));
 
   Array.from(el.themeSwitch.children).forEach((b) =>
     b.addEventListener("click", () => setTheme(b.dataset.theme)));
@@ -3010,6 +3128,7 @@
     const saved = store.read();
     applyFont(saved.font);
     if (PROMPTS.includes(saved.prompt)) setPrompt(saved.prompt);
+    if (DATE_FORMS.includes(saved.dates)) setDates(saved.dates);
     if (MODES.includes(saved.mode)) setMode(saved.mode);
     const known = SCRIPTS.indexOf(saved.script) > -1;
     const hasDecks = allDecks().some((d) => d.script === saved.script);
@@ -3505,6 +3624,7 @@
       state.fontsMissing = fonts.missing;
       applyFont(store.read().font);
       setPrompt(state.prompt);   // before setMode: buildMenu() reads it
+      setDates(state.dates);     // likewise — the calendar records depend on it
       setMode(state.mode);
 
       // A script with no decks in kana.json gets no button, and never gets

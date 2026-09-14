@@ -374,6 +374,18 @@
         </div>
       </div>
 
+      <!-- How months, dates and times are written: 9月 and 3時45分 as nearly
+           everything prints them, or 九月 and 三時四十五分. With 9月 on the
+           square the number is already showing, so Typing and Choosing ask for
+           the reading instead. Weekdays look the same either way. -->
+      <div class="modebar modebar--stack">
+        <span class="modebar__label">Dates &amp; times written as</span>
+        <div class="seg" id="datesSwitch" role="radiogroup" aria-label="How dates and times are written">
+          <button type="button" class="seg__btn" data-dates="numeral" role="radio" aria-checked="true" lang="ja">9月</button>
+          <button type="button" class="seg__btn" data-dates="kanji" role="radio" aria-checked="false" lang="ja">九月</button>
+        </div>
+      </div>
+
       <!-- Theme is this device's alone — it is never synced to an account. -->
       <div class="modebar modebar--stack">
         <span class="modebar__label">Theme</span>
