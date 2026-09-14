@@ -593,9 +593,11 @@
   const activeScreen = () =>
     SCREENS.find((s) => !s.classList.contains("hidden")) || el.menu;
 
-  // The three that are reached from somewhere and returned from: Escape leaves
-  // them, and while one is up it owns the keyboard.
-  const PANELS = [el.options, el.fontPicker, el.chart];
+  // Every screen that is reached from somewhere and returned from: Escape leaves
+  // them, and while one is up it owns the keyboard. Account and progress were
+  // missing — they have always been navTo() screens with a Back button, and
+  // Escape simply did nothing on them.
+  const PANELS = [el.options, el.fontPicker, el.chart, el.auth, el.stats];
   const onPanel = () => PANELS.indexOf(activeScreen()) >= 0;
 
   // Which pool this run's timings belong to. Typing romaji on a keyboard and
@@ -2893,10 +2895,26 @@
     }));
 
   document.addEventListener("keydown", (e) => {
-    // Escape backs out of a panel, which is what <dialog> used to do for free.
+    // An Escape during IME composition cancels the conversion; it is not a
+    // request to leave the screen. Same guard as Enter in enterSubmits.
+    if (e.isComposing || e.keyCode === 229) return;
+    // Escape backs out of a panel, which is what <dialog> used to do for free —
+    // one layer at a time. The change-password form inside Account closes first,
+    // as its Cancel does, and only the next Escape leaves the screen.
     if (onPanel()) {
-      if (e.key === "Escape") navBack();
-      return;                               // the panel owns the keyboard
+      if (e.key !== "Escape") return;       // the panel owns the keyboard
+      if (activeScreen() === el.auth && !el.pwForm.classList.contains("hidden")) {
+        el.pwCancel.click();
+        el.pwToggle.focus();
+        return;
+      }
+      navBack();
+      return;
+    }
+    // The results screen's way out that isn't another run, as everywhere else.
+    if (activeScreen() === el.end) {
+      if (e.key === "Escape") toMenu();
+      return;
     }
     if (el.play.classList.contains("hidden")) return;
     if (e.key === "Escape") { toMenu(); return; }
