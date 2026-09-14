@@ -148,16 +148,16 @@ const typedField = () =>
 const elapsed = () =>
   state.finishedMs || (state.startedAt ? performance.now() - state.startedAt : 0);
 
-// Whole seconds: the live clock in the play bar and the deck rows on the menu,
-// where a millisecond figure would only flicker or crowd the row.
+// Whole seconds: the live clock in the play bar, where a millisecond figure
+// would only flicker.
 function fmtTime(ms) {
   const total = Math.max(0, Math.round(ms / 1000));
   const m = Math.floor(total / 60), s = total % 60;
   return m + ":" + (s < 10 ? "0" : "") + s;
 }
 
-// A run's exact length, milliseconds and all — what the results screen and the
-// progress report show. Rounding there hides the difference between two runs
+// A run's exact length, milliseconds and all — what the results screen, the deck
+// rows on the menu and the progress report show. Rounding there hides the difference between two runs
 // of the same deck when you are chasing your own time.
 function fmtExact(ms) {
   const total = Math.max(0, Math.round(ms));
