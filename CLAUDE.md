@@ -786,11 +786,36 @@ so 12:55 is offered against 1:00.
 round about every seventh run, so ranking them says nothing; `cal-hour` and `cal-minute` are twelve
 and nineteen fixed prompts and are analysed like any deck. See `UNANALYSABLE`.
 
-**Not included, deliberately:** 午前 and 午後. They are a second axis rather than more material —
-every prompt would double, and knowing that 午後 is pm is not the thing these drills are for.
-Minutes stop at the five-minute marks for a related reason: 3:47 is composition plus one more
-`irregular` entry, and a clock is read to the nearest five aloud far more often than not. Both are
-a `kana.json` edit away — the marks are a list on the drill — and neither needs code.
+### 午前 and 午後
+
+**`cal-ampm` is the clock with the half of the day in front**, and it is a drill of its own rather
+than a change to `cal-time`, for the reason records split by mode: 三時四十五分 → 3:45 and
+午後三時四十五分 → 15:45 are different questions, and Clock times' records were earned on the first.
+The two words are `meridiem` in `kana.json`, each carrying the 24-hour `from` its half starts at,
+and a time drill opts in with `"meridiem": true`. Four things about it:
+
+- **The identity is the 24-hour clock.** It is the other way Japan writes a time — timetables,
+  opening hours — and the only way to say *pm* on a keypad, so Typing takes `1545` for 午後3時45分
+  exactly as Clock times takes `345`. `c.cal.h24` is what `readClock()` is checked against; on a
+  plain clock card it is simply the hour. **Writing asks with `3:45 pm` instead**, because the words
+  are what is being written and a 24-hour prompt would turn the question into arithmetic.
+- **Hours run 1 to 11**, from the drill's `hours`. Twelve is left out on purpose: the 1872
+  ordinance that brought in the solar clock makes 午前12時 noon, everyday use and most timetables
+  say 午後0時 for noon and 午前0時 for midnight, and a drill should not grade one side of that.
+- **The other half of the day is always a wrong option** (`meridiemNeighbours()`) — first, and
+  never shuffled out of the three. 午前 against 午後 is the whole of what the drill adds, and three
+  neighbouring minutes in the right half would never test it. The rest are `timeNeighbours()`,
+  kept to this half and to the drill's hours.
+- **It is unanalysable**, on `cal-time`'s reason twice over: eleven hours, twelve marks and two
+  halves is 264 faces against a run of twenty. `timeValues()` deals the halves the way it deals
+  hours and marks, so every run is half of each.
+
+`timeEntry()` is the one place an identity is read back into `{h, m, mer}`; Choosing under 9月
+needs it to build a reading for each neighbour.
+
+**Minutes stop at the five-minute marks**, deliberately: 3:47 is composition plus one more
+`irregular` entry, and a clock is read to the nearest five aloud far more often than not. It is a
+`kana.json` edit away — the marks are a list on the drill — and needs no code.
 
 ## Performance mode
 
@@ -998,7 +1023,7 @@ enforced in `analytics.py`, and each one costs data on purpose:
   same distinction — a prompt that will not recur cannot be ranked. **The arithmetic drill is not in
   it**, because it files under its five operators, which recur every run. **The clock drill is the
   other one in it**: twelve hours against twelve marks is 144 faces and a run deals twenty, so one face
-  comes round about every seventh run and ranking them would say nothing. **Every other calendar
+  comes round about every seventh run and ranking them would say nothing. `cal-ampm` is in it for the same reason twice over. **Every other calendar
   drill is analysable** and needs nothing added: seven, twelve, thirteen, nineteen, nineteen, twelve and
   thirty-one fixed prompts, every one of them asked every run, which is exactly the case the
   report is for.
@@ -1263,9 +1288,9 @@ keep working with no network at all**, on a LAN, and from a folder on a static h
 
 - **The cut is defined by Unicode *ranges*, not by the current contents of `kana.json`.** Every
   kana block is kept whole, so adding a card can never produce tofu — which would otherwise make
-  "adding a deck is a JSON edit" quietly false. The enumerated part is the forty-one kanji the
+  "adding a deck is a JSON edit" quietly false. The enumerated part is the forty-four kanji the
   interface actually draws — 設定 記録 五十音 …, the numerals 一二三四五六七八九十百千万 both
-  generated subjects write their values in, the calendar's 月火水木金土日曜, and 時分秒半 for the
+  generated subjects write their values in, the calendar's 月火水木金土日曜, and 時分秒半 午前後 for the
   clock — plus `U+014D` and `U+016B` for the ō and ū the readings are spelt with, and
   `U+00D7,U+00F7,U+2212` for the × ÷ − the arithmetic drill asks with. `subset.py`'s `check()` re-derives the
   kanji from the sources and fails if the list has drifted, so that can't rot silently.

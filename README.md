@@ -149,7 +149,7 @@ the five sound changes that break the pattern — 300 さんびゃく, 600 ろ�
 kana and the reading. Below those, the operator words, 十 before パーセント, and a dozen sums read
 aloud.
 
-**Time — the 日時 stamp.** Weekdays, months, dates and the clock, in eight drills with a table of
+**Time — the 日時 stamp.** Weekdays, months, dates and the clock, in nine drills with a table of
 their own. Most of it is counting with something on the end — 四月 is month four, 二十日 the
 twentieth, 四時 four o'clock — so it reads the same way round as the numbers:
 
@@ -193,9 +193,14 @@ weekdays look the same either way.
   then the minute. Twenty faces a run, dealt so that every hour comes up. Half past has a word of
   its own — 三時半 **さんじはん** — and Writing takes either that or the long way round. Typing
   takes **3:45**, or just **345**, so the phone keypad can answer it.
+- **AM and PM** puts 午前 **ごぜん** or 午後 **ごご** in front: 午後三時四十五分 is
+  **ごごさんじよんじゅうごふん**. Typing and Choosing answer on the 24-hour clock — **15:45**, or
+  **1545** on the keypad — and Writing shows **3:45 pm**. Hours run 1 to 11, since whether 午前12時
+  is noon or midnight depends on whom you ask, and the same time in the other half of the day is
+  always one of the wrong options.
 
 **All characters → 日時** lays all of that out: the week, the twelve months, the three that change,
-days 1–10, days 11–31, the three that stay native, the twelve hours, the minutes, the seconds, and a handful of
+days 1–10, days 11–31, the three that stay native, the twelve hours, the minutes, the seconds, 午前 and 午後, and a handful of
 whole times taken apart.
 
 **Flick keyboard drills — phones and tablets only.** Below the deck list, on a touch device, are two
@@ -550,7 +555,7 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
 `一万二千三百四十五 いちまんにせんさんびゃくよんじゅうご` のように大きな数を分解した例。各行は
 「漢字・何であるか・かな・読み」の 4 つです。
 
-**時 — 日時 の印。** 曜日・月・日付・時刻の 8 つのドリルと、専用の一覧表が入っています。ほとんどは
+**時 — 日時 の印。** 曜日・月・日付・時刻の 9 つのドリルと、専用の一覧表が入っています。ほとんどは
 数え方に何かが付いたもの — 四月 は 4 番目の月、二十日 は 20 日目 — なので、向きは数字と同じです。
 
 - **タイピング** は **月曜日** を出して **Monday**、**20日** を出して読み方（`hatsuka`）を入力。
@@ -591,9 +596,13 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
   後です。1 回 20 問、どの時も必ず出るように配ります。30 分には **半** という言い方があり
   （三時半 **さんじはん**）、書き取りはどちらでも正解。入力は **3:45** でも **345** でも通るので、
   スマホのテンキーでも答えられます。
+- **AM and PM** は前に 午前 **ごぜん** か 午後 **ごご** を付けたもの。午後三時四十五分 は
+  **ごごさんじよんじゅうごふん**。タイピングと選択は 24 時間表記で答えます（**15:45**、テンキーなら
+  **1545**）。書き取りは **3:45 pm** を出します。午前12時 が正午か深夜かは人によって違うので、時は
+  1〜11 だけ。外れの選択肢には必ず反対側（午前↔午後）の同じ時刻が入ります。
 
 **五十音表 → 日時** はその全部を並べたものです。曜日、12 か月、変わる 3 つ、1〜10 日、11〜31 日、
-和語のまま残る 3 つ、12 の時、分、秒、そして時刻をいくつか分解したもの。
+和語のまま残る 3 つ、12 の時、分、秒、午前・午後、そして時刻をいくつか分解したもの。
 
 **フリック入力のドリル — スマートフォンとタブレットのみ。** タッチ端末では、デッキ一覧の下にフリック
 入力のドリルが 2 つ出ます。日本語のケータイキーボードは五十音の行ごとに 10 個のキーがあり、母音は
