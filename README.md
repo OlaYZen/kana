@@ -153,11 +153,12 @@ aloud.
 their own. Most of it is counting with something on the end — 四月 is month four, 二十日 the
 twentieth, 四時 four o'clock — so it reads the same way round as the numbers:
 
-- **Typing** shows **月曜日** and you type **Monday**; **20日** and you type how it is said,
-  `hatsuka` — or, with **九月** chosen below, **二十日** and you type **20**. On Reading it shows
-  `getsuyōbi` and `hatsuka`, and you type **Monday** and **20**.
+- **Typing** shows **月曜日** and you type how it is said, `getsuyōbi` (or just `getsu`); **20日**
+  and you type `hatsuka` — or, with **九月** chosen below, **二十日** and you type **20**. On Reading
+  it shows `hatsuka` and you type **20**; a weekday always shows its kanji, since its reading is the
+  answer.
 - **Choosing** is the same question with four options — the dates either side of the right one, or
-  the rest of the week. With digits on the square, the options are readings.
+  the rest of the week. For a weekday, or with digits on the square, the options are readings.
 - **Writing** shows **20日** and you type **はつか**; **Monday** and you type **げつようび**;
   **3:45** and you type **さんじよんじゅうごふん**. Romaji counts here too — `hatsuka`,
   `getsuyōbi` — spelt however you like: `juuni`, `jūni` and `juni` are all the same answer.
@@ -599,11 +600,11 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
 **時 — 日時 の印。** 曜日・月・日付・時刻の 10 個のドリルと、専用の一覧表が入っています。ほとんどは
 数え方に何かが付いたもの — 四月 は 4 番目の月、二十日 は 20 日目 — なので、向きは数字と同じです。
 
-- **タイピング** は **月曜日** を出して **Monday**、**20日** を出して読み方（`hatsuka`）を入力。
-  設定で **九月** を選ぶと **二十日** を出して **20** を入力します（Reading にすると
-  `getsuyōbi`・`hatsuka` を出して **Monday**・**20** を入力）。
-- **選択** は同じ問いを 4 択で。外れは前後の日付か、残りの曜日です。数字で出すときは選択肢が読み方に
-  なります。
+- **タイピング** は **月曜日** を出して読み方（`getsuyōbi`、前の部分 `getsu` だけでも可）、**20日** を
+  出して読み方（`hatsuka`）を入力。設定で **九月** を選ぶと **二十日** を出して **20** を入力します
+  （Reading にすると `hatsuka` を出して **20** を入力。曜日は読み方が答えなので、いつも漢字で出ます）。
+- **選択** は同じ問いを 4 択で。外れは前後の日付か、残りの曜日です。曜日と、数字で出すときは
+  選択肢が読み方になります。
 - **書き取り** は **20日** を出して **はつか**、**Monday** を出して **げつようび** を入力。
   ここもローマ字で構いません（`hatsuka`、`getsuyōbi`）。長音の書き方は問いません — `juuni`、
   `jūni`、`juni` はすべて同じ答えです。

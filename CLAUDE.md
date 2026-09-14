@@ -695,12 +695,12 @@ says. Everything else composes: 十一日 is `jū` + `ichi` + `nichi` and needs 
 
 **Weekdays are not counting at all and are simply listed.** What makes them the same kind of thing
 as a date is that both have an **identity that is not Japanese** — the number for a month or a
-date, the English name for a weekday — and that identity is what Typing and Choosing answer with,
-exactly as the number drills answer with digits.
+date, the English name for a weekday. A month or a date is answered with that identity in Typing and
+Choosing, exactly as the number drills answer with digits; **a weekday is not** — see below.
 
 | mode | prompt | answer | field |
 |---|---|---|---|
-| `type` | 二十日 or `hatsuka`, 月曜日 or `getsuyōbi` | 20, 4, `Monday` | `#numInput`, or `#input` for a weekday |
+| `type` | 二十日 or `hatsuka`, 月曜日 | 20, 4, `getsuyōbi` for a weekday | `#numInput`, or `#input` for a weekday |
 | `choose` | the same prompt | the same answer, 1 of 4 | `#choices` |
 | `write` | the identity — `20日`, `4月`, `Monday` | the kana — はつか | `#kanaInput`, the IME |
 
@@ -714,7 +714,7 @@ Four things about that table are load-bearing:
   the plain numeral with the counter's own kanji after it.
 - **A weekday takes the plain field, not the keypad.** `numericAnswer()` is what decides, and it
   asks whether *this card* is answered with a number rather than which drill is running. It is the
-  one generated prompt that isn't.
+  one generated prompt that never is: it is answered with its reading.
 - **Grading is `numKanaAccepts()` / `numRomajiAccepts()`, unchanged.** An irregular value is a
   single part — the whole word — which is also what puts its `altk` in the right place: 十七日 takes
   じゅうしちにち or じゅうななにち, and nothing composed has an alternate at all, because everything
@@ -731,6 +731,24 @@ Four things about that table are load-bearing:
 - **`key` is the identity**, so `logAnswer()` files a date under `20` and a weekday under `Monday`.
   A date asked both ways is one thing you either know or don't; the report should say you are slow
   on the 20th, not rank `hatsuka` against `20`.
+
+**A weekday is answered with its reading, not its English name.** Typing shows 月曜日 and takes
+`getsuyōbi` or げつようび — or the stem alone, for the reason above — and Choosing offers four
+readings. It shipped answering `Monday`, on the argument that the English name is a weekday's
+identity the way 6 is a number's, and the argument does not hold: 6 is a real answer to 六, but
+`Monday` for 月曜日 turns a Japanese drill into a translation quiz, and on the Reading prompt it
+asked for `Monday` with `getsuyōbi` on the square. Four things follow:
+
+- **`answersReading()` is true for every weekday card** in Typing and Choosing, whatever the
+  prompt and date settings say, so a weekday takes the reading path through grading, choices and
+  the correction shown after a miss. There is no English-name branch left in `submitTyped()`.
+- **The `Numbers & dates ask with` setting does not reach weekdays.** On Reading the square would
+  show `getsuyōbi` and ask for `getsuyōbi`, so a weekday keeps its kanji either way.
+- **Its records are `-said`** (`promptForm()`). The English-answer records stay under `-kanji` and
+  `-reading`, where they were earned; nothing migrates, as with 九月.
+- **The English survives where it helps and nowhere else**: Writing's prompt, which has to name
+  the day without giving the reading away, and the feedback's gloss — *月曜日 is Monday — げつようび
+  "getsuyōbi"*. `key` stays `Monday`, so the report still files a day under its identity.
 
 ### How a date is written
 
@@ -749,7 +767,7 @@ already pick. `answersReading()` is the single test, and three things hang off i
 - **`pick()` grades a calendar card against `choiceAnswer()`**, never `c.a` directly. `c.a` stays
   the identity, which is what `key` and the report want.
 - **It is a third record form, `-numeral`**, beside `-kanji` and `-reading` (`promptForm()`),
-  because it is a different question from both. A weekday keeps `-kanji`. Nothing migrates: 九月
+  because it is a different question from both. A weekday is `-said`, since it is always answered with its reading. Nothing migrates: 九月
   records stay where they were earned, and 9月 starts its own.
 
 The Reading prompt and Writing are untouched — `kugatsu` → 9 still answers on the keypad, and
@@ -1372,7 +1390,7 @@ These each cost a real bug once. Comments in the source mark most of them.
 - **`typedField()` is the only thing that knows which of the three fields is live**, and it asks
   `numericAnswer()` — *is this card answered with a number?* — never *which drill is running*. A
   month and a date answer with theirs; a weekday, alone among the generated prompts, answers with
-  an English name and takes the plain field. Reading `el.input` directly in a grading path is what
+  its reading and takes the plain field. Reading `el.input` directly in a grading path is what
   this exists to stop.
 - **Anything that walks `state.deck.cards` needs a branch for the generated drills.** A number or
   calendar drill has no `cards` — the end screen's miss ordering and the "practise again" wording
