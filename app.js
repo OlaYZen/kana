@@ -1571,6 +1571,11 @@
              write: "Write these minutes in kana.",
              sayType: "Type how these minutes are said.",
              sayChoose: "Pick how these minutes are said." },
+    second:{ type: "Type the seconds this reads.",
+             choose: "Pick the seconds this reads.",
+             write: "Write these seconds in kana.",
+             sayType: "Type how these seconds are said.",
+             sayChoose: "Pick how these seconds are said." },
     // The clock's identity has a colon in it and a numeric keypad has no colon
     // key, so the field takes the digits either way — see readClock(). The
     // placeholder is what says so, rather than this line naming a format.
@@ -1669,6 +1674,7 @@
     // neither a word anyone had to write down.
     if (kind === "hour") return clockIdent(entry.n, 0);
     if (kind === "minute") return entry.n + " min";
+    if (kind === "second") return entry.n + " sec";
     const n = entry.n, tens = n % 100;
     const suffix = tens > 10 && tens < 14 ? "th"
       : n % 10 === 1 ? "st" : n % 10 === 2 ? "nd" : n % 10 === 3 ? "rd" : "th";

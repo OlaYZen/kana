@@ -515,6 +515,39 @@
           ]
         },
         {
+          "type": "numbers",
+          "title": "Seconds 1 – 10",
+          "en": "byō changes nothing in front of it — only 4, 7 and 9 need care",
+          "items": [
+            { "n": "1 sec",   "x": "一秒",   "q": "いちびょう",    "a": "ichibyō" },
+            { "n": "2 sec",   "x": "二秒",   "q": "にびょう",     "a": "nibyō" },
+            { "n": "3 sec",   "x": "三秒",   "q": "さんびょう",    "a": "sanbyō" },
+            { "n": "4 sec",   "x": "四秒",   "q": "よんびょう",    "a": "yonbyō" },
+            { "n": "5 sec",   "x": "五秒",   "q": "ごびょう",     "a": "gobyō" },
+            { "n": "6 sec",   "x": "六秒",   "q": "ろくびょう",    "a": "rokubyō" },
+            { "n": "7 sec",   "x": "七秒",   "q": "ななびょう",    "a": "nanabyō" },
+            { "n": "8 sec",   "x": "八秒",   "q": "はちびょう",    "a": "hachibyō" },
+            { "n": "9 sec",   "x": "九秒",   "q": "きゅうびょう",   "a": "kyūbyō" },
+            { "n": "10 sec",  "x": "十秒",   "q": "じゅうびょう",   "a": "jūbyō" }
+          ]
+        },
+        {
+          "type": "numbers", "wide": true,
+          "title": "Seconds by five",
+          "en": "just the number plus byō, every one of them — set it beside the minutes above",
+          "items": [
+            { "n": "15 sec",  "x": "十五秒",   "q": "じゅうごびょう",    "a": "jūgobyō" },
+            { "n": "20 sec",  "x": "二十秒",   "q": "にじゅうびょう",    "a": "nijūbyō" },
+            { "n": "25 sec",  "x": "二十五秒",  "q": "にじゅうごびょう",   "a": "nijūgobyō" },
+            { "n": "30 sec",  "x": "三十秒",   "q": "さんじゅうびょう",   "a": "sanjūbyō" },
+            { "n": "35 sec",  "x": "三十五秒",  "q": "さんじゅうごびょう",  "a": "sanjūgobyō" },
+            { "n": "40 sec",  "x": "四十秒",   "q": "よんじゅうびょう",   "a": "yonjūbyō" },
+            { "n": "45 sec",  "x": "四十五秒",  "q": "よんじゅうごびょう",  "a": "yonjūgobyō" },
+            { "n": "50 sec",  "x": "五十秒",   "q": "ごじゅうびょう",    "a": "gojūbyō" },
+            { "n": "55 sec",  "x": "五十五秒",  "q": "ごじゅうごびょう",   "a": "gojūgobyō" }
+          ]
+        },
+        {
           "type": "numbers", "wide": true,
           "title": "Telling the time",
           "en": "the hour, then the minutes — and 半 han is half past, said instead of sanjuppun",
@@ -989,6 +1022,15 @@
         }
       },
       {
+        "id": "second", "suffix": "秒", "r": "byō", "k": "びょう", "max": 59,
+        "irregular": {
+          "4":  { "r": "yonbyō",           "k": "よんびょう" },
+          "7":  { "r": "nanabyō",          "k": "ななびょう",
+                  "alt": ["shichibyō"],    "altk": ["しちびょう"] },
+          "9":  { "r": "kyūbyō",           "k": "きゅうびょう" }
+        }
+      },
+      {
         "id": "month", "suffix": "月", "r": "gatsu", "k": "がつ", "max": 12,
         "names": ["January", "February", "March", "April", "May", "June", "July",
                   "August", "September", "October", "November", "December"],
@@ -1053,6 +1095,12 @@
         "values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
         "label": "Minutes", "sample": "分",
         "subtitle": "ふん and ぷん — 1 to 10, then every five"
+      },
+      {
+        "id": "cal-second", "kind": "second",
+        "values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
+        "label": "Seconds", "sample": "秒",
+        "subtitle": "びょう never changes — 1 to 10, then every five"
       },
       {
         "id": "cal-time", "kind": "time", "counters": ["hour", "minute"], "len": 20,

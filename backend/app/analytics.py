@@ -49,7 +49,8 @@ FLICK_PREFIX = "flick-"   # decks whose prompts are directions, not characters
 # so one face comes round every seventh run or so and ranking them says nothing.
 # The 1-50 drill is the opposite case and is analysed like any deck: it is fifty
 # fixed prompts, and which of them you are slow on is exactly what the report is
-# for. So are the hours and the minutes, which are twelve and nineteen.
+# for. So are the hours, the minutes and the seconds — twelve, nineteen and
+# nineteen.
 UNANALYSABLE = {"num-random", "cal-time"}
 
 MIN_RUNS = 3           # complete, non-drill runs of one deck before reporting
