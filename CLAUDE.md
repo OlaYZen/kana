@@ -23,9 +23,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `frontend/fonts/` | the five bundled Japanese faces, subset to kana, plus `LICENSES.txt` and the `subset.py` that regenerates them — see **Bundled fonts** |
 | `start.sh` | install / update / run, executable in git (mode `100755`) |
 | `backend/` | the optional FastAPI server |
+| `ux-rules.md` | the UX patterns every GUI change has to follow — see **UI changes follow ux-rules.md** |
 | `NOTES.md` | hand-written study notes — numbers, time, months, weekdays, dates. Read by nobody; `kana.json` is still the only content the app loads |
 
-That plus `README.md`, `NOTES.md` and this file is the whole repository. Three superseded standalone pages —
+That plus `README.md`, `NOTES.md`, `ux-rules.md` and this file is the whole repository. Three superseded standalone pages —
 `hiragana-game.html`, `katakana-game.html` and `kana-chart.html`, near-identical predecessors of
 the drill and the chart — were deleted; they are in git history at `3ece9c6` if one is ever
 needed. Don't reintroduce a second copy of the game: they drifted out of sync with the real app
@@ -1608,6 +1609,35 @@ Two environment quirks worth knowing:
 Worth asserting on, since geometry checks alone miss them: text collision between sibling spans,
 page overflow (`scrollWidth`/`scrollHeight` vs viewport), whether a control is actually inside the
 viewport, and layout shift of the square when an answer is graded.
+
+## UI changes follow ux-rules.md
+
+**Anything new added to the GUI must follow [`ux-rules.md`](ux-rules.md)**, and so must any change
+to an existing screen, control, dialog or form. Read it before building UI, not after: it is short,
+and every pattern in it that applies is a requirement here, not a suggestion. A change that breaks
+one needs a stated reason in the code comment beside it, the way the exceptions below have one.
+
+What the rules already mean in this app, so a new piece lands consistent with the old:
+
+- **Visible options instead of select** — 2 to 5 mutually exclusive choices are a segmented
+  `.seg` row (answer mode, theme, Timer, Times shown as…), never a dropdown.
+- **Toggle switches for immediate settings** — an on/off that takes effect at once is a
+  `role="switch"` toggle, like the quick access pins; checkboxes only where a submit step follows.
+- **Avoid disabled submit buttons / disable during loading** — buttons stay pressable and validate
+  on submit with inline messages and `aria-invalid`; they are disabled only while a request is in
+  flight, through `busy()`, which also swaps the label.
+- **Modal closing** — the one modal, the quick options dialog, closes on ✕, Escape and a click on
+  the backdrop, and returns focus to what opened it. Screens reached with `navTo()` leave on Escape
+  and Back, and a new one joins `PANELS`, `SCREENS` and the wide-window id lists.
+- **Toast vs inline feedback** — feedback sits next to what caused it (the answer square and
+  feedback line, the form's own message); there are no toasts.
+- **Skeleton loading vs spinner** — content with a known shape loads behind a skeleton, as the
+  progress report does, kept up long enough not to flash.
+- **Don't limit user input** — no `maxLength` on fields; show what is wrong instead of blocking it.
+
+Where a rule and an invariant elsewhere in this file seem to disagree, the invariant records a bug
+someone already hit, so reconcile the two rather than silently picking one — and write down which
+way it went.
 
 ## Commits
 
