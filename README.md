@@ -88,7 +88,7 @@ unchanged.
 Every deck keeps its own records and its own progress report, including the derived ones. A run of
 Mixed kana is not a run of the six decks it's built from, and doesn't count towards them.
 
-**Three ways to answer**, switchable under **Options**:
+**Three ways to answer**, switchable under **Settings** (and on the menu itself — see quick access below):
 
 - **Typing** — the character is shown, you type its sound. Alternate romanisations are accepted,
   so `si`, `shi`, `hu`, `fu`, `sya`, `sha` and `nn` all count.
@@ -111,14 +111,14 @@ which way round you're asked**:
   keyboard set up. Both count, and the hint under the box says so. (Kana decks are stricter: there
   Writing shows you the reading, so romaji would just be typing the question back.)
 
-**Numbers & dates ask with · Kanji / Reading** in Options decides what the first two show: the
+**Numbers & dates ask with · Kanji / Reading** in Settings decides what the first two show: the
 kanji — 六, 十二, 一万二千三百四十五 — which is what you meet on a price tag or a form, or the
 reading — `roku`, `jū ni` — which is what you hear at a till. Both are worth practising and neither
 stands in for the other, so each keeps its own best score and time. Writing ignores the setting: it
 asks with **6** either way. Whichever way you were asked, the answer tells you all three:
 **六 is 6 — ろく "roku"**.
 
-So the direction is yours to choose and it stays put for the whole run — switch mode in Options to
+So the direction is yours to choose and it stays put for the whole run — switch mode in Settings to
 practise the other way.
 
 - **Numbers 1–10** is the ten words everything else is built from. Start here.
@@ -162,7 +162,7 @@ twentieth, 四時 four o'clock — so it reads the same way round as the numbers
   **3:45** and you type **さんじよんじゅうごふん**. Romaji counts here too — `hatsuka`,
   `getsuyōbi` — spelt however you like: `juuni`, `jūni` and `juni` are all the same answer.
 
-**Dates & times written as · 9月 / 九月** in Options decides how months, dates and times look
+**Dates & times written as · 9月 / 九月** in Settings decides how months, dates and times look
 everywhere — on the square, in the answer and in the table. **9月**, **20日** and **3時45分** is the
 default, because that is how calendars, tickets and signs print them; **九月**, **二十日** and
 **三時四十五分** is the textbook form. With digits on the square the number is already showing, so
@@ -225,12 +225,12 @@ there's no flicking to practise with a physical keyboard.
 Each drill keeps its own best score and time, separate from the decks and from each other. ん
 isn't drilled: it has no vowel, and which key it sits on varies between keyboards.
 
-**Timer during a run · Hidden / Shown** in Options puts a clock in the bar at the top while you
+**Timer during a run · Hidden / Shown** in Settings puts a clock in the bar at the top while you
 practise. It is hidden unless you turn it on, because a ticking counter turns practice into a race;
 the run is timed either way, and the results screen always shows the exact time — `1:23.456`, to
 the millisecond, the same figure your fastest clean run is kept in. It follows your account.
 
-**Performance · Normal / Fast** in Options turns every animation off. The 〇 stamp goes with them,
+**Performance · Normal / Fast** in Settings turns every animation off. The 〇 stamp goes with them,
 so a right answer moves straight to the next character instead of pausing for it — which makes a
 run noticeably quicker as well as cheaper to draw on an older phone. A wrong answer is unchanged:
 it still stops, still tells you what the answer was, and still waits for you.
@@ -261,15 +261,27 @@ can't set a record that's impossible to beat honestly. The run is timed the whol
 the clock is deliberately never shown while you're practising; a ticking counter turns practice
 into a race. Missed drills don't count towards records.
 
-**The menu stays out of the way.** It is the script switch, the list of decks, and one **Options**
-button — everything else (answer mode, font, the chart, progress, account) is behind that button,
-so the deck list keeps the screen instead of losing a third of a phone to stacked settings. The
-Options button shows the current answer mode, since that's the one setting worth seeing at a
-glance, and the deck rows are labelled with it too. Options, the font picker and the chart are
-screens rather than pop-ups, so nothing is ever half a panel with the way out below the fold.
+**The menu stays out of the way.** It is the script switch, the list of decks, and one **More**
+button — so the deck list keeps the screen instead of losing a third of a phone to stacked
+settings. **More** is five buttons: **Settings**, Character font, All characters & romaji, Your
+progress and Account. **Settings** has every switch — answer mode, prompts, dates, timer, theme,
+performance — plus quick access and the keyboard shortcuts. They are screens rather than pop-ups,
+so nothing is ever half a panel with the way out below the fold. The deck rows are labelled with
+the answer mode their figures belong to.
+
+**Quick access** puts the settings you change most back on the menu, just above More, and in a
+**quick options** box that **Q** opens from the menu or in the middle of a run. Answer by is there
+to start with; under **Settings → Quick access** any setting can be switched on or off, and the
+choice is kept on that device, since a phone and a laptop have different room to spare. Unpin
+Answer by and More shows the current mode instead.
+
+**Keyboard.** On the menu, **1–5** switch between Hiragana, Katakana, Kana, Numbers and Time, and
+**Q** opens quick options there and during a run. Neither does anything while you are typing into a
+field, so an answer with a q in it is just an answer. **Esc** goes back from any screen and closes
+quick options.
 
 **On a wide screen the menu becomes a rail.** From about 1100px the deck list stays put on the
-left and whatever you're doing — a drill, the chart, Options, your progress — fills the space
+left and whatever you're doing — a drill, the chart, Settings, your progress — fills the space
 beside it, with the writing square and the answer box side by side instead of stacked. When
 nothing is running the chart sits in that space, so the table you'd look a character up in is
 already open. Phones and tablets are untouched: one screen at a time, exactly as before.
@@ -305,7 +317,7 @@ canvas and comparing the pixels, so anything missing, or identical to an option 
 left out. Your own faces also fill in for anything the bundled subsets leave out, such as a kanji
 typed into the answer box by mistake.
 
-**Light and dark.** Under **Options → Theme**: Auto follows your system and is the default, or pin
+**Light and dark.** Under **Settings → Theme**: Auto follows your system and is the default, or pin
 Light or Dark. The dark theme is the same washi paper at night rather than an inversion — sumi
 ground, warm off-white ink, the seal red opened up to where it reads on a dark ground. Because the
 app ships its own, it asks Dark Reader to leave the page alone.
@@ -378,12 +390,12 @@ Times are reported as medians rather than averages, so one slow card doesn't mov
 start.sh             install / update / run
 
 frontend/            everything the browser loads
-  index.html         nine screens, no modals
+  index.html         ten screens, one dialog
   css/core.css       every rule and no colour, mobile-first
   css/light.css      the light theme — colour tokens only
   css/dark.css       the dark theme — colour tokens only
   kana.json          all content — decks, cards, chart layout, font options
-  js/                all front-end logic, sixteen scripts loaded in order
+  js/                all front-end logic, seventeen scripts loaded in order
   icon.svg           the app icon, and the source favicon.ico is built from
   favicon.ico        the same icon at six sizes, 16 to 256
   fonts/             the five bundled Japanese faces, subset to kana
@@ -505,7 +517,7 @@ python -m http.server 8000 --directory frontend
 記録と進捗レポートはデッキごとに別で、混ぜたデッキも同じです。Mixed kana を 1 回やっても、元の
 6 デッキをやったことにはなりません。
 
-**答え方は 3 種類**、「Options」から切り替えられます。
+**答え方は 3 種類**、「Settings」から切り替えられます（メニューのクイックアクセスからも）。
 
 - **タイピング** — 文字が出るので、その読みをローマ字で入力します。別の綴りも受け付けるので、
   `si`、`shi`、`hu`、`fu`、`sya`、`sha`、`nn` のどれでも正解です。
@@ -660,14 +672,26 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
 を残さないためです。ランは常に計測されていますが、練習中に時計はわざと表示しません。進むカウンター
 があると練習が競争になるからです。間違いだけの練習は記録に入りません。
 
-**メニューは邪魔をしません。** 置いてあるのは文字種の切り替え、デッキの一覧、そして **Options**
-ボタンだけです。ほかのもの（答え方、フォント、一覧表、進捗、アカウント）はすべてそのボタンの中に
-あります。設定を積み上げるとスマートフォンの画面の 3 分の 1 が消えてしまい、本当に使いたいデッキ
-一覧が狭くなるからです。Options ボタンには今の答え方が表示され、デッキの行にもラベルが付きます。
-Options・フォント・一覧表はポップアップではなく画面なので、下に隠れて戻れないということがありません。
+**メニューは邪魔をしません。** 置いてあるのは文字種の切り替え、デッキの一覧、そして **More**
+ボタンだけです。設定を積み上げるとスマートフォンの画面の 3 分の 1 が消えてしまい、本当に使いたい
+デッキ一覧が狭くなるからです。**More** には 5 つのボタン — **Settings**、Character font、
+All characters & romaji、Your progress、Account — があります。**Settings** にはすべての切り替え
+（答え方、出題の形、日付の表記、タイマー、テーマ、パフォーマンス）と、クイックアクセス、キーボード
+操作の説明があります。どれもポップアップではなく画面なので、下に隠れて戻れないということがありません。
+デッキの行には、その数字がどの答え方のものかが表示されます。
+
+**クイックアクセス**を使うと、よく変える設定をメニューの More ボタンのすぐ上と、**Q** で開く
+**クイックオプション**に置けます（メニューでも練習中でも開けます）。最初は Answer by（答え方）だけが
+出ています。**Settings → Quick access** でどの設定もオン・オフでき、この選択は端末ごとに保存されます
+（スマートフォンとパソコンでは使える広さが違うため）。Answer by を外すと、More ボタンに今の答え方が
+表示されます。
+
+**キーボード。** メニューでは **1〜5** でひらがな・カタカナ・かな・数字・時を切り替え、**Q** で
+クイックオプションを開きます（練習中も使えます）。入力欄に文字を打っている間はどちらも反応しないので、
+答えに q が入っていても大丈夫です。**Esc** はどの画面からも戻り、クイックオプションも閉じます。
 
 **画面が広いときはメニューが左に残ります。** 1100px あたりから、デッキ一覧が左に固定され、右側に
-今やっていること（練習、一覧表、Options、進捗）が入ります。練習中は書き取りの枠と入力欄が縦に
+今やっていること（練習、一覧表、設定、進捗）が入ります。練習中は書き取りの枠と入力欄が縦に
 積まれず横に並びます。何も走っていないときは右側に一覧表が出るので、調べたい表が最初から開いた
 状態です。スマートフォンとタブレットはこれまでどおり、1 画面ずつです。
 
@@ -700,7 +724,7 @@ Font License 1.1 で、全文は `frontend/fonts/LICENSES.txt`、作り直す手
 ものは出しません。また、同梱の書体に含めていない文字（答え欄に間違えて漢字を打ったときなど）は、
 端末側の書体が補います。
 
-**ライトとダーク。**「Options → Theme」から選べます。既定の Auto は端末の設定に従い、Light と
+**ライトとダーク。**「Settings → Theme」から選べます。既定の Auto は端末の設定に従い、Light と
 Dark は固定です。ダークは色を反転したものではなく、同じ和紙の夜の姿です — 墨の地、温かみのある
 生成りの文字、暗い地でも読める明るさまで開いた朱。アプリ自身がダークを持っているので、Dark Reader
 には手を出さないよう伝えてあります。
@@ -771,12 +795,12 @@ Dark は固定です。ダークは色を反転したものではなく、同じ
 start.sh             導入・更新・起動
 
 frontend/            ブラウザが読み込むもの全部
-  index.html         9 つの画面、モーダルなし
+  index.html         10 の画面、ダイアログ 1 つ
   css/core.css       ルール全部、色は持たない、モバイルファースト
   css/light.css      ライトテーマ — 色の変数だけ
   css/dark.css       ダークテーマ — 色の変数だけ
   kana.json          内容全部 — デッキ、カード、表のレイアウト、フォント
-  js/                フロント側のロジック全部、順番に読み込む 16 ファイル
+  js/                フロント側のロジック全部、順番に読み込む 17 ファイル
   icon.svg           アプリのアイコン。favicon.ico の生成元でもあります
   favicon.ico        同じアイコンを 16〜256 の 6 サイズで収めたもの
   fonts/             同梱の日本語書体 5 つ（かなに絞ったサブセット）

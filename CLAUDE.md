@@ -14,10 +14,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | File | Role |
 |---|---|
-| `frontend/index.html` | markup only — nine screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`, `#options`, `#fontPicker`, `#chart`) and no modals; `#play` holds one answer block per kind of answer (`#typeMode`, `#writeMode`, `#numberMode`, `#chooseMode`) |
+| `frontend/index.html` | markup only — ten screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`, `#options` — shown as More — `#settings`, `#fontPicker`, `#chart`) and one dialog, `#quickDialog`; `#play` holds one answer block per kind of answer (`#typeMode`, `#writeMode`, `#numberMode`, `#chooseMode`) |
 | `frontend/css/` | `core.css`, every rule and no colour, mobile-first; `light.css` and `dark.css`, one theme each and nothing but colour tokens |
 | `frontend/kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `derived[]`, `numbers{}`. No kana, font name or number reading lives in JS or CSS |
-| `frontend/js/` | all front-end logic, sixteen classic scripts that `index.html` loads in order — see **Scripts** |
+| `frontend/js/` | all front-end logic, seventeen classic scripts that `index.html` loads in order — see **Scripts** |
 | `frontend/icon.svg` | the app icon, and the source the `.ico` is generated from — see **The icon** |
 | `frontend/favicon.ico` | six sizes rasterised from `icon.svg`; what `<link rel="icon">` points at |
 | `frontend/fonts/` | the five bundled Japanese faces, subset to kana, plus `LICENSES.txt` and the `subset.py` that regenerates them — see **Bundled fonts** |
@@ -42,9 +42,10 @@ to its own files relatively (`kana.json`, `fonts/…`), so the move changed noth
 
 ### Scripts
 
-**The front-end logic is sixteen classic scripts in `js/`, not modules**, and `index.html` loads
+**The front-end logic is seventeen classic scripts in `js/`, not modules**, and `index.html` loads
 them in this order: `base` → `fonts` → `state` → `screens` → `theme` → `chart` → `flick` →
-`numbers` → `calendar` → `decks` → `menu` → `run` → `backend` → `progress` → `wiring` → `boot`.
+`numbers` → `calendar` → `decks` → `menu` → `run` → `backend` → `progress` → `quick` → `wiring` →
+`boot`.
 They were one IIFE, `app.js`, cut at its section banners with not a line of logic changed. Classic
 scripts share one global scope, which is what let the cut be mechanical: every function still sees
 every other, as it did inside the IIFE. Modules would have meant an import and an export for most
@@ -149,7 +150,8 @@ both ways. Three rules follow from that and are what keep a theme to one file:
 - **No literal colour may appear in `core.css`.** A literal can only be right in one
   theme. That includes the translucent ones, which is what `--press`, `--on-fill`,
   `--paper-lift`, `--square-bg` and the `--shadow-*` values exist for. (`--backdrop` and
-  `--shadow-sheet` went with the dialogs that used them.) Shu-derived washes use
+  `--shadow-sheet` went with the old dialog sheets — and `--backdrop` came back, in both theme files, for the quick
+  options dialog.) Shu-derived washes use
   `color-mix(in srgb, var(--shu) N%, transparent)` instead and need no dark twin at all.
 - **`--accent-dark` is the accent's *label* colour, not "the dark theme's accent"** — `--shu-3` in
   light, a lighter tint in dark. Same for `--ai-2`, its katakana counterpart. The three
@@ -260,7 +262,7 @@ and five misses that all came from one category have nothing to interleave with.
 with fewer than two surviving sources is dropped at boot rather than offered as a run of one
 category, which is also what stops `mixFits()` being asked a meaningless question.
 
-**Three answer modes**, chosen in Options and held in `state.mode`:
+**Three answer modes**, chosen in Settings and held in `state.mode`:
 
 | mode | prompt | answer | graded by |
 |---|---|---|---|
@@ -336,7 +338,7 @@ across all three subjects is *type = a plain keyboard, write = a Japanese IME, c
 and it is the reason numbers and dates can be decks rather than extra modes.
 
 **Which script the two reading modes ask in is a setting** — `state.prompt`, `PROMPTS`, the
-`Numbers & dates ask with` switch in Options — because 六 → 6 and `roku` → 6 are both worth
+`Numbers & dates ask with` switch in Settings — because 六 → 6 and `roku` → 6 are both worth
 practising and neither is a substitute for the other. Reading the kanji is what you need on a price
 tag; hearing the reading and knowing the value is what you need at a till. Three things about it:
 
@@ -944,13 +946,48 @@ the easiest mode set a score the hardest could never beat. Every `store.best`/`s
   idempotent.
 
 **The menu is deliberately shallow.** Only three things sit on it: the script switch, the deck
-list (which scrolls, and holds the flick drills), and one Options button. Answer mode, theme, font,
+list (which scrolls, and holds the flick drills), and one More button — plus whatever the user pins above it as quick access, below. Answer mode, theme, font,
 chart, progress and account all live on `#options` behind that button — stacked on the menu they
 took about a third of a phone screen away from the deck list, which is the thing you came to use.
 The mode is the one setting that is otherwise invisible from the menu, so `setMode()` writes it
-into the Options button's label. That shallowness holds on a wide window too, where the menu is
+into the More button's label, which `buildQuick()` hides while Answer by is pinned. That shallowness holds on a wide window too, where the menu is
 the rail: the rail is the same element, so promoting Progress or the chart into it would mean a
 second copy of a row that already exists, and rows drift the moment there are two of them.
+
+**More, Settings, and quick access.** The menu's one button is **More** (`#options` in the code),
+and More is five buttons and nothing else: Settings, Character font, All characters & romaji, Your
+progress, Account. **Settings** (`#settings`) holds every switch — Practice, Display — plus the
+Quick access toggles and a Keyboard note. Any row carrying `data-setting` can be pinned, and a
+pinned row shows in two places: at the foot of the menu, above More, and in the **quick options
+dialog** the Q key opens. Answer by is pinned by default, so the most-changed setting is back on the
+menu without anyone asking. Five things keep that from becoming the second copy the paragraph
+above warns about:
+
+- **A pinned row is a clone, not a copy anyone writes.** `buildQuick()` clones the row from
+  Settings into both places and strips its ids; a tap on a cloned button clicks the original, so
+  the listener in `wiring.js` and the setter behind it are the only ones there are.
+- **Setters paint only the originals**, and a `MutationObserver` on `#settings` copies
+  `aria-checked` onto every clone (`mirrorQuick()`). Nothing paints a clone directly, so
+  `el.modeSwitch` and the rest stay the one handle per switch.
+- **The toggles are named from the rows' own labels**, so a label changed in `index.html` changes
+  everywhere.
+- **The pins are this device's**, in `kana.quick`, read and written directly like the theme — how
+  much menu there is room for depends on the screen. More names the answer mode only while Answer
+  by is *not* pinned, since it is otherwise invisible from the menu.
+- **Pinned rows on the menu are capped at 38dvh and scroll past it** (24dvh under 450px tall), and
+  never shrink below that. All six on a 320x568 phone stood 394px and took the deck list to zero
+  and More off the screen; a shrinkable area instead squeezed the one default row to a 25px sliver
+  on a landscape phone. Both were measured, and the cap is what fixed both.
+
+A new setting is pinnable the moment its `.modebar` row has a `data-setting`; `initQuick()` runs
+from boot after every setter, so the clones start from the state the originals are in.
+
+**Shortcuts** live in `shortcut()` in `wiring.js`: **1–5** pick a stamp on the menu (the stamps
+carry `aria-keyshortcuts`), and **Q** opens quick options on the menu or mid-run. Neither fires
+while a field has focus — Q is a letter someone may be typing, and in Typing and Writing the answer
+field always has it — nor with Ctrl, Alt or Cmd held, nor mid-composition, nor on a panel, which
+returns before `shortcut()` is reached. Digits stay Choosing's mid-run: the stamps only take them on
+the menu, where no card is listening.
 
 **Layout model.** `body` → `.stage` → one `.screen` flex column per screen. `.play` is four bands:
 `.playbar` (fixed) / `.revealbar` (fixed, touch only) / `.playmain` (flexes, holds the writing
@@ -971,6 +1008,17 @@ with `navBack()`. What that bought, in order of how much it mattered:
 - **A trail rather than a single trigger.** `navTo()` pushes `{screen, focus}`, so menu → Options →
   chart → back lands on Options and not on the menu, and 字 from a running card comes back to the
   card. `show()` is the plain move that cuts the trail; every "go to the menu" path uses it.
+
+**The one exception is the quick options dialog**, `#quickDialog`, and it is a real `<dialog>` on
+purpose. It has to open over whatever is on screen — a card mid-run included — and come straight
+back, which is exactly the job a screen and its trail do badly. What sank the old sheets does not
+apply: it holds a handful of switches, so there is no height cap deciding whether a way out is
+visible, and every way it closes — ✕, Escape, a click on the backdrop — lands on the one `close`
+event, where `afterQuickDialog()` puts focus back (into the answer field mid-card, for the reason
+below). The panel inside fills the dialog, which is what makes "the click's target is the dialog"
+mean "the backdrop". While it is open the document keydown handler returns first, so no digit or
+Escape reaches the screen behind it. jsdom has no modal dialogs, so a suite that opens it has to
+stub `showModal`/`close` and fire `close` itself.
 
 `navBack()` keeps the one piece of the old `close` handler that was load-bearing: **back into a
 running card refocuses the answer field**, because the on-screen keyboard follows focus and the
@@ -1258,7 +1306,9 @@ These each cost a real bug once. Comments in the source mark most of them.
   to handle Escape natively; a screen does not, so the document keydown handler sends it there —
   and returns early while a panel is up, or the digits that pick an answer would reach the card
   behind it. Leaving a panel any other way (calling `show()` from inside one) drops the trail and
-  strands you on the menu. **`PANELS` is the list, and a new `navTo()` screen has to join it** —
+  strands you on the menu. **`PANELS` is the list, and a new `navTo()` screen has to join it** — and `SCREENS`, and the two
+  id lists in the wide-window block of `core.css`, or it is laid out as a phone screen beside the
+  rail —
   Account and Progress were `navTo()` screens with Back buttons that never did, so Escape did
   nothing on either until they were added. Escape goes one layer at a time: the change-password
   form inside Account closes first, and only the next Escape leaves. The results screen takes
