@@ -153,13 +153,21 @@ aloud.
 their own. Most of it is counting with something on the end — 四月 is month four, 二十日 the
 twentieth, 四時 four o'clock — so it reads the same way round as the numbers:
 
-- **Typing** shows **月曜日** and you type **Monday**; **二十日** and you type **20** — or
-  `getsuyōbi` and `hatsuka`, if the Options setting above is on Reading.
+- **Typing** shows **月曜日** and you type **Monday**; **20日** and you type how it is said,
+  `hatsuka` — or, with **九月** chosen below, **二十日** and you type **20**. On Reading it shows
+  `getsuyōbi` and `hatsuka`, and you type **Monday** and **20**.
 - **Choosing** is the same question with four options — the dates either side of the right one, or
-  the rest of the week.
+  the rest of the week. With digits on the square, the options are readings.
 - **Writing** shows **20日** and you type **はつか**; **Monday** and you type **げつようび**;
   **3:45** and you type **さんじよんじゅうごふん**. Romaji counts here too — `hatsuka`,
   `getsuyōbi` — spelt however you like: `juuni`, `jūni` and `juni` are all the same answer.
+
+**Dates & times written as · 9月 / 九月** in Options decides how months, dates and times look
+everywhere — on the square, in the answer and in the table. **9月**, **20日** and **3時45分** is the
+default, because that is how calendars, tickets and signs print them; **九月**, **二十日** and
+**三時四十五分** is the textbook form. With digits on the square the number is already showing, so
+Typing and Choosing ask for the reading instead. Each form keeps its own best score and time, and
+weekdays look the same either way.
 
 - **Weekdays** is the seven, each ending in ようび with the day's kanji in front: 月 moon, 火 fire,
   水 water, 木 wood, 金 gold, 土 earth, 日 sun. Since every one of them ends the same way, Writing
@@ -541,12 +549,19 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
 **時 — 日時 の印。** 曜日・月・日付・時刻の 7 つのドリルと、専用の一覧表が入っています。ほとんどは
 数え方に何かが付いたもの — 四月 は 4 番目の月、二十日 は 20 日目 — なので、向きは数字と同じです。
 
-- **タイピング** は **月曜日** を出して **Monday**、**二十日** を出して **20** を入力（設定を
-  Reading にすると `getsuyōbi`・`hatsuka` を出します）。
-- **選択** は同じ問いを 4 択で。外れは前後の日付か、残りの曜日です。
+- **タイピング** は **月曜日** を出して **Monday**、**20日** を出して読み方（`hatsuka`）を入力。
+  設定で **九月** を選ぶと **二十日** を出して **20** を入力します（Reading にすると
+  `getsuyōbi`・`hatsuka` を出して **Monday**・**20** を入力）。
+- **選択** は同じ問いを 4 択で。外れは前後の日付か、残りの曜日です。数字で出すときは選択肢が読み方に
+  なります。
 - **書き取り** は **20日** を出して **はつか**、**Monday** を出して **げつようび** を入力。
   ここもローマ字で構いません（`hatsuka`、`getsuyōbi`）。長音の書き方は問いません — `juuni`、
   `jūni`、`juni` はすべて同じ答えです。
+
+設定の **Dates & times written as · 9月 / 九月** で、月・日付・時刻の表記が決まります（問題・答え・
+一覧表すべて）。既定は **9月**・**20日**・**3時45分** — カレンダーや切符、看板で目にする形です。
+**九月**・**二十日**・**三時四十五分** は教科書の形です。数字で出すと答えの数がすでに見えているので、
+タイピングと選択では数ではなく読み方を訊きます。記録は表記ごとに別で、曜日はどちらでも同じです。
 
 - **Weekdays** は 7 つ。どれも ようび で終わり、前に付く漢字がその日です。月・火・水・木・金・
   土・日。どれも同じ ようび で終わるので、書き取りは前の部分だけでも正解になります（火曜日 なら

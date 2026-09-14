@@ -588,7 +588,7 @@ directions` all sit under the あ stamp. Don't simplify this to "never show the 
 deck's identity entirely.
 
 **Persistence** is localStorage key `kana.v1` (`STORE` in `app.js`), holding
-`{rev, mode, prompt, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
+`{rev, mode, prompt, dates, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
 merges patches — never `setItem` directly. **Renaming that key wipes every record anyone has set**,
 because it is the only handle on a returning user's saved bests — the `hkk.v1` → `kana.v1` rename
 was only safe because `renameKeys()` moves the old value across first, and any future rename needs
@@ -676,6 +676,33 @@ Four things about that table are load-bearing:
 - **`key` is the identity**, so `logAnswer()` files a date under `20` and a weekday under `Monday`.
   A date asked both ways is one thing you either know or don't; the report should say you are slow
   on the 20th, not rank `hatsuka` against `20`.
+
+### How a date is written
+
+**Months, dates and times are shown 9月, 20日 and 3時45分 by default, and 九月, 二十日 and
+三時四十五分 only when `Dates & times written as` says so** — `state.dates`, `DATE_FORMS`,
+`setDates()`. Digits are how a calendar, a ticket or a sign prints them; the kanji form is what a
+textbook uses. A weekday has no number in it and looks the same either way. It belongs to `store`
+for the prompt setting's reason, and boot runs `setDates()` before `setMode()` for the same one.
+
+**Under 9月 the two reading modes ask for the reading, not the value.** 9月 → 9 is the answer
+copied off the square, so Typing takes romaji (or kana) on the plain field and Choosing offers four
+readings, each built by `calendarCard()` from the neighbours `calNeighbours()` / `timeNeighbours()`
+already pick. `answersReading()` is the single test, and three things hang off it:
+
+- **`numericAnswer()` is false under it**, so `typedField()` hands over `#input`, not the keypad.
+- **`pick()` grades a calendar card against `choiceAnswer()`**, never `c.a` directly. `c.a` stays
+  the identity, which is what `key` and the report want.
+- **It is a third record form, `-numeral`**, beside `-kanji` and `-reading` (`promptForm()`),
+  because it is a different question from both. A weekday keeps `-kanji`. Nothing migrates: 九月
+  records stay where they were earned, and 9月 starts its own.
+
+The Reading prompt and Writing are untouched — `kugatsu` → 9 still answers on the keypad, and
+Writing already asked with 9月. **`c.cal.numeral` sits beside `c.cal.face`, and `calFace()` is what
+picks between them** for the square, the feedback line and the missed list alike. The chart keeps
+one `x` column rather than two: `numeralText()` turns the kanji numerals in it into digits at render
+time, reading them back from `numbers`, so the two forms cannot drift and the generator still has
+one thing to emit.
 
 **Choosing draws its distractors from nearby** (`calNeighbours()`) — the dates either side, then a
 week and ten days away, then whatever the drill still holds; for a weekday, the rest of the week.
@@ -808,7 +835,7 @@ the easiest mode set a score the hardest could never beat. Every `store.best`/`s
   suffixed; Writing asks the same question either way. `promptApplies()` is the single test, and
   `modeLabel()` is what takes the key apart again for display, including for run rows the server
   sends back.
-- **`setPrompt()` has to rebuild the menu** for the same reason `setMode()` does, below: every
+- **`setPrompt()` and `setDates()` have to rebuild the menu** for the same reason `setMode()` does, below: every
   figure under 十 and 日時 belongs to the form on screen.
 - **`setMode()` has to rebuild the menu**, not just re-render the play screen. The deck rows show
   the selected mode's figures, so switching mode while on the menu changes every number in the
@@ -1121,11 +1148,11 @@ These each cost a real bug once. Comments in the source mark most of them.
   together (this bit `.deck__name`/`.deck__meta` and `.font__name`/`.font__note`).
 - **The run is timed but the clock is never shown while practising** — deliberate, a visible
   ticking counter turns practice into a race. Total appears once, on the results screen.
-- **Never select `.seg__btn` document-wide.** Five switches share the class now — answer mode,
-  prompt form, theme, performance, and the progress screen's device switch. A global query wires
+- **Never select `.seg__btn` document-wide.** Six switches share the class now — answer mode,
+  prompt form, date form, theme, performance, and the progress screen's device switch. A global query wires
   `setMode(undefined)` onto the others and blanks their `aria-checked` on every mode change. Each
   has a handle of its own for exactly this reason: go through `el.modeSwitch` / `el.promptSwitch` /
-  `el.themeSwitch` / `el.perfSwitch` / `el.deviceSwitch`. The shared *layout* is `.modebar--stack`,
+  `el.datesSwitch` / `el.themeSwitch` / `el.perfSwitch` / `el.deviceSwitch`. The shared *layout* is `.modebar--stack`,
   which is a layout modifier and not a handle on the mode.
 - **`activeMode()` is a record key, not a test of what is on screen.** It carries a `-kanji` or
   `-reading` suffix for the generated drills, so `activeMode() !== "choose"` silently stopped being
