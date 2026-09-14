@@ -149,7 +149,7 @@ the five sound changes that break the pattern — 300 さんびゃく, 600 ろ�
 kana and the reading. Below those, the operator words, 十 before パーセント, and a dozen sums read
 aloud.
 
-**Time — the 日時 stamp.** Weekdays, months, dates and the clock, in seven drills with a table of
+**Time — the 日時 stamp.** Weekdays, months, dates and the clock, in eight drills with a table of
 their own. Most of it is counting with something on the end — 四月 is month four, 二十日 the
 twentieth, 四時 four o'clock — so it reads the same way round as the numbers:
 
@@ -185,13 +185,17 @@ weekdays look the same either way.
 - **Minutes** is where 分 changes shape. It is ふん after 2, 5 and 7 and ぷん after the rest, and
   the number in front changes with it: 一分 **いっぷん**, 六分 **ろっぷん**, 八分 **はっぷん**,
   十分 **じゅっぷん**. The drill asks 1 to 10 and then every five, which is how a clock is read.
+- **Seconds** is the counter that leaves the number alone: 秒 is びょう after everything, so 一秒
+  is **いちびょう** and 十秒 **じゅうびょう** — set beside 一分 いっぷん and 十分 じゅっぷん, which
+  is the point. Only 4, 7 and 9 need care: **よんびょう**, **ななびょう** (or しちびょう) and
+  **きゅうびょう**, never しびょう or くびょう. Same values as Minutes.
 - **Clock times** puts the two together: 三時四十五分 is **さんじよんじゅうごふん**, the hour and
   then the minute. Twenty faces a run, dealt so that every hour comes up. Half past has a word of
   its own — 三時半 **さんじはん** — and Writing takes either that or the long way round. Typing
   takes **3:45**, or just **345**, so the phone keypad can answer it.
 
 **All characters → 日時** lays all of that out: the week, the twelve months, the three that change,
-days 1–10, days 11–31, the three that stay native, the twelve hours, the minutes, and a handful of
+days 1–10, days 11–31, the three that stay native, the twelve hours, the minutes, the seconds, and a handful of
 whole times taken apart.
 
 **Flick keyboard drills — phones and tablets only.** Below the deck list, on a touch device, are two
@@ -546,7 +550,7 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
 `一万二千三百四十五 いちまんにせんさんびゃくよんじゅうご` のように大きな数を分解した例。各行は
 「漢字・何であるか・かな・読み」の 4 つです。
 
-**時 — 日時 の印。** 曜日・月・日付・時刻の 7 つのドリルと、専用の一覧表が入っています。ほとんどは
+**時 — 日時 の印。** 曜日・月・日付・時刻の 8 つのドリルと、専用の一覧表が入っています。ほとんどは
 数え方に何かが付いたもの — 四月 は 4 番目の月、二十日 は 20 日目 — なので、向きは数字と同じです。
 
 - **タイピング** は **月曜日** を出して **Monday**、**20日** を出して読み方（`hatsuka`）を入力。
@@ -579,13 +583,17 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
 - **Minutes** は 分 の形が変わるところ。2・5・7 の後は ふん、それ以外は ぷん になり、前の数字も
   一緒に変わります（一分 **いっぷん**、六分 **ろっぷん**、八分 **はっぷん**、十分
   **じゅっぷん**）。出題は 1〜10 と、そこから 5 分刻みです。
+- **Seconds** は数字をそのままにする助数詞。秒 はいつも びょう で、一秒 は **いちびょう**、十秒 は
+  **じゅうびょう** — 一分 いっぷん・十分 じゅっぷん と並べると違いが分かります。気をつけるのは
+  4・7・9 だけで、**よんびょう**、**ななびょう**（しちびょう）、**きゅうびょう**。しびょう・くびょう
+  とは言いません。出題は分と同じです。
 - **Clock times** は両方をつなげたもの。三時四十五分 は **さんじよんじゅうごふん**、時が先で分が
   後です。1 回 20 問、どの時も必ず出るように配ります。30 分には **半** という言い方があり
   （三時半 **さんじはん**）、書き取りはどちらでも正解。入力は **3:45** でも **345** でも通るので、
   スマホのテンキーでも答えられます。
 
 **五十音表 → 日時** はその全部を並べたものです。曜日、12 か月、変わる 3 つ、1〜10 日、11〜31 日、
-和語のまま残る 3 つ、12 の時、分、そして時刻をいくつか分解したもの。
+和語のまま残る 3 つ、12 の時、分、秒、そして時刻をいくつか分解したもの。
 
 **フリック入力のドリル — スマートフォンとタブレットのみ。** タッチ端末では、デッキ一覧の下にフリック
 入力のドリルが 2 つ出ます。日本語のケータイキーボードは五十音の行ごとに 10 個のキーがあり、母音は

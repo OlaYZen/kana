@@ -90,8 +90,8 @@ or font options is a JSON edit, never a code edit. Keys prefixed `//` (`"//fonts
   deck's does. See **Derived decks** below.
 - numbers: `{ones[], places[], groups[], operators[], percent{}, drills[]}` — the parts a number is *composed* from, not a
   list of them. Each part carries `j` (its kanji), `r` (romaji) and `k` (kana). See **Numbers**.
-- calendar: `{weekdays[], counters[], drills[]}` — the seven days listed, and the four counters
-  months, dates, hours and minutes are composed with. See **The calendar and the clock** below.
+- calendar: `{weekdays[], counters[], drills[]}` — the seven days listed, and the five counters
+  months, dates, hours, minutes and seconds are composed with. See **The calendar and the clock** below.
 
 **Colour** is washi paper throughout — cream ground, ink text, vermilion seal accent — defined
 once in `:root` (`--paper*`, `--c-ink*`, `--shu`, `--brass`, `--matcha`). The accents are
@@ -768,6 +768,14 @@ composed, then joined.
   because it is counted twice, so every branch tests `kind` instead. Reading `c.cal.n` to tell them
   apart is what the weekday branch used to do and is what broke first.
 
+**Seconds are a fourth counter and a sixth drill, and add nothing to the machinery.** `cal-second`
+is 秒 on the same nineteen values as the minutes, and it is the calmest counter in the file: びょう
+never changes the number in front of it, so the only entries in its `irregular` are the three the
+4/7/9 rule forces — よんびょう, ななびょう (or しちびょう), きゅうびょう — which exist to *refuse*
+しびょう, よびょう and くびょう rather than to change a sound. That contrast with 分 is the lesson,
+and the chart puts the two side by side. Seconds are deliberately not part of `cal-time`: a clock
+is read aloud to the nearest five minutes, and 3時45分30秒 is a timer, not a time of day.
+
 **The faces are dealt, not sampled.** Twelve hours against twelve marks is 144 faces and a run asks
 twenty, so `timeValues()` cycles a shuffled list of each: every hour is asked before any hour is
 asked twice, and the same for the marks. Sampling twenty of 144 can leave 四時 or 七時 out of a run
@@ -991,7 +999,7 @@ enforced in `analytics.py`, and each one costs data on purpose:
   it**, because it files under its five operators, which recur every run. **The clock drill is the
   other one in it**: twelve hours against twelve marks is 144 faces and a run deals twenty, so one face
   comes round about every seventh run and ranking them would say nothing. **Every other calendar
-  drill is analysable** and needs nothing added: seven, twelve, thirteen, nineteen, twelve and
+  drill is analysable** and needs nothing added: seven, twelve, thirteen, nineteen, nineteen, twelve and
   thirty-one fixed prompts, every one of them asked every run, which is exactly the case the
   report is for.
 - **Flick drills are listed but never analysed** (`analysable: false` for any `flick-` deck).
@@ -1255,9 +1263,9 @@ keep working with no network at all**, on a LAN, and from a folder on a static h
 
 - **The cut is defined by Unicode *ranges*, not by the current contents of `kana.json`.** Every
   kana block is kept whole, so adding a card can never produce tofu — which would otherwise make
-  "adding a deck is a JSON edit" quietly false. The enumerated part is the forty kanji the
+  "adding a deck is a JSON edit" quietly false. The enumerated part is the forty-one kanji the
   interface actually draws — 設定 記録 五十音 …, the numerals 一二三四五六七八九十百千万 both
-  generated subjects write their values in, the calendar's 月火水木金土日曜, and 時分半 for the
+  generated subjects write their values in, the calendar's 月火水木金土日曜, and 時分秒半 for the
   clock — plus `U+014D` and `U+016B` for the ō and ū the readings are spelt with, and
   `U+00D7,U+00F7,U+2212` for the × ÷ − the arithmetic drill asks with. `subset.py`'s `check()` re-derives the
   kanji from the sources and fails if the list has drifted, so that can't rot silently.
