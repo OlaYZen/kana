@@ -363,6 +363,13 @@
     <div class="panel__scroll">
       <!-- Five ways onward and nothing else: every switch lives one step further
            in, on Settings, so this screen is a list you can read at a glance. -->
+      <!-- Your progress leads, and it and Account are both hidden unless a backend answers /api/health -->
+      <button type="button" class="wide hidden" id="statsBtn">
+        <span class="wide__mark" lang="ja">記録</span>
+        <span class="wide__label">Your progress</span>
+        <span class="wide__go" aria-hidden="true">▸</span>
+      </button>
+
       <button type="button" class="wide" id="settingsBtn">
         <span class="wide__mark" lang="ja">設定</span>
         <span class="wide__label">Settings</span>
@@ -378,13 +385,6 @@
       <button type="button" class="wide" id="chartBtn">
         <span class="wide__mark" lang="ja">五十音</span>
         <span class="wide__label">All characters &amp; romaji</span>
-        <span class="wide__go" aria-hidden="true">▸</span>
-      </button>
-
-      <!-- both hidden unless a backend answers /api/health -->
-      <button type="button" class="wide hidden" id="statsBtn">
-        <span class="wide__mark" lang="ja">記録</span>
-        <span class="wide__label">Your progress</span>
         <span class="wide__go" aria-hidden="true">▸</span>
       </button>
 
