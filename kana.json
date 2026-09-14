@@ -853,6 +853,19 @@
         { "q": "ピュ", "a": "pyu" },
         { "q": "ピョ", "a": "pyo" }
       ]
+    },
+    {
+      "id": "time-kanji", "label": "Time kanji", "script": "calendar", "sample": "時分秒",
+      "subtitle": "時 分 秒 半 午前 午後 — the words a time is written with",
+      "note": "Each read as it is said in a time: 時 ji after the hour, 分 fun — or pun, after 1, 3, 4, 6, 8 and 10 — after the minutes, 秒 byō after the seconds, 半 han for half past, and 午前 gozen and 午後 gogo in front.",
+      "cards": [
+        { "q": "時",   "a": "ji",    "alt": ["zi"] },
+        { "q": "分",   "a": "fun",   "alt": ["pun", "hun"] },
+        { "q": "秒",   "a": "byō",   "alt": ["byou", "byo", "byoo"] },
+        { "q": "半",   "a": "han" },
+        { "q": "午前", "a": "gozen" },
+        { "q": "午後", "a": "gogo" }
+      ]
     }
   ],
 
