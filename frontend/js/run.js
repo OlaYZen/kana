@@ -73,7 +73,8 @@ function render() {
   // direction asks with the identity and answers in kana.
   const reading = state.prompt === "reading";
   const text =
-    calendaring ? (writing ? c.cal.ask : reading ? c.cal.reading : calFace(c)) :
+    // a weekday keeps its kanji on the Reading prompt: the reading is its answer
+    calendaring ? (writing ? c.cal.ask : reading && c.cal.kind !== "week" ? c.cal.reading : calFace(c)) :
     numbering ? (writing ? c.num.ask : reading ? c.num.reading : c.num.kanji) :
     flicking ? c.q : writing ? c.a : c.q;
   // Latin prompt in every case but reading Japanese. Both generated subjects
@@ -82,7 +83,7 @@ function render() {
   // answers in kana. So only Writing is Latin here, and for a weekday, whose
   // identity is a word rather than a number, only Writing's prompt is.
   const latinPrompt = calendaring
-    ? (writing ? c.cal.askLang === "en" : reading)
+    ? (writing ? c.cal.askLang === "en" : reading && c.cal.kind !== "week")
     : numbering ? (writing || reading)
     : flicking || writing;
 
@@ -249,8 +250,10 @@ function buildChoices(c) {
     // Under 9月 the options are how the same neighbours are said, built as
     // cards of their own so the readings come from the same composition.
     const reads = answersReading();
-    const said = (ident) => calendarCard(state.deck,
-      c.cal.kind === "time" ? timeEntry(state.deck, ident) : { n: Number(ident) }).cal.reading;
+    const said = (ident) => c.cal.kind === "week"
+      ? CAL.weekdays.find((x) => x.en === ident).r     // a weekday's reading is its entry's own
+      : calendarCard(state.deck,
+          c.cal.kind === "time" ? timeEntry(state.deck, ident) : { n: Number(ident) }).cal.reading;
     buildChoiceButtons(shuffle(near.slice(0, 3)
       .map((a) => ({ a: reads ? said(a) : a }))
       .concat({ a: choiceAnswer(c) })), c);
@@ -351,10 +354,6 @@ function submitTyped() {
       if (!value) return;
       right = numRomajiAccepts(c.cal.parts, normRomaji(value)) ||
               numKanaAccepts(c.cal.parts, normKana(value));
-    } else if (c.cal.kind === "week") {
-      value = norm(field.value);
-      if (!value) return;
-      right = value === norm(c.cal.ident);
     } else if (c.cal.kind === "time") {
       // the digits either way — "3:45" and "345" are one answer, because a
       // numeric keypad cannot type the colon the identity is written with

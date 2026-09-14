@@ -128,8 +128,9 @@ const numericAnswer = () =>
 // Writing already asks with 9月 and answers in kana, and a weekday has no
 // number in it to give away.
 const answersReading = () =>
-  state.calendar !== null && state.calendar !== "week" && !state.flick &&
-  state.mode !== "write" && state.prompt === "kanji" && state.dates === "numeral";
+  state.calendar !== null && !state.flick && state.mode !== "write" &&
+  // a weekday always: its English name is a translation, not an answer
+  (state.calendar === "week" || (state.prompt === "kanji" && state.dates === "numeral"));
 
 // What a pick is graded against: the value, or the reading when that is asked.
 const choiceAnswer = (c) => (answersReading() ? c.cal.reading : c.a);

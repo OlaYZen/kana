@@ -175,9 +175,13 @@ const promptApplies = (deck, mode) =>
 // A calendar drill asked with 9月 wants the reading rather than the value, so
 // it is a third question beside 九月 → 9 and "kugatsu" → 9, and records as
 // "-numeral". A weekday has no number to write either way and keeps "-kanji".
+// A weekday is always asked with its kanji and answered with its reading, so the
+// prompt setting does not reach it and it records as "-said" — a different
+// question from the English-name answer it had before, whose records stay put.
 const promptForm = (deck, prompt) =>
-  prompt === "kanji" && deck.calendar && deck.calendar !== "week" &&
-  state.dates === "numeral" ? "numeral" : prompt;
+  deck.calendar === "week" ? "said"
+    : prompt === "kanji" && deck.calendar && state.dates === "numeral" ? "numeral"
+    : prompt;
 const recordMode = (deck, mode, prompt) =>
   promptApplies(deck, mode) ? mode + "-" + promptForm(deck, prompt) : mode;
 

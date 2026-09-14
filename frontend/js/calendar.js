@@ -40,9 +40,13 @@ const CAL_ASK = {
   // in the same ようび, so what is being asked for is the part in front. Said
   // in general terms rather than by example: naming the stem would name the
   // answer. See kana.json's `altk` on each weekday.
-  week:  { type: "Type the day this reads.",
-           choose: "Pick the day this reads.",
-           write: "Write this day — its first part is enough." },
+  // Typing and Choosing ask for the reading, as Writing asks for the kana; the
+  // English name is only ever Writing's prompt and the feedback's gloss.
+  week:  { type: "Type how this day is said — its first part is enough.",
+           choose: "Pick how this day is said.",
+           write: "Write this day — its first part is enough.",
+           sayType: "Type how this day is said — its first part is enough.",
+           sayChoose: "Pick how this day is said." },
   month: { type: "Type the month this reads.",
            choose: "Pick the month this reads.",
            write: "Write this month in kana.",
