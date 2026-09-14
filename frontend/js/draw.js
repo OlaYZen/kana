@@ -20,7 +20,8 @@ let drawActive = null;            // the stroke under the pointer
 
 const canDraw = (c) => Boolean(c && drawScripts.has(c.q));
 const drawableCards = (deck) => (deck && deck.cards ? deck.cards.filter(canDraw) : []);
-const drawingNow = () => !state.flick && state.mode === "draw";
+const drawingNow = () => !state.flick && isDrawMode(state.mode);
+const tracingNow = () => !state.flick && state.mode === "trace";
 
 function loadStrokes() {
   if (drawRefs) return Promise.resolve(drawRefs);
@@ -124,6 +125,7 @@ function drawNote(text) {
 function drawAsk() {
   const c = card(), g = cardGroup(c);
   const which = state.deck.spansScripts && g.script ? "the " + g.script + " for " : "";
+  if (tracingNow()) return "Trace " + which + '<b class="drawask">' + c.a + "</b> over the faint character.";
   return "Draw " + which + '<b class="drawask">' + c.a + "</b> from memory.";
 }
 
@@ -157,7 +159,8 @@ function drawVerdict(c, g) {
   return "Not close enough yet — " + g.score + "/100.";
 }
 
-// The answer, faint behind the ink, once the card is graded.
+// The answer, faint behind the ink: once the card is graded, or from the start
+// when tracing.
 function showGhost(c) {
   el.glyph.textContent = c.q;
   el.glyph.lang = "ja";
@@ -181,5 +184,5 @@ function initDraw(decks) {
   el.drawClear.addEventListener("click", clearDrawing);
   el.drawCheck.addEventListener("click", checkDrawing);
   window.addEventListener("resize", () => { if (drawingNow()) { fitPad(); paintPad(); } });
-  if (state.mode === "draw") loadStrokes().catch(() => {});
+  if (isDrawMode(state.mode)) loadStrokes().catch(() => {});
 }

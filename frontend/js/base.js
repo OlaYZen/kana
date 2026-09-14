@@ -121,7 +121,10 @@ const TOUCH = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 // comparison — see CLAUDE.md.
 const SCRIPTS = ["hiragana", "katakana", "kana", "number", "calendar"];
 
-const MODES = ["type", "choose", "write", "draw"];
+const MODES = ["type", "choose", "write", "draw", "trace"];
+// Tracing is Drawing with the kana shown faintly on the pad: the same pad, the
+// same grader, and records of its own, since copying a shape is not recalling one.
+const isDrawMode = (mode) => mode === "draw" || mode === "trace";
 
 // Which script the generated drills ask in, when they are the ones asking:
 // 六 or "roku", 二十日 or "hatsuka". Both are worth practising and they are
@@ -147,7 +150,7 @@ const DATE_FORMS = ["numeral", "kanji"];
 // runs, and they record under it so their scores never mix with a deck's.
 // The number drills are not here: they answer to the three above like a deck.
 const MODE_LABEL = {
-  type: "Typing", choose: "Choosing", write: "Writing", draw: "Drawing", flick: "Flick"
+  type: "Typing", choose: "Choosing", write: "Writing", draw: "Drawing", trace: "Tracing", flick: "Flick"
 };
 
 // A generated drill's record mode carries the prompt form after it —
@@ -173,7 +176,7 @@ const recordKey = (deckId, mode) => deckId + "|" + mode;
 // records split by mode in the first place. Both forms are suffixed, and
 // `rev 4` moves the records that predate the split onto "-reading".
 const promptApplies = (deck, mode) =>
-  Boolean(deck && (deck.numbers || deck.calendar)) && mode !== "write" && mode !== "draw";
+  Boolean(deck && (deck.numbers || deck.calendar)) && mode !== "write" && !isDrawMode(mode);
 // A calendar drill asked with 9月 wants the reading rather than the value, so
 // it is a third question beside 九月 → 9 and "kugatsu" → 9, and records as
 // "-numeral". A weekday has no number to write either way and keeps "-kanji".
