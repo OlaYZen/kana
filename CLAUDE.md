@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-> The front end is `frontend/`, four static files plus a folder of fonts, and works on its own — no build step,
+> The front end is `frontend/` — `index.html`, `kana.json`, `css/`, `js/` and the fonts — and works on its own — no build step,
 > no bundler, nothing to install, and nothing fetched from anyone else's server. The backend in
 > `backend/` is **optional**: it adds accounts, server-side saves and the progress report, and if
 > nothing answers `/api/health` the app hides all of that and runs exactly as it did before it
@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `frontend/index.html` | markup only — nine screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`, `#options`, `#fontPicker`, `#chart`) and no modals; `#play` holds one answer block per kind of answer (`#typeMode`, `#writeMode`, `#numberMode`, `#chooseMode`) |
 | `frontend/css/` | `core.css`, every rule and no colour, mobile-first; `light.css` and `dark.css`, one theme each and nothing but colour tokens |
 | `frontend/kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `derived[]`, `numbers{}`. No kana, font name or number reading lives in JS or CSS |
-| `frontend/app.js` | all front-end logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
+| `frontend/js/` | all front-end logic, sixteen classic scripts that `index.html` loads in order — see **Scripts** |
 | `frontend/icon.svg` | the app icon, and the source the `.ico` is generated from — see **The icon** |
 | `frontend/favicon.ico` | six sizes rasterised from `icon.svg`; what `<link rel="icon">` points at |
 | `frontend/fonts/` | the five bundled Japanese faces, subset to kana, plus `LICENSES.txt` and the `subset.py` that regenerates them — see **Bundled fonts** |
@@ -39,6 +39,33 @@ touches. `main.py` mounts `StaticFiles` on `frontend/` and **must never be point
 root**: until the split it was, and anyone on the network could fetch `/backend/kana.db` — every
 password hash and session token — along with `/.git/` and the backend source. The front end refers
 to its own files relatively (`kana.json`, `fonts/…`), so the move changed nothing inside it.
+
+### Scripts
+
+**The front-end logic is sixteen classic scripts in `js/`, not modules**, and `index.html` loads
+them in this order: `base` → `fonts` → `state` → `screens` → `theme` → `chart` → `flick` →
+`numbers` → `calendar` → `decks` → `menu` → `run` → `backend` → `progress` → `wiring` → `boot`.
+They were one IIFE, `app.js`, cut at its section banners with not a line of logic changed. Classic
+scripts share one global scope, which is what let the cut be mechanical: every function still sees
+every other, as it did inside the IIFE. Modules would have meant an import and an export for most
+of 224 top-level names that call each other in every direction. Three rules come with it:
+
+- **Order is load-bearing, and only for what runs while a file loads.** A function may call
+  anything, whichever file declares it, because by the time anything is *called* every file has
+  loaded. What may not happen is a file *using* a later one's name at load time — a `const`
+  initialiser that calls it, or a listener handed a function by name. Inside the IIFE, hoisting
+  forgave that; across files it is a `ReferenceError` and the app never boots. That is why
+  `wiring.js` sits after `backend.js` and `progress.js`, whose functions its listeners name, and
+  why `boot.js` is last. The split was checked with a parser for exactly this before it shipped.
+- **Every top-level name is now a global.** None of the 224 collides with anything on `window` —
+  checked in Chromium, since a clash with a non-configurable property such as `top` or `location`
+  would stop the script loading at all. A new top-level name has to clear the same bar.
+- **Each file starts with `"use strict"`**, because the one at the top of the IIFE no longer
+  covers them. No top-level code uses `this`, which is the one thing that would have changed
+  meaning outside the function.
+
+A new file goes into `index.html` at the point its load-time needs put it, and `subset.py` reads
+every file in `js/`, so a kanji a new file renders is checked like any other.
 
 The project directory used to be called `hkk`, and its three localStorage keys carried that prefix
 long after. They are now `kana.*`, and `renameKeys()` in `app.js` moves anything still found under
@@ -1416,7 +1443,7 @@ then emits the JSON. That assertion is the whole value of the exercise: it is wh
 this time and is what would catch a `forms` entry with the wrong leading digit. Regenerating
 without it is just retyping.
 
-**Front end — jsdom.** `app.js` runs under it unmodified, which is enough to drive whole runs end
+**Front end — jsdom.** the `js/` scripts run under it unmodified, which is enough to drive whole runs end
 to end: script switching, all four modes, grading, records, the account flow, the progress screen.
 Install jsdom in a scratch directory, never the project. **Give the `JSDOM` an origin** — `url:
 "http://localhost:8000/"` or similar — or there is no `localStorage`, every write takes its
@@ -1435,6 +1462,13 @@ probing takes its documented privacy-mode path, offering everything unverified. 
 a suite with several full runs in it takes minutes; **`window.performance` has only a getter**, so
 it cannot be reassigned; and each `JSDOM` has its own `localStorage`, so a "returning visitor" has
 to be seeded before `app.js` runs rather than carried over from a previous boot.
+
+**Load the scripts as scripts, not with `eval`.** Since the split into `js/`, a suite has to load
+each file named in `index.html`, in order, as its own `<script>` element under `runScripts:
+"dangerously"`, after the stubs are in place — strip the `<script>` tags from the markup first so
+none runs early. An indirect `eval` of each file gives every one a separate scope for its
+`const`s, so nothing a file declares is visible to the next and the app fails in a way the browser
+never would; concatenating them into one `eval` hides exactly the ordering bugs a test should catch.
 
 **Fonts need a real browser, and so does anything about them.** jsdom neither loads a web font nor
 rasterises one, so the whole bundled path — that the eight `@font-face` rules parse, that the
