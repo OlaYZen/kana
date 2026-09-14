@@ -641,7 +641,7 @@ directions` all sit under the あ stamp. Don't simplify this to "never show the 
 deck's identity entirely.
 
 **Persistence** is localStorage key `kana.v1` (`STORE` in `app.js`), holding
-`{rev, mode, prompt, dates, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
+`{rev, mode, prompt, dates, clock, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
 merges patches — never `setItem` directly. **Renaming that key wipes every record anyone has set**,
 because it is the only handle on a returning user's saved bests — the `hkk.v1` → `kana.v1` rename
 was only safe because `renameKeys()` moves the old value across first, and any future rename needs
@@ -1238,13 +1238,17 @@ These each cost a real bug once. Comments in the source mark most of them.
   `activeScreen()` knows what is up.
 - **Sibling `<span>`s sharing a grid cell need explicit `display:block`** or their text runs
   together (this bit `.deck__name`/`.deck__meta` and `.font__name`/`.font__note`).
-- **The run is timed but the clock is never shown while practising** — deliberate, a visible
-  ticking counter turns practice into a race. Total appears once, on the results screen.
-- **Never select `.seg__btn` document-wide.** Six switches share the class now — answer mode,
-  prompt form, date form, theme, performance, and the progress screen's device switch. A global query wires
+- **The run is timed, and the clock stays off screen while practising unless the Timer switch
+  shows it** — deliberate, a visible
+  ticking counter turns practice into a race. Hidden is the default for that reason; `setClock()` syncs the choice through `store`,
+  and `runClockTick()` is the only thing that repaints the play bar's clock — it is a display,
+  and nothing is measured by counting its ticks. The results screen shows the total and the best
+  time with `fmtExact()`, to the millisecond, never rounded: those are the figures the records keep.
+- **Never select `.seg__btn` document-wide.** Seven switches share the class now — answer mode,
+  prompt form, date form, timer, theme, performance, and the progress screen's device switch. A global query wires
   `setMode(undefined)` onto the others and blanks their `aria-checked` on every mode change. Each
   has a handle of its own for exactly this reason: go through `el.modeSwitch` / `el.promptSwitch` /
-  `el.datesSwitch` / `el.themeSwitch` / `el.perfSwitch` / `el.deviceSwitch`. The shared *layout* is `.modebar--stack`,
+  `el.datesSwitch` / `el.clockSwitch` / `el.themeSwitch` / `el.perfSwitch` / `el.deviceSwitch`. The shared *layout* is `.modebar--stack`,
   which is a layout modifier and not a handle on the mode.
 - **`activeMode()` is a record key, not a test of what is on screen.** It carries a `-kanji` or
   `-reading` suffix for the generated drills, so `activeMode() !== "choose"` silently stopped being

@@ -225,6 +225,11 @@ there's no flicking to practise with a physical keyboard.
 Each drill keeps its own best score and time, separate from the decks and from each other. ん
 isn't drilled: it has no vowel, and which key it sits on varies between keyboards.
 
+**Timer during a run · Hidden / Shown** in Options puts a clock in the bar at the top while you
+practise. It is hidden unless you turn it on, because a ticking counter turns practice into a race;
+the run is timed either way, and the results screen always shows the exact time — `1:23.456`, to
+the millisecond, the same figure your fastest clean run is kept in. It follows your account.
+
 **Performance · Normal / Fast** in Options turns every animation off. The 〇 stamp goes with them,
 so a right answer moves straight to the next character instead of pausing for it — which makes a
 run noticeably quicker as well as cheaper to draw on an older phone. A wrong answer is unchanged:
@@ -547,6 +552,11 @@ python -m http.server 8000 --directory frontend
 `sanzen`、8,000 は `hassen`。
 
 それぞれ自分の最高記録と時間を持ちます（デッキとも、互いとも別）。
+
+**Timer during a run · Hidden / Shown** を設定で Shown にすると、練習中に上のバーへ時計が出ます。
+時間が刻まれると練習が競争になってしまうので、既定は非表示です。計測はどちらでも行われ、結果画面には
+いつも正確なタイム（`1:23.456` のようにミリ秒まで）が出ます。最速記録もこの値で保存されます。この設定は
+アカウントに同期されます。
 
 **パフォーマンス · Normal / Fast** は設定にあります。Fast にするとアニメーションが全部止まります。
 〇 の判子も出ないので、正解するとそのまま次の文字に進みます（速くなりますし、古い端末では描画も
