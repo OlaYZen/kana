@@ -581,7 +581,7 @@
 
   "decks": [
     {
-      "id": "hiragana",
+      "id": "hiragana", "draw": true,
       "label": "Hiragana",
       "script": "hiragana",
       "sample": "あ",
@@ -637,7 +637,7 @@
       ]
     },
     {
-      "id": "hiragana-dakuten",
+      "id": "hiragana-dakuten", "draw": true,
       "label": "Dakuten hiragana",
       "script": "hiragana",
       "sample": "が",
@@ -718,7 +718,7 @@
       ]
     },
     {
-      "id": "katakana",
+      "id": "katakana", "draw": true,
       "label": "Katakana",
       "script": "katakana",
       "sample": "ア",
@@ -774,7 +774,7 @@
       ]
     },
     {
-      "id": "katakana-dakuten",
+      "id": "katakana-dakuten", "draw": true,
       "label": "Dakuten katakana",
       "script": "katakana",
       "sample": "ガ",
