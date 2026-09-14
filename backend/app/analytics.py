@@ -47,11 +47,12 @@ FLICK_PREFIX = "flick-"   # decks whose prompts are directions, not characters
 # not be asked again. The clock drill is the same shape for the same reason: it
 # deals twenty of the 144 faces a twelve-hour clock makes at five-minute marks,
 # so one face comes round every seventh run or so and ranking them says nothing.
+# The 午前/午後 drill doubles that to 264 faces and is out for the same reason.
 # The 1-50 drill is the opposite case and is analysed like any deck: it is fifty
 # fixed prompts, and which of them you are slow on is exactly what the report is
 # for. So are the hours, the minutes and the seconds — twelve, nineteen and
 # nineteen.
-UNANALYSABLE = {"num-random", "cal-time"}
+UNANALYSABLE = {"num-random", "cal-time", "cal-ampm"}
 
 MIN_RUNS = 3           # complete, non-drill runs of one deck before reporting
 MAX_CARD_MS = 10_000   # over this, the timing is discarded as "distracted"

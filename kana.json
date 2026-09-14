@@ -560,6 +560,20 @@
             { "n": "12:55",  "x": "十二時五十五分",  "q": "じゅうにじごじゅうごふん",  "a": "jūniji gojūgofun" },
             { "n": "9:30",   "x": "九時半",      "q": "くじはん",          "a": "kuji han" }
           ]
+        },
+        {
+          "type": "numbers", "wide": true,
+          "title": "午前 and 午後",
+          "en": "gozen before noon and gogo after, said in front of the time — the 24-hour clock is the other way to write it",
+          "items": [
+            { "n": "am",     "x": "午前",         "q": "ごぜん",                  "a": "gozen" },
+            { "n": "pm",     "x": "午後",         "q": "ごご",                   "a": "gogo" },
+            { "n": "9:00",   "x": "午前九時",      "q": "ごぜんくじ",               "a": "gozen kuji" },
+            { "n": "11:55",  "x": "午前十一時五十五分", "q": "ごぜんじゅういちじごじゅうごふん", "a": "gozen jūichiji gojūgofun" },
+            { "n": "15:30",  "x": "午後三時半",     "q": "ごごさんじはん",             "a": "gogo sanji han" },
+            { "n": "16:20",  "x": "午後四時二十分",   "q": "ごごよじにじゅっぷん",          "a": "gogo yoji nijuppun" },
+            { "n": "19:15",  "x": "午後七時十五分",   "q": "ごごしちじじゅうごふん",         "a": "gogo shichiji jūgofun" }
+          ]
         }
       ]
     }
@@ -977,7 +991,7 @@
     ]
   },
 
-  "//calendar": "The calendar and the clock. Days, months, hours and minutes are all counting with a counter on the end, so they are *composed* the same way a number is — app.js reads the value with readNumber(), writes it with kanjiNumber() and appends the counter — and only what composition gets wrong is written down. `irregular` is that list, keyed by the whole value rather than by a digit, because these replace the entire reading and not one part of it: 一日 is tsuitachi, 二十日 hatsuka, 四月 shigatsu. Everything absent from it is built, kanji included — nothing here writes a kanji form out, since `j` in `numbers` above already says how a value is written. The rule that decides what has to be listed is the trailing digit: 4, 7 and 9 carry `alt` readings in `numbers` (yon/shi, nana/shichi, kyū/ku), and a bare trailing digit takes them — so every value ending in one of the three is written out here, or the drill would quietly accept jūnananichi for 十七日. `suffix` is the counter's own kanji, which the composed form ends in. `weekdays` are not counting at all and are simply listed — `en` is the identity, the thing Typing and Choosing answer with, where a day or a month answers with its number. Their `altk`/`alt` is the stem alone, げつ for げつようび: every weekday ends in the same ようび, so Writing takes either the whole word or just the part that says which day. That works for weekdays and for nothing else here — a month's stem is the bare number and a date's is either the bare number or nothing separable at all, so accepting it would drop the counter the drill is about. A drill is {id, kind, len, label, sample, subtitle}, `kind` being \"week\" or a counter id; every value is asked exactly once. The clock adds two more counters and nothing else: \u6642 on an hour and \u5206 on a minute, listed the same way and irregular in the same places \u2014 \u56db\u6642 is yoji and \u4e00\u5206 ippun, and \u5206 is ふん after 2, 5 and 7 and ぷん after the rest, which is why most of the minutes are written out. `half` is the one reading that is not a counter at all: \u534a han is half past, true of 3:30 and not of a bare 三十分, so app.js merges it into the minute only when the two counters are being said together. A drill may carry `values` instead of `len` — the values it asks, a subset of the same material rather than a second kind of thing, which is what `cal-day-native` is: the thirteen dates that are said as words instead of ending in \u306b\u3061. The list is the length, so it carries no `len`, and Choosing draws its wrong answers from the list too \u2014 offering the 19th against \u306f\u3064\u304b in a drill that never asks it would answer the question for anyone who knows which thirteen are in it. A drill of `kind` \"time\" is the one built from two counters rather than one: it names them in `counters` and the marks it asks in `minutes`, and every value it asks is an hour and a minute said one after the other \u2014 which is the only thing the clock adds to how a reading is put together. Which way round a prompt goes is the answer mode's to decide, exactly as it is for the number drills.",
+  "//calendar": "The calendar and the clock. Days, months, hours and minutes are all counting with a counter on the end, so they are *composed* the same way a number is — app.js reads the value with readNumber(), writes it with kanjiNumber() and appends the counter — and only what composition gets wrong is written down. `irregular` is that list, keyed by the whole value rather than by a digit, because these replace the entire reading and not one part of it: 一日 is tsuitachi, 二十日 hatsuka, 四月 shigatsu. Everything absent from it is built, kanji included — nothing here writes a kanji form out, since `j` in `numbers` above already says how a value is written. The rule that decides what has to be listed is the trailing digit: 4, 7 and 9 carry `alt` readings in `numbers` (yon/shi, nana/shichi, kyū/ku), and a bare trailing digit takes them — so every value ending in one of the three is written out here, or the drill would quietly accept jūnananichi for 十七日. `suffix` is the counter's own kanji, which the composed form ends in. `weekdays` are not counting at all and are simply listed — `en` is the identity, the thing Typing and Choosing answer with, where a day or a month answers with its number. Their `altk`/`alt` is the stem alone, げつ for げつようび: every weekday ends in the same ようび, so Writing takes either the whole word or just the part that says which day. That works for weekdays and for nothing else here — a month's stem is the bare number and a date's is either the bare number or nothing separable at all, so accepting it would drop the counter the drill is about. A drill is {id, kind, len, label, sample, subtitle}, `kind` being \"week\" or a counter id; every value is asked exactly once. The clock adds two more counters and nothing else: \u6642 on an hour and \u5206 on a minute, listed the same way and irregular in the same places \u2014 \u56db\u6642 is yoji and \u4e00\u5206 ippun, and \u5206 is ふん after 2, 5 and 7 and ぷん after the rest, which is why most of the minutes are written out. `half` is the one reading that is not a counter at all: \u534a han is half past, true of 3:30 and not of a bare 三十分, so app.js merges it into the minute only when the two counters are being said together. A drill may carry `values` instead of `len` — the values it asks, a subset of the same material rather than a second kind of thing, which is what `cal-day-native` is: the thirteen dates that are said as words instead of ending in \u306b\u3061. The list is the length, so it carries no `len`, and Choosing draws its wrong answers from the list too \u2014 offering the 19th against \u306f\u3064\u304b in a drill that never asks it would answer the question for anyone who knows which thirteen are in it. A drill of `kind` \"time\" is the one built from two counters rather than one: it names them in `counters` and the marks it asks in `minutes`, and every value it asks is an hour and a minute said one after the other \u2014 which is the only thing the clock adds to how a reading is put together. Which way round a prompt goes is the answer mode's to decide, exactly as it is for the number drills. `meridiem` is 午前 and 午後, each with the 24-hour `from` its half of the day starts at; a time drill with `\"meridiem\": true` says one before the hour, is answered on the 24-hour clock, and asks only the `hours` it lists — 1 to 11, because whether 午前12時 is noon or midnight depends on whom you ask.",
   "calendar": {
     "weekdays": [
       { "en": "Monday",    "ja": "月曜日", "k": "げつようび",  "r": "getsuyōbi",  "altk": ["げつ"],   "alt": ["getsu"] },
@@ -1107,7 +1121,18 @@
         "minutes": [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
         "label": "Clock times", "sample": "時分",
         "subtitle": "The hour and the minute together, to five minutes"
+      },
+      {
+        "id": "cal-ampm", "kind": "time", "counters": ["hour", "minute"], "meridiem": true,
+        "len": 20, "hours": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        "minutes": [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
+        "label": "AM and PM", "sample": "午後",
+        "subtitle": "午前 and 午後 in front of the time, answered on the 24-hour clock"
       }
+    ],
+    "meridiem": [
+      { "id": "am", "j": "午前", "r": "gozen", "k": "ごぜん", "en": "am", "from": 0 },
+      { "id": "pm", "j": "午後", "r": "gogo",  "k": "ごご",  "en": "pm", "from": 12 }
     ]
   }
 }
