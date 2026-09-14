@@ -247,6 +247,9 @@
     <div class="playmain">
       <div class="square" id="square">
         <span class="glyph" id="glyph" lang="ja">あ</span>
+        <!-- Drawing mode's pad: above the glyph, which shows the answer faintly
+             behind the ink once a drawing is graded; below the 〇 stamp. -->
+        <canvas class="drawpad hidden" id="drawPad" aria-label="Drawing area: draw the character here"></canvas>
         <span class="maru" aria-hidden="true"></span>
       </div>
     </div>
@@ -288,6 +291,17 @@
                  placeholder="digits…" aria-label="Type the number in digits">
           <button type="button" class="btn btn--primary" id="numSubmitBtn">Check</button>
         </div>
+      </div>
+
+      <!-- drawing: the square above is the pad, and these are its controls.
+           Check is never disabled — with nothing drawn it says so, inline. -->
+      <div id="drawMode" class="hidden">
+        <div class="drawtools">
+          <button type="button" class="btn btn--ghost" id="drawUndo">Undo</button>
+          <button type="button" class="btn btn--ghost" id="drawClear">Clear</button>
+          <button type="button" class="btn btn--primary" id="drawCheck">Check</button>
+        </div>
+        <p class="drawnote hidden" id="drawNote" role="status" aria-live="polite"></p>
       </div>
 
       <!-- shared by all three typing modes; the hint text is set per mode -->
@@ -414,6 +428,7 @@
           <button type="button" class="seg__btn" data-mode="type" role="radio" aria-checked="true">Typing</button>
           <button type="button" class="seg__btn" data-mode="choose" role="radio" aria-checked="false">Choosing</button>
           <button type="button" class="seg__btn" data-mode="write" role="radio" aria-checked="false">Writing</button>
+          <button type="button" class="seg__btn" data-mode="draw" role="radio" aria-checked="false">Drawing</button>
         </div>
       </div>
 
@@ -583,6 +598,8 @@
 <script src="js/decks.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/run.js"></script>
+<script src="js/grade.js"></script>
+<script src="js/draw.js"></script>
 <script src="js/backend.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/quick.js"></script>

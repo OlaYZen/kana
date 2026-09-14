@@ -112,6 +112,14 @@ document.addEventListener("keydown", (e) => {
   if (shortcut(e)) return;
   if (el.play.classList.contains("hidden")) return;
   if (e.key === "Escape") { toMenu(); return; }
+  // Drawing: Enter checks (or continues) and Backspace takes back a stroke. A
+  // focused button handles its own Enter, or Check would run twice.
+  if (drawingNow()) {
+    if (e.target && e.target.tagName === "BUTTON") return;
+    if (e.key === "Enter") { e.preventDefault(); checkDrawing(); }
+    else if (e.key === "Backspace") { e.preventDefault(); undoStroke(); }
+    return;
+  }
   if (state.mode !== "choose") return;
 
   if (!state.graded && /^[1-4]$/.test(e.key)) {

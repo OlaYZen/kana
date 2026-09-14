@@ -24,6 +24,13 @@ function start(deck, cards) {
     : state.calendar ? calendarQueue(deck)
     : deck.mix ? mixedQueue(deck)
     : shuffle(deck.cards);
+  // Drawing covers the kana kana.json marks drawable; a mixed deck deals just
+  // those, and a deck with none is not startable from the menu at all.
+  if (!state.flick && state.mode === "draw") {
+    state.queue = state.queue.filter(canDraw);
+    if (!state.queue.length) return;
+    loadStrokes().catch(() => {});
+  }
   state.i = 0;
   state.answered = 0; state.correct = 0;
   state.streak = 0; state.bestStreak = 0;
@@ -68,12 +75,14 @@ function render() {
   const flicking = state.flick !== null;
   const writing = !flicking && state.mode === "write";
   const choosing = !flicking && state.mode === "choose";
+  const drawing = !flicking && state.mode === "draw";
   // The generated drills ask in whichever script the Prompt setting says —
   // 二十日 or "hatsuka", 六 or "roku". Writing is untouched by it: that
   // direction asks with the identity and answers in kana.
   const reading = state.prompt === "reading";
   const text =
     // a weekday keeps its kanji on the Reading prompt: the reading is its answer
+    drawing ? "" :     // Drawing asks on the line below; the square is the pad
     calendaring ? (writing ? c.cal.ask : reading && c.cal.kind !== "week" ? c.cal.reading : calFace(c)) :
     numbering ? (writing ? c.num.ask : reading ? c.num.reading : c.num.kanji) :
     flicking ? c.q : writing ? c.a : c.q;
@@ -88,6 +97,7 @@ function render() {
     : flicking || writing;
 
   el.square.classList.remove("is-correct", "is-wrong", "is-graded");
+  el.glyph.classList.remove("is-ghost");
   el.glyph.textContent = text;
   el.glyph.lang = latinPrompt ? "en" : "ja";
   // Two kana in the square — きゃ — and not two of anything else: a generated
@@ -108,7 +118,8 @@ function render() {
     flicking ? (state.flick === "vowel"
                   ? "Any character that ends in this vowel."
                   : "Any character from this key.") :
-    state.mode === "type"   ? "Type the sound this character makes." :
+    drawing ? "" :
+  state.mode === "type"   ? "Type the sound this character makes." :
     state.mode === "choose" ? "Pick the sound this character makes."
                             : writeAsk();
 
@@ -119,12 +130,15 @@ function render() {
   // so all three take the numeric field where a deck takes the romaji one — a
   // weekday answers with its English name and takes the romaji field like a
   // deck. Writing is kana in every case, and Choosing has no field at all.
-  const typing = !flicking && !writing && !choosing;
+  if (drawing) el.feedback.innerHTML = drawAsk();
+  const typing = !flicking && !writing && !choosing && !drawing;
   const keypad = numericAnswer();
   el.typeMode.classList.toggle("hidden", !typing || keypad);
   el.numberMode.classList.toggle("hidden", !typing || !keypad);
   el.writeMode.classList.toggle("hidden", !kanaAnswer());
   el.chooseMode.classList.toggle("hidden", !choosing);
+  el.drawMode.classList.toggle("hidden", !drawing);
+  el.drawPad.classList.toggle("hidden", !drawing);
   // reveal and the hint row belong to the two typing modes only
   el.typedTools.classList.toggle("hidden", choosing);
   el.revealBar.classList.toggle("hidden", choosing);
@@ -134,6 +148,12 @@ function render() {
     if (stale) stale.remove();
     el.chooseHint.classList.remove("hidden");
     buildChoices(c);
+  } else if (drawing) {
+    // no field to focus: the pad takes the pointer, and the keys are Enter and ⌫
+    resetPad();
+    el.typedHint.textContent = "Enter ↵ to check · ⌫ to undo";
+    el.typedHint.className = "hint hint--keys";
+    el.drawCheck.textContent = "Check";
   } else {
     // the IME reminder has to survive on touch, where the keyboard hint is
     // deliberately suppressed — hence the different class
@@ -207,7 +227,8 @@ function focusField(input) {
    as well is harmless. Neither suppresses the click. */
 function keepKeyboard(node) {
   const hold = (e) => {
-    if (state.mode === "choose") return;   // nothing is focused to protect
+    // nothing is focused to protect: Choosing has no field, Drawing has the pad
+    if (state.mode === "choose" || state.mode === "draw") return;
     e.preventDefault();
   };
   node.addEventListener("pointerdown", hold);
@@ -455,7 +476,15 @@ function markCorrect(typed) {
   // A number is always confirmed the same way round — digits, then kana, then
   // reading — whichever direction it was asked in. The pair is the fact worth
   // repeating; which half was on the card is not.
-  el.feedback.innerHTML = state.calendar
+  if (drawingNow()) showGhost(c);
+  el.feedback.innerHTML = drawingNow()
+    ? '<span class="ok">Correct — <b lang="ja">' + c.q + '</b> is “' + c.a + '”, drawn ' +
+      (state.lastGrade ? state.lastGrade.score : 100) + "/100" +
+      // joined strokes pass — it is how people write — but the count is worth knowing
+      (state.lastGrade && state.lastGrade.joined
+        ? " (usually written in " + state.lastGrade.expected + " stroke" + (state.lastGrade.expected === 1 ? "" : "s") + ")"
+        : "") + ".</span>"
+    : state.calendar
     ? '<span class="ok">Correct — ' + calSays(c) + '<b lang="ja">' +
       c.cal.kana + '</b> “' + c.cal.reading + '”.</span>'
     : state.numbers
@@ -505,6 +534,12 @@ function markWrong(c, viaReveal, typed) {
     el.feedback.innerHTML =
       (viaReveal ? "" : '<span class="no">Not quite. </span>') + got +
       "Try " + '<b lang="ja">' + c.a + "</b>. " + tail;
+  } else if (drawingNow()) {
+    // the one reason it failed, then the answer itself, faint behind the ink
+    showGhost(c);
+    el.feedback.innerHTML =
+      (viaReveal ? "" : '<span class="no">Not quite. </span>' + drawVerdict(c, state.lastGrade) + " ") +
+      '<b lang="ja">' + c.q + '</b> is “' + c.a + '”. ' + tail;
   } else {
     const readings = [c.a].concat(c.alt || []).join(" / ");
     el.feedback.innerHTML =
@@ -514,7 +549,9 @@ function markWrong(c, viaReveal, typed) {
 
   updateStats();
 
-  if (!choosingNow()) {
+  if (drawingNow()) {
+    el.drawCheck.textContent = "Next →";
+  } else if (!choosingNow()) {
     const f = typedField();
     // show the answer in the field the user was answering in: a worked example
     // for flick, the kana when writing, the romaji when typing

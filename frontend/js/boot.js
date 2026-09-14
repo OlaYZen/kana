@@ -98,6 +98,7 @@ fetch("kana.json", { cache: "no-cache" })
     setTimes(state.exactTimes); // before setMode: the deck rows read it
     setMode(state.mode);
     initQuick();               // after every setter: the pinned copies start from their state
+    initDraw(state.decks);     // which kana can be drawn, and the pad's listeners
 
     // A script with no decks in kana.json gets no button, and never gets
     // selected — otherwise the menu would open on an empty list. Derived

@@ -40,7 +40,11 @@ function deckRow(deck) {
   // answer mode is set to; a deck's figures are the selected mode's, which is
   // why switching mode rebuilds the list.
   const mode = deck.flick ? "flick" : recordMode(deck, state.mode, state.prompt);
-  const size = deckSize(deck);
+  // Drawing covers the kana kana.json marks drawable: a mixed deck counts just
+  // those, and a deck with none is listed, explained, and not startable.
+  const drawMode = !deck.flick && state.mode === "draw";
+  const noDraw = drawMode && drawableCards(deck).length === 0;
+  const size = drawMode ? drawableCards(deck).length : deckSize(deck);
   // A generated run deals prompts; only a deck has cards to count.
   const unit = deck.flick || deck.numbers || deck.calendar ? " prompts" : " cards";
   const best = store.best(deck.id, mode);
@@ -54,7 +58,9 @@ function deckRow(deck) {
   b.innerHTML =
     '<span class="deck__sample" lang="ja">' + deckText(deck, deck.sample) + "</span>" +
     '<span><span class="deck__name">' + deck.label + "</span>" +
-    '<span class="deck__meta">' + deckText(deck, deck.subtitle) + " · " + size + unit + "</span></span>" +
+    '<span class="deck__meta">' + (noDraw
+      ? "Drawing covers single kana — pick another answer mode for this one"
+      : deckText(deck, deck.subtitle) + " · " + size + unit) + "</span></span>" +
     '<span class="deck__best" title="Your best in ' + modeLabel(mode) + '">' +
       '<span class="deck__pct">' + (best ? best + "%" : "—") + "</span>" +
       (bestMs ? '<span class="deck__time" title="Fastest run with no mistakes">' +
@@ -64,7 +70,11 @@ function deckRow(deck) {
       "<small>" + modeLabel(mode) + "</small>" +
     "</span>";
 
-  b.addEventListener("click", () => start(deck));
+  if (noDraw) {
+    b.classList.add("deck--nodraw");
+    b.setAttribute("aria-disabled", "true");
+  }
+  b.addEventListener("click", () => { if (!noDraw) start(deck); });
   return b;
 }
 
@@ -84,6 +94,7 @@ function setMode(mode) {
   Array.from(el.modeSwitch.children).forEach((b) =>
     b.setAttribute("aria-checked", String(b.dataset.mode === mode)));
   store.write({ mode: mode });
+  if (mode === "draw") loadStrokes().catch(() => {});   // fetched once, when first wanted
   // unless Answer by is pinned to quick access the mode is invisible from the
   // menu, so the Settings button carries it; quick.js hides it when pinned
   el.moreMode.textContent = MODE_LABEL[mode] || mode;
