@@ -578,7 +578,7 @@ function finish() {
   el.endLabel.textContent = state.deck.label + " complete";
   el.endScore.textContent = pct + "%";
   el.endSub.textContent =
-    state.correct + " of " + state.answered + " right · " + fmtTime(took) +
+    state.correct + " of " + state.answered + " right · " + fmtExact(took) +
     " · longest streak " + state.bestStreak;
 
   // Beside the score: this deck's records *in this mode*, named so the figure
@@ -587,7 +587,8 @@ function finish() {
   // number twice says nothing. Drills are a handful of cards, so no records.
   const parts = [];
   if (!state.isDrill && best > 0 && best !== pct) parts.push("<b>" + best + "%</b>");
-  if (bestMs && !isFastest) parts.push("<b>" + fmtTime(bestMs) + "</b>");
+  // exact, like the run's own time above: both are the figures the record keeps
+  if (bestMs && !isFastest) parts.push("<b>" + fmtExact(bestMs) + "</b>");
   el.endBestChip.classList.toggle("hidden", !parts.length);
   if (parts.length) {
     el.endBestChip.innerHTML = modeLabel(mode).toLowerCase() + " best " + parts.join(" · ");
