@@ -1,4 +1,4 @@
-# <img src="icon.svg" alt="Kana Practice icon — hiragana あ on a washi ground" width="40" height="40" style="border-radius: 9px; vertical-align: middle;"> かな — Kana Practice
+# <img src="frontend/icon.svg" alt="Kana Practice icon — hiragana あ on a washi ground" width="40" height="40" style="border-radius: 9px; vertical-align: middle;"> かな — Kana Practice
 
 A Japanese kana recognition drill for hiragana and katakana. Open it, pick a deck, answer until
 the deck is done. The app itself is four static files and a folder of fonts, with no build step
@@ -36,7 +36,7 @@ right clears the count, so normal use is never affected even after a few fumbled
 **Without a backend**, the app is still four static files and works on its own:
 
 ```bash
-python -m http.server 8000
+python -m http.server 8000 --directory frontend
 ```
 
 Any static file server works, and the folder can be dropped straight onto GitHub Pages, Netlify or
@@ -290,9 +290,9 @@ optional feature is added, and this is an app about what a character looks like.
 
 They're cut down to the characters this app actually draws, so each is 32–110 KB instead of the
 3.6–13 MB the full faces weigh, and only the one you've picked is ever loaded. Nothing is fetched
-from Google: the files are in `fonts/`, served by whatever is serving the app, so it all works
-offline. All five are under the SIL Open Font License 1.1 — `fonts/LICENSES.txt` has the full
-text, and `fonts/subset.py` regenerates them.
+from Google: the files are in `frontend/fonts/`, served by whatever is serving the app, so it all works
+offline. All five are under the SIL Open Font License 1.1 — `frontend/fonts/LICENSES.txt` has the full
+text, and `frontend/fonts/subset.py` regenerates them.
 
 Beyond those five, any Japanese faces your own device has are still offered — a monospaced option
 if it has one, and its default serif and sans. Those are detected by rendering each candidate to a
@@ -370,19 +370,20 @@ Times are reported as medians rather than averages, so one slow card doesn't mov
 ## Layout
 
 ```
-index.html         nine screens, no modals
-styles.css         the whole stylesheet, mobile-first
-kana.json          all content — decks, cards, chart layout, font options
-app.js             all front-end logic, one IIFE
-icon.svg           the app icon, and the source favicon.ico is built from
-favicon.ico        the same icon at six sizes, 16 to 256
-start.sh           install / update / run
+start.sh             install / update / run
 
-fonts/             the five bundled Japanese faces, subset to kana
-  LICENSES.txt     SIL OFL 1.1, all five, in full
-  subset.py        regenerates the subsets; never runs to serve the app
+frontend/            everything the browser loads
+  index.html         nine screens, no modals
+  styles.css         the whole stylesheet, mobile-first
+  kana.json          all content — decks, cards, chart layout, font options
+  app.js             all front-end logic, one IIFE
+  icon.svg           the app icon, and the source favicon.ico is built from
+  favicon.ico        the same icon at six sizes, 16 to 256
+  fonts/             the five bundled Japanese faces, subset to kana
+    LICENSES.txt     SIL OFL 1.1, all five, in full
+    subset.py        regenerates the subsets; never runs to serve the app
 
-backend/
+backend/             the optional server, and its database (kana.db, not in git)
   requirements.txt three dependencies
   app/db.py        SQLite schema, no ORM
   app/auth.py      passwords and sessions
@@ -391,8 +392,9 @@ backend/
   app/main.py      routes, and serves the front end
 ```
 
-The four front-end files and `fonts/` are the app; they need nothing installed and nothing built,
-and reach no other server. `kana.json` is the only place content lives; `app.js` renders whatever
+`frontend/` is the app; it needs nothing installed and nothing built, and reaches no other server.
+The backend serves that folder and nothing outside it, so the database and the source are never
+reachable over HTTP. `kana.json` is the only place content lives; `app.js` renders whatever
 deck it's handed. Adding a deck, accepting another romanisation, or changing the chart is a JSON
 edit, not a code change.
 
@@ -443,7 +445,7 @@ HTTP 経由で配信する必要があります。ブラウザは `file://` ペ�
 **サーバーなしの場合**、アプリは静的ファイル 4 つとフォントのままで動きます。
 
 ```bash
-python -m http.server 8000
+python -m http.server 8000 --directory frontend
 ```
 
 静的ファイルサーバーなら何でも動き、フォルダごと GitHub Pages や Netlify に置けます。アカウント
@@ -675,9 +677,9 @@ Options・フォント・一覧表はポップアップではなく画面なの�
 主題のアプリでは困ります。
 
 同梱の書体はこのアプリが実際に描く文字だけに絞ってあるので、元の 3.6〜13 MB に対して 1 つ
-32〜110 KB です。読み込まれるのは選んでいる 1 つだけで、`fonts/` に置いてあるものをアプリ自身の
+32〜110 KB です。読み込まれるのは選んでいる 1 つだけで、`frontend/fonts/` に置いてあるものをアプリ自身の
 サーバーが配るため、Google などへの通信は発生せず、オフラインでも動きます。5 つとも SIL Open
-Font License 1.1 で、全文は `fonts/LICENSES.txt`、作り直す手順は `fonts/subset.py` にあります。
+Font License 1.1 で、全文は `frontend/fonts/LICENSES.txt`、作り直す手順は `frontend/fonts/subset.py` にあります。
 
 この 5 つに加えて、端末に日本語書体があればそれも選べます（等幅のもの、既定の明朝系とゴシック系）。
 こちらは候補をキャンバスに描画してピクセルを比較して調べ、無いものや、すでにあるものと同じ見え方の
@@ -752,19 +754,20 @@ Dark は固定です。ダークは色を反転したものではなく、同じ
 ## ファイル構成
 
 ```
-index.html         9 つの画面、モーダルなし
-styles.css         スタイル全部、モバイルファースト
-kana.json          内容全部 — デッキ、カード、表のレイアウト、フォント
-app.js             フロント側のロジック全部、IIFE 1 つ
-icon.svg           アプリのアイコン。favicon.ico の生成元でもあります
-favicon.ico        同じアイコンを 16〜256 の 6 サイズで収めたもの
-start.sh           導入・更新・起動
+start.sh             導入・更新・起動
 
-fonts/             同梱の日本語書体 5 つ（かなに絞ったサブセット）
-  LICENSES.txt     5 つ分の SIL OFL 1.1 全文
-  subset.py        サブセットを作り直すスクリプト（配信時には動きません）
+frontend/            ブラウザが読み込むもの全部
+  index.html         9 つの画面、モーダルなし
+  styles.css         スタイル全部、モバイルファースト
+  kana.json          内容全部 — デッキ、カード、表のレイアウト、フォント
+  app.js             フロント側のロジック全部、IIFE 1 つ
+  icon.svg           アプリのアイコン。favicon.ico の生成元でもあります
+  favicon.ico        同じアイコンを 16〜256 の 6 サイズで収めたもの
+  fonts/             同梱の日本語書体 5 つ（かなに絞ったサブセット）
+    LICENSES.txt     5 つ分の SIL OFL 1.1 全文
+    subset.py        サブセットを作り直すスクリプト（配信時には動きません）
 
-backend/
+backend/             任意のサーバーとそのデータベース（kana.db、git には入りません）
   requirements.txt 依存 3 つ
   app/db.py        SQLite のスキーマ、ORM なし
   app/auth.py      パスワードとセッション
@@ -773,8 +776,9 @@ backend/
   app/main.py      ルーティングとフロントの配信
 ```
 
-フロント側の 4 ファイルと `fonts/` がアプリ本体で、インストールするものもビルドも要らず、外部の
-サーバーにも一切アクセスしません。内容は `kana.json` だけにあり、`app.js` は渡されたデッキをその
+`frontend/` がアプリ本体で、インストールするものもビルドも要らず、外部のサーバーにも一切アクセス
+しません。バックエンドが配信するのはこのフォルダーの中だけなので、データベースやソースが HTTP で
+見えることはありません。内容は `kana.json` だけにあり、`app.js` は渡されたデッキをその
 まま表示します。デッキを増やす、別の綴りを受け付ける、表を変える — どれも JSON の編集であって、
 コードの変更ではありません。
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-> The front end is four static files plus a folder of fonts, and works on its own — no build step,
+> The front end is `frontend/`, four static files plus a folder of fonts, and works on its own — no build step,
 > no bundler, nothing to install, and nothing fetched from anyone else's server. The backend in
 > `backend/` is **optional**: it adds accounts, server-side saves and the progress report, and if
 > nothing answers `/api/health` the app hides all of that and runs exactly as it did before it
@@ -14,13 +14,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | File | Role |
 |---|---|
-| `index.html` | markup only — nine screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`, `#options`, `#fontPicker`, `#chart`) and no modals; `#play` holds one answer block per kind of answer (`#typeMode`, `#writeMode`, `#numberMode`, `#chooseMode`) |
-| `styles.css` | the entire stylesheet, mobile-first |
-| `kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `derived[]`, `numbers{}`. No kana, font name or number reading lives in JS or CSS |
-| `app.js` | all front-end logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
-| `icon.svg` | the app icon, and the source the `.ico` is generated from — see **The icon** |
-| `favicon.ico` | six sizes rasterised from `icon.svg`; what `<link rel="icon">` points at |
-| `fonts/` | the five bundled Japanese faces, subset to kana, plus `LICENSES.txt` and the `subset.py` that regenerates them — see **Bundled fonts** |
+| `frontend/index.html` | markup only — nine screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`, `#options`, `#fontPicker`, `#chart`) and no modals; `#play` holds one answer block per kind of answer (`#typeMode`, `#writeMode`, `#numberMode`, `#chooseMode`) |
+| `frontend/styles.css` | the entire stylesheet, mobile-first |
+| `frontend/kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `derived[]`, `numbers{}`. No kana, font name or number reading lives in JS or CSS |
+| `frontend/app.js` | all front-end logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
+| `frontend/icon.svg` | the app icon, and the source the `.ico` is generated from — see **The icon** |
+| `frontend/favicon.ico` | six sizes rasterised from `icon.svg`; what `<link rel="icon">` points at |
+| `frontend/fonts/` | the five bundled Japanese faces, subset to kana, plus `LICENSES.txt` and the `subset.py` that regenerates them — see **Bundled fonts** |
 | `start.sh` | install / update / run, executable in git (mode `100755`) |
 | `backend/` | the optional FastAPI server |
 | `NOTES.md` | hand-written study notes — numbers, time, months, weekdays, dates. Read by nobody; `kana.json` is still the only content the app loads |
@@ -30,6 +30,15 @@ That plus `README.md`, `NOTES.md` and this file is the whole repository. Three s
 the drill and the chart — were deleted; they are in git history at `3ece9c6` if one is ever
 needed. Don't reintroduce a second copy of the game: they drifted out of sync with the real app
 the moment they stopped being loaded.
+
+**The front end and the backend are sibling folders, and the split is also a security boundary.**
+`frontend/` is everything the browser loads — the four files, the icons and `fonts/` — and still
+works on its own from any static host. `backend/` is the server and its database,
+`backend/kana.db`, which `db.py` locates from the repo root and which nothing in `frontend/`
+touches. `main.py` mounts `StaticFiles` on `frontend/` and **must never be pointed back at the repo
+root**: until the split it was, and anyone on the network could fetch `/backend/kana.db` — every
+password hash and session token — along with `/.git/` and the backend source. The front end refers
+to its own files relatively (`kana.json`, `fonts/…`), so the move changed nothing inside it.
 
 The project directory used to be called `hkk`, and its three localStorage keys carried that prefix
 long after. They are now `kana.*`, and `renameKeys()` in `app.js` moves anything still found under
@@ -44,7 +53,7 @@ Must be served over HTTP. `fetch("kana.json")` is blocked on `file://`, so doubl
 
 ```bash
 ./start.sh              # venv, deps, git pull, uvicorn — the whole backend
-python -m http.server 8000   # front end only, no accounts
+python -m http.server 8000 --directory frontend   # front end only, no accounts
 ```
 
 `start.sh` is idempotent: it only pulls when the tree is clean, only reinstalls when
@@ -56,7 +65,7 @@ a touch device — testing them means opening the app on a phone, and a loopback
 that impossible. The cost is that the whole network can reach it over plain HTTP; `--host
 127.0.0.1` is the way back.
 
-Kana glyphs no longer need a CJK-capable font on the host: five faces ship in `fonts/`. The
+Kana glyphs no longer need a CJK-capable font on the host: five faces ship in `frontend/fonts/`. The
 device's own faces are still used where it has them, and are still what renders anything outside
 the subset — see **Bundled fonts**.
 
@@ -1277,12 +1286,15 @@ These each cost a real bug once. Comments in the source mark most of them.
   listing every value a counter *could* take would be a hand-written table where composition does
   the work. The generator that produces the chart asserts this over each drill's own pool,
   including the clock's marks; a hand edit has nothing checking it.
+- **The static mount is `frontend/`, never the repo root.** `StaticFiles` serves any file under
+  the directory it is given, by path, so mounted on the root it handed out `backend/kana.db` and
+  `.git/`. Anything the browser needs goes in `frontend/`; anything it must not see stays out of it.
 - **`kana.json` is fetched with `cache: "no-cache"`.** Without it the HTTP cache silently serves a
   stale deck file and edits appear to do nothing.
 
 ## Bundled fonts
 
-Five of the eight font options ship with the app, in `fonts/`, declared by the `@font-face` block
+Five of the eight font options ship with the app, in `frontend/fonts/`, declared by the `@font-face` block
 at the top of `styles.css` and marked `"bundled"` in `kana.json`:
 
 | Option | Face | Files |
@@ -1299,7 +1311,7 @@ serif or textbook face unless the *Japanese Supplemental Fonts* optional feature
 a character looks like. Nothing is fetched from Google or anyone else at runtime: **the app must
 keep working with no network at all**, on a LAN, and from a folder on a static host.
 
-**They are subsets, and `fonts/subset.py` is how they are regenerated.** The upstream faces are
+**They are subsets, and `frontend/fonts/subset.py` is how they are regenerated.** The upstream faces are
 3.6–13 MB each because they carry thousands of kanji; cut to what this app renders they are
 32–110 KB, 424 KB for all eight files. Three decisions there are load-bearing:
 
@@ -1371,7 +1383,7 @@ Three things about how bundling changed this:
 
 ### Licensing
 
-All five are SIL Open Font License 1.1. `fonts/LICENSES.txt` carries all five licences verbatim,
+All five are SIL Open Font License 1.1. `frontend/fonts/LICENSES.txt` carries all five licences verbatim,
 and `--name-IDs=*` keeps each font's own copyright and licence inside the file. Only one declares
 a Reserved Font Name — Noto Sans JP reserves `'Source'`, inherited from Source Han Sans, which is
 not a name used here — so these subsets keep the families' own names. **If a font is ever added
