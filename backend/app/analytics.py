@@ -73,7 +73,7 @@ def kana_index() -> dict:
     by_reading: dict[str, list[str]] = {}
     by_kana: dict[str, str] = {}
     try:
-        data = json.loads((ROOT / "kana.json").read_text(encoding="utf-8"))
+        data = json.loads((ROOT / "frontend" / "kana.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {"by_reading": {}, "by_kana": {}}
     for deck in data.get("decks", []):

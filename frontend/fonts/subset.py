@@ -6,7 +6,7 @@ Run it when the app gains a character the subsets don't carry, or to move to a
 newer upstream release:
 
     pip install "fonttools[woff]" brotli
-    python fonts/subset.py
+    python frontend/fonts/subset.py
 
 The upstream faces are 3.6-13 MB each because they carry thousands of kanji.
 This app renders kana, forty-four kanji of interface chrome, and Latin — 477

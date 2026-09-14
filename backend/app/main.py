@@ -17,6 +17,10 @@ from pydantic import BaseModel, Field
 from . import analytics, auth, db, ratelimit
 
 ROOT = Path(__file__).resolve().parents[2]
+# Everything the browser loads, and nothing else. The static mount below is on
+# this folder, never on ROOT: mounted on ROOT it served backend/kana.db, the
+# source and .git to anyone who asked for them by path.
+FRONTEND = ROOT / "frontend"
 
 app = FastAPI(title="Kana Practice", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
@@ -312,9 +316,9 @@ def http_error(request: Request, exc: HTTPException) -> JSONResponse:
 
 @app.get("/")
 def index() -> FileResponse:
-    return FileResponse(ROOT / "index.html")
+    return FileResponse(FRONTEND / "index.html")
 
 
 # Mounted last so every /api route above wins. html=True serves index.html for
 # unknown paths, which keeps a refresh on any URL working.
-app.mount("/", StaticFiles(directory=ROOT, html=True), name="static")
+app.mount("/", StaticFiles(directory=FRONTEND, html=True), name="static")
