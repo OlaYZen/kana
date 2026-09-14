@@ -105,8 +105,8 @@ function mirrorQuick() {
    handful of switches never needs the height cap that sank the old sheets, and
    <dialog> gives it Escape, a focus trap and the top layer for nothing. Closing
    it any way — ✕, Escape, the backdrop — lands on the one `close` event, which
-   puts focus back: into the answer field mid-card, since the on-screen keyboard
-   follows focus, and otherwise wherever it was when Q was pressed. */
+   puts focus back wherever it was when Q was pressed. Q only works on the menu,
+   so it never opens over a card. */
 let quickReturn = null;
 
 function openQuickDialog() {
@@ -120,10 +120,6 @@ function openQuickDialog() {
 function afterQuickDialog() {
   const back = quickReturn;
   quickReturn = null;
-  if (!el.play.classList.contains("hidden") && !choosingNow()) {
-    focusField(typedField().input);
-    return;
-  }
   if (back && document.contains(back)) {
     try { back.focus({ preventScroll: true }); } catch (e) { back.focus(); }
   }
