@@ -152,6 +152,27 @@ def report(conn: sqlite3.Connection, user_id: int, device: str, deck_id: str) ->
         ).fetchall()
     ]
 
+    # The run that holds the time record, one per mode — records are keyed by
+    # deck *and* mode, so a Writing run is never "slower" than a Typing one. Same
+    # rule as the client's best time: a flawless run only, or a rushed run with
+    # misses would take it. Drawn from all history rather than the 25 listed, so
+    # when the record is older than the list nothing is tagged, instead of the
+    # quickest of what happens to be on screen. A tie goes to the first to set it.
+    out["fastest_run_ids"] = [
+        r["id"] for r in conn.execute(
+            """SELECT MIN(id) AS id FROM runs r
+                WHERE user_id = ? AND device = ? AND deck_id = ? AND is_drill = 0
+                  AND correct = total AND total > 0
+                  AND duration_ms = (
+                      SELECT MIN(duration_ms) FROM runs
+                       WHERE user_id = r.user_id AND device = r.device
+                         AND deck_id = r.deck_id AND mode = r.mode
+                         AND is_drill = 0 AND correct = total AND total > 0)
+             GROUP BY mode""",
+            (user_id, device, deck_id),
+        ).fetchall()
+    ]
+
     if not out["ready"]:
         # No aggregate figures — a median or a "weakest character" shown here
         # would read as a finding, and it isn't one.

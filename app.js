@@ -3123,9 +3123,14 @@
   // analysis below the gate is an inference, which is the part that needs
   // several runs before it means anything. Drills never appear here — the
   // server leaves them out of recent_runs entirely.
-  function renderRuns(runs) {
+  function renderRuns(report) {
+    const runs = report.recent_runs;
     if (!runs || !runs.length) return;
     const b = statBlock("Runs", runs.length >= 25 ? "Most recent 25." : null);
+    // One per mode, and only a flawless run — the server picks them from all of
+    // history, so a record older than this list tags nothing rather than
+    // crowning the quickest of what happens to be shown.
+    const fastest = new Set(report.fastest_run_ids || []);
     runs.forEach((r) => {
       const pct = r.total ? Math.round(r.correct / r.total * 100) : 0;
       // The deck is already the heading here, so the row names the mode instead,
@@ -3133,13 +3138,17 @@
       // across a small phone, and the two belong together anyway: they are what
       // the run *was*, as against how it went.
       const when = fmtWhen(r.created_at);
-      statRow(b, [
+      const row = statRow(b, [
         { text: modeLabel(r.mode), cls: "srow__r srow__r--wide",
           sub: when || null },
         { text: r.correct + "/" + r.total, cls: "srow__s" },
         { text: fmtExact(r.duration_ms), cls: "srow__s srow__s--time" },
         { text: pct + "%", cls: "srow__v" + (pct < 70 ? " srow__v--bad" : "") }
       ]);
+      if (fastest.has(r.id)) {
+        const tag = add(row.querySelector(".srow__t") || row.firstChild, "span", "srow__tag", "Fastest");
+        tag.title = "Fastest clean run in this mode";
+      }
     });
   }
 
@@ -3231,7 +3240,7 @@
         "A flick drill asks for a direction or a key, and any character with " +
         "that vowel or on that key counts — so there is no character to call " +
         "slow, and a wrong answer can't be traced to one. The runs are below.");
-      renderRuns(report.recent_runs);
+      renderRuns(report);
       return;
     }
 
@@ -3247,7 +3256,7 @@
         "characters are slow or shaky isn't worked out until there are enough " +
         "of them — and runs of another deck don't count towards this one. " +
         "Your runs themselves are below either way.");
-      renderRuns(report.recent_runs);
+      renderRuns(report);
       return;
     }
 
@@ -3324,7 +3333,7 @@
       ]));
     }
 
-    renderRuns(report.recent_runs);
+    renderRuns(report);
   }
 
   // Fetch and draw, keeping whatever is currently selected. Used by the device
