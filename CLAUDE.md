@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | File | Role |
 |---|---|
 | `frontend/index.html` | markup only — nine screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`, `#options`, `#fontPicker`, `#chart`) and no modals; `#play` holds one answer block per kind of answer (`#typeMode`, `#writeMode`, `#numberMode`, `#chooseMode`) |
-| `frontend/styles.css` | the entire stylesheet, mobile-first |
+| `frontend/css/` | `core.css`, every rule and no colour, mobile-first; `light.css` and `dark.css`, one theme each and nothing but colour tokens |
 | `frontend/kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `derived[]`, `numbers{}`. No kana, font name or number reading lives in JS or CSS |
 | `frontend/app.js` | all front-end logic, one IIFE, sectioned by `/* ---------- name ---------- */` banners |
 | `frontend/icon.svg` | the app icon, and the source the `.ico` is generated from — see **The icon** |
@@ -108,12 +108,18 @@ deliberately darker than a dark theme's would be: the same red/gold/green at "gl
 lightness fails contrast on cream. Nothing re-themes wholesale — the chart and the menu only
 re-point `--accent`, flipping shu-red/indigo-blue via `[data-script]`.
 
-**The dark theme is one more block of custom properties**, `:root[data-theme="dark"]`, and nothing
-else. It re-declares the palette rather than inverting it — the same paper at night, sumi ground
+**A theme is one file of custom properties and nothing else.** `css/light.css` is `:root`,
+`css/dark.css` is `:root[data-theme="dark"]`, and `css/core.css` holds every rule and not one
+colour. A new theme is a copy of `light.css` with the values changed and the selector renamed to
+`:root[data-theme="<name>"]`; *offering* it is still a small `app.js` change — a button in the Theme
+switch and an entry in `THEME_COLOR` — since `auto` only ever resolves to light or dark. Every token
+`light.css` declares has to be declared again, because `core.css` falls back on none of them.
+`--accent`, `--accent-dark` and `--focus-glow` live in `core.css`: they only point at `--shu`, so a
+theme gets them for nothing. The dark theme re-declares the palette rather than inverting it — the same paper at night, sumi ground
 and warm off-white ink, with every accent opened up in lightness because the sentence above cuts
-both ways. Three rules follow from that and are what keep it to one block:
+both ways. Three rules follow from that and are what keep a theme to one file:
 
-- **No literal colour may appear below the two `:root` blocks.** A literal can only be right in one
+- **No literal colour may appear in `core.css`.** A literal can only be right in one
   theme. That includes the translucent ones, which is what `--press`, `--on-fill`,
   `--paper-lift`, `--square-bg` and the `--shadow-*` values exist for. (`--backdrop` and
   `--shadow-sheet` went with the dialogs that used them.) Shu-derived washes use
@@ -1300,7 +1306,7 @@ These each cost a real bug once. Comments in the source mark most of them.
 ## Bundled fonts
 
 Five of the eight font options ship with the app, in `frontend/fonts/`, declared by the `@font-face` block
-at the top of `styles.css` and marked `"bundled"` in `kana.json`:
+at the top of `css/core.css` (with `url("../fonts/…")`, relative to the stylesheet) and marked `"bundled"` in `kana.json`:
 
 | Option | Face | Files |
 |---|---|---|

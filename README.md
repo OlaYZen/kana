@@ -374,7 +374,9 @@ start.sh             install / update / run
 
 frontend/            everything the browser loads
   index.html         nine screens, no modals
-  styles.css         the whole stylesheet, mobile-first
+  css/core.css       every rule and no colour, mobile-first
+  css/light.css      the light theme — colour tokens only
+  css/dark.css       the dark theme — colour tokens only
   kana.json          all content — decks, cards, chart layout, font options
   app.js             all front-end logic, one IIFE
   icon.svg           the app icon, and the source favicon.ico is built from
@@ -393,6 +395,8 @@ backend/             the optional server, and its database (kana.db, not in git)
 ```
 
 `frontend/` is the app; it needs nothing installed and nothing built, and reaches no other server.
+A theme is only its colours: copy `css/light.css`, change the values and name the selector
+`:root[data-theme="yours"]`.
 The backend serves that folder and nothing outside it, so the database and the source are never
 reachable over HTTP. `kana.json` is the only place content lives; `app.js` renders whatever
 deck it's handed. Adding a deck, accepting another romanisation, or changing the chart is a JSON
@@ -758,7 +762,9 @@ start.sh             導入・更新・起動
 
 frontend/            ブラウザが読み込むもの全部
   index.html         9 つの画面、モーダルなし
-  styles.css         スタイル全部、モバイルファースト
+  css/core.css       ルール全部、色は持たない、モバイルファースト
+  css/light.css      ライトテーマ — 色の変数だけ
+  css/dark.css       ダークテーマ — 色の変数だけ
   kana.json          内容全部 — デッキ、カード、表のレイアウト、フォント
   app.js             フロント側のロジック全部、IIFE 1 つ
   icon.svg           アプリのアイコン。favicon.ico の生成元でもあります
@@ -777,7 +783,8 @@ backend/             任意のサーバーとそのデータベース（kana.db�
 ```
 
 `frontend/` がアプリ本体で、インストールするものもビルドも要らず、外部のサーバーにも一切アクセス
-しません。バックエンドが配信するのはこのフォルダーの中だけなので、データベースやソースが HTTP で
+しません。テーマは色だけのファイルです。`css/light.css` を複製して値を変え、セレクターを
+`:root[data-theme="yours"]` にすれば作れます。バックエンドが配信するのはこのフォルダーの中だけなので、データベースやソースが HTTP で
 見えることはありません。内容は `kana.json` だけにあり、`app.js` は渡されたデッキをその
 まま表示します。デッキを増やす、別の綴りを受け付ける、表を変える — どれも JSON の編集であって、
 コードの変更ではありません。
