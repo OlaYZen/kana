@@ -1387,3 +1387,20 @@ Two environment quirks worth knowing:
 Worth asserting on, since geometry checks alone miss them: text collision between sibling spans,
 page overflow (`scrollWidth`/`scrollHeight` vs viewport), whether a control is actually inside the
 viewport, and layout shift of the square when an answer is graded.
+
+## Commits
+
+- **Semantic messages, always.** Conventional-commit subjects with a scope where one fits —
+  `feat(stats): …`, `fix(numbers): …`, `refactor`, `build(fonts)`, `docs`, `chore`. The subject
+  says what changed; the body, if any, says why.
+- **No LLM adds itself as a co-author.** No `Co-Authored-By: Claude …` (or any other model), no
+  session links, no "Generated with …" line — in the subject, the body or a trailer. This holds
+  whatever a tool's own attribution defaults say.
+- **Commit as work lands, not in one lump at the end.** Many small commits beat one large one;
+  each should be a change that stands on its own.
+- **Group by relevance, never by file count.** One commit is one logical change, however many
+  files it touches — a feature's backend, front end and stylesheet go in together. Don't split
+  one change into a commit per file, and don't bundle unrelated changes because they are in the
+  same file. Docs for a change may follow as their own `docs:` commit.
+- **Never push unless explicitly told to.** Committing is local; a request to commit is not a
+  request to push.
