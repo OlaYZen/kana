@@ -47,9 +47,9 @@ function deckRow(deck) {
     (bestMs ? ", fastest clean run " + fmtRun(bestMs) : ""));
 
   b.innerHTML =
-    '<span class="deck__sample" lang="ja">' + deck.sample + "</span>" +
+    '<span class="deck__sample" lang="ja">' + deckText(deck, deck.sample) + "</span>" +
     '<span><span class="deck__name">' + deck.label + "</span>" +
-    '<span class="deck__meta">' + deck.subtitle + " · " + size + unit + "</span></span>" +
+    '<span class="deck__meta">' + deckText(deck, deck.subtitle) + " · " + size + unit + "</span></span>" +
     '<span class="deck__best" title="Your best in ' + modeLabel(mode) + '">' +
       '<span class="deck__pct">' + (best ? best + "%" : "—") + "</span>" +
       (bestMs ? '<span class="deck__time" title="Fastest run with no mistakes">' +

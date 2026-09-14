@@ -32,7 +32,7 @@ function start(deck, cards) {
   state.kbDismissed = false;   // a fresh run always offers the keyboard
   store.write({ deck: deck.id });
 
-  el.playMark.textContent = deck.sample;
+  el.playMark.textContent = deckText(deck, deck.sample);
   el.playLabel.textContent = deck.label + (state.isDrill ? " · drill" : "");
   show(el.play);
   startClock();
@@ -573,7 +573,7 @@ function finish() {
   const isFastest = flawless && store.setBestTime(state.deck.id, mode, took);
   const bestMs = state.isDrill ? 0 : store.bestTime(state.deck.id, mode);
 
-  el.endMark.textContent = state.deck.sample;
+  el.endMark.textContent = deckText(state.deck, state.deck.sample);
   el.endLabel.textContent = state.deck.label + " complete";
   el.endScore.textContent = pct + "%";
   el.endSub.textContent =

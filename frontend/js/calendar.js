@@ -399,4 +399,12 @@ const says = (written, what) =>
 // reads the way the square did.
 const calFace = (c) => (state.dates === "numeral" ? c.cal.numeral : c.cal.face);
 const calSays = (c) => says(calFace(c), c.cal.en);
+
+// A calendar deck's sample and subtitle follow the Dates setting the way its
+// cards do — 10日 on the Native dates row, "1月 to 12月" under Months — or the
+// deck list says 十日 while every card in the drill says 10日. kana.json keeps
+// them in kanji, the one form numeralText() can turn into the other. A number
+// drill keeps its kanji: writing numbers in kanji is what those drills teach.
+const deckText = (deck, text) =>
+  deck && deck.calendar && state.dates === "numeral" ? numeralText(text) : text;
 const numSays = (c) => says(c.num.kanji, c.num.ident);
