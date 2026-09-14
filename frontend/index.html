@@ -424,13 +424,24 @@
 
       <div class="modebar modebar--stack" data-setting="mode">
         <span class="modebar__label">Answer by</span>
-        <div class="seg seg--five" id="modeSwitch" role="radiogroup" aria-label="Answer mode">
+        <div class="seg" id="modeSwitch" role="radiogroup" aria-label="Answer mode">
           <button type="button" class="seg__btn" data-mode="type" role="radio" aria-checked="true">Typing</button>
           <button type="button" class="seg__btn" data-mode="choose" role="radio" aria-checked="false">Choosing</button>
           <button type="button" class="seg__btn" data-mode="write" role="radio" aria-checked="false">Writing</button>
           <button type="button" class="seg__btn" data-mode="draw" role="radio" aria-checked="false">Drawing</button>
-          <button type="button" class="seg__btn" data-mode="trace" role="radio" aria-checked="false">Tracing</button>
         </div>
+      </div>
+
+      <!-- Easy drawing: Drawing with the kana shown faintly on the square, to draw
+           over. A switch, since it is on or off and takes effect at once. Its runs
+           keep their own records (deckId|draw-easy) — copying a shape is not
+           recalling one. Synced, like the settings around it. -->
+      <div class="modebar modebar--stack" data-setting="easy">
+        <span class="modebar__label">Easy drawing</span>
+        <button type="button" class="qtoggle" id="easySwitch" role="switch" aria-checked="false">
+          <span class="qtoggle__label">Show the kana faintly to trace over</span>
+          <span class="qtoggle__track" aria-hidden="true"><span class="qtoggle__thumb"></span></span>
+        </button>
       </div>
 
       <!-- Only the number and calendar drills read this: 六 or "roku", 二十日 or

@@ -20,8 +20,9 @@ let drawActive = null;            // the stroke under the pointer
 
 const canDraw = (c) => Boolean(c && drawScripts.has(c.q));
 const drawableCards = (deck) => (deck && deck.cards ? deck.cards.filter(canDraw) : []);
-const drawingNow = () => !state.flick && isDrawMode(state.mode);
-const tracingNow = () => !state.flick && state.mode === "trace";
+const drawingNow = () => !state.flick && state.mode === "draw";
+// Easy drawing: the kana shows faintly from the start, to trace over.
+const tracingNow = () => drawingNow() && state.easyDraw;
 
 function loadStrokes() {
   if (drawRefs) return Promise.resolve(drawRefs);
@@ -160,7 +161,7 @@ function drawVerdict(c, g) {
 }
 
 // The answer, faint behind the ink: once the card is graded, or from the start
-// when tracing.
+// in easy drawing.
 function showGhost(c) {
   el.glyph.textContent = c.q;
   el.glyph.lang = "ja";
@@ -184,5 +185,5 @@ function initDraw(decks) {
   el.drawClear.addEventListener("click", clearDrawing);
   el.drawCheck.addEventListener("click", checkDrawing);
   window.addEventListener("resize", () => { if (drawingNow()) { fitPad(); paintPad(); } });
-  if (isDrawMode(state.mode)) loadStrokes().catch(() => {});
+  if (state.mode === "draw") loadStrokes().catch(() => {});
 }

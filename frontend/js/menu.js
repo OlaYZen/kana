@@ -42,7 +42,7 @@ function deckRow(deck) {
   const mode = deck.flick ? "flick" : recordMode(deck, state.mode, state.prompt);
   // Drawing covers the kana kana.json marks drawable: a mixed deck counts just
   // those, and a deck with none is listed, explained, and not startable.
-  const drawMode = !deck.flick && isDrawMode(state.mode);
+  const drawMode = !deck.flick && state.mode === "draw";
   const noDraw = drawMode && drawableCards(deck).length === 0;
   const size = drawMode ? drawableCards(deck).length : deckSize(deck);
   // A generated run deals prompts; only a deck has cards to count.
@@ -59,7 +59,7 @@ function deckRow(deck) {
     '<span class="deck__sample" lang="ja">' + deckText(deck, deck.sample) + "</span>" +
     '<span><span class="deck__name">' + deck.label + "</span>" +
     '<span class="deck__meta">' + (noDraw
-      ? modeLabel(state.mode) + " covers single kana — pick another answer mode for this one"
+      ? "Drawing covers single kana — pick another answer mode for this one"
       : deckText(deck, deck.subtitle) + " · " + size + unit) + "</span></span>" +
     '<span class="deck__best" title="Your best in ' + modeLabel(mode) + '">' +
       '<span class="deck__pct">' + (best ? best + "%" : "—") + "</span>" +
@@ -94,7 +94,7 @@ function setMode(mode) {
   Array.from(el.modeSwitch.children).forEach((b) =>
     b.setAttribute("aria-checked", String(b.dataset.mode === mode)));
   store.write({ mode: mode });
-  if (isDrawMode(mode)) loadStrokes().catch(() => {});   // fetched once, when first wanted
+  if (mode === "draw") loadStrokes().catch(() => {});   // fetched once, when first wanted
   // unless Answer by is pinned to quick access the mode is invisible from the
   // menu, so the Settings button carries it; quick.js hides it when pinned
   el.moreMode.textContent = MODE_LABEL[mode] || mode;

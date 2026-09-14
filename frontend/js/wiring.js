@@ -146,6 +146,8 @@ Array.from(el.clockSwitch.children).forEach((b) =>
 Array.from(el.timesSwitch.children).forEach((b) =>
   b.addEventListener("click", () => setTimes(b.dataset.times === "exact")));
 
+el.easySwitch.addEventListener("click", () => setEasyDraw(!state.easyDraw));
+
 Array.from(el.themeSwitch.children).forEach((b) =>
   b.addEventListener("click", () => setTheme(b.dataset.theme)));
 

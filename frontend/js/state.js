@@ -30,6 +30,8 @@ const state = {
   showClock: store.read().clock === "shown",
   // how a run's time is written — rounded to the second unless Exact is chosen
   exactTimes: store.read().times === "exact",
+  // Easy drawing: the kana faintly on the pad to trace over — off unless chosen
+  easyDraw: store.read().easy === true,
   answered: 0, correct: 0, streak: 0, bestStreak: 0,
   missed: [],        // unique wrong cards, chart order
   graded: false,     // answer already scored — waiting to advance
@@ -217,6 +219,15 @@ function setTimes(exact) {
     b.setAttribute("aria-checked", String((b.dataset.times === "exact") === state.exactTimes)));
   store.write({ times: state.exactTimes ? "exact" : "rounded" });
   runClockTick();
+  if (el.play.classList.contains("hidden")) buildMenu();
+}
+
+// On or off, synced like the timer: how you want to practise drawing is about
+// what you are learning. The deck list shows the easy records while it is on.
+function setEasyDraw(on) {
+  state.easyDraw = Boolean(on);
+  el.easySwitch.setAttribute("aria-checked", String(state.easyDraw));
+  store.write({ easy: state.easyDraw });
   if (el.play.classList.contains("hidden")) buildMenu();
 }
 

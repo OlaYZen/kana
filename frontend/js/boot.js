@@ -96,6 +96,7 @@ fetch("kana.json", { cache: "no-cache" })
     setDates(state.dates);     // likewise — the calendar records depend on it
     setClock(state.showClock); // paints the Timer switch
     setTimes(state.exactTimes); // before setMode: the deck rows read it
+    setEasyDraw(state.easyDraw); // likewise — easy drawing records apart
     setMode(state.mode);
     initQuick();               // after every setter: the pinned copies start from their state
     initDraw(state.decks);     // which kana can be drawn, and the pad's listeners

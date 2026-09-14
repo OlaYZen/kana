@@ -64,11 +64,14 @@ function buildQuickToggles() {
   });
 }
 
+// A row's controls: the options of a segmented switch, or one on/off switch.
+const rowControls = (row) => Array.from(row.querySelectorAll('[role="radio"], [role="switch"]'));
+
 function cloneRow(row) {
   const copy = row.cloneNode(true);
   copy.querySelectorAll("[id]").forEach((n) => n.removeAttribute("id"));
-  const originals = Array.from(row.querySelector(".seg").children);
-  Array.from(copy.querySelector(".seg").children).forEach((b, i) =>
+  const originals = rowControls(row);
+  rowControls(copy).forEach((b, i) =>
     b.addEventListener("click", () => originals[i].click()));
   return copy;
 }
@@ -94,8 +97,8 @@ function mirrorQuick() {
   quickBoxes().forEach((box) => box.querySelectorAll(".modebar[data-setting]").forEach((copy) => {
     const row = el.settings.querySelector('.modebar[data-setting="' + copy.dataset.setting + '"]');
     if (!row) return;
-    const src = Array.from(row.querySelector(".seg").children);
-    Array.from(copy.querySelector(".seg").children).forEach((b, i) => {
+    const src = rowControls(row);
+    rowControls(copy).forEach((b, i) => {
       if (src[i]) b.setAttribute("aria-checked", src[i].getAttribute("aria-checked"));
     });
   }));
@@ -113,7 +116,7 @@ function openQuickDialog() {
   if (el.quickDialog.open) return;
   quickReturn = document.activeElement;
   el.quickDialog.showModal();
-  const start = el.quickDialogBody.querySelector('.seg__btn[aria-checked="true"]') || el.quickDialogEdit;
+  const start = el.quickDialogBody.querySelector('[role="radio"][aria-checked="true"], [role="switch"]') || el.quickDialogEdit;
   start.focus();
 }
 

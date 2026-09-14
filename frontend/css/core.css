@@ -417,17 +417,6 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 }
 .modebar--stack .seg{ display:flex; }
 .modebar--stack .seg__btn{ flex:1 1 0; padding:0 8px; }
-/* Answer by has five options, and five labels need ~400px in one row: 28px
-   more than a 320px phone has, and more than the pinned copy gets in the wide
-   rail. Where the row is narrower than that it becomes two even rows — the
-   three typed modes, then Drawing and Tracing — rather than clipping a label.
-   Measured against the row itself, so Settings and quick access each decide. */
-.modebar--stack:has(> .seg--five){ container-type:inline-size; }
-@container (max-width:440px){
-  .modebar--stack .seg--five{ display:grid; grid-template-columns:repeat(6, 1fr); }
-  .modebar--stack .seg--five .seg__btn{ grid-column:span 2; }
-  .modebar--stack .seg--five .seg__btn:nth-child(n+4){ grid-column:span 3; }
-}
 
 /* The one control left at the foot of the menu. Everything that used to be
    stacked here is behind it, so the deck list keeps the screen. */

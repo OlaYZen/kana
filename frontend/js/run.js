@@ -26,7 +26,7 @@ function start(deck, cards) {
     : shuffle(deck.cards);
   // Drawing covers the kana kana.json marks drawable; a mixed deck deals just
   // those, and a deck with none is not startable from the menu at all.
-  if (!state.flick && isDrawMode(state.mode)) {
+  if (!state.flick && state.mode === "draw") {
     state.queue = state.queue.filter(canDraw);
     if (!state.queue.length) return;
     loadStrokes().catch(() => {});
@@ -75,7 +75,7 @@ function render() {
   const flicking = state.flick !== null;
   const writing = !flicking && state.mode === "write";
   const choosing = !flicking && state.mode === "choose";
-  const drawing = !flicking && isDrawMode(state.mode);   // Drawing or Tracing
+  const drawing = !flicking && state.mode === "draw";
   // The generated drills ask in whichever script the Prompt setting says —
   // 二十日 or "hatsuka", 六 or "roku". Writing is untouched by it: that
   // direction asks with the identity and answers in kana.
@@ -151,7 +151,7 @@ function render() {
   } else if (drawing) {
     // no field to focus: the pad takes the pointer, and the keys are Enter and ⌫
     resetPad();
-    if (tracingNow()) showGhost(c);   // Tracing: the kana to draw over, from the start
+    if (tracingNow()) showGhost(c);   // easy drawing: the kana to draw over, from the start
     el.typedHint.textContent = "Enter ↵ to check · ⌫ to undo";
     el.typedHint.className = "hint hint--keys";
     el.drawCheck.textContent = "Check";
@@ -229,7 +229,7 @@ function focusField(input) {
 function keepKeyboard(node) {
   const hold = (e) => {
     // nothing is focused to protect: Choosing has no field, Drawing has the pad
-    if (state.mode === "choose" || isDrawMode(state.mode)) return;
+    if (state.mode === "choose" || state.mode === "draw") return;
     e.preventDefault();
   };
   node.addEventListener("pointerdown", hold);
