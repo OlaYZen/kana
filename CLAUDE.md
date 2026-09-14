@@ -131,6 +131,17 @@ Six decks: base / dakuten / combination × hiragana / katakana (46 / 25 / 36 car
 total). Obsolete kana (ゐ ゑ ヰ ヱ, the archaic yi/ye/wu forms, polysyllabics) are excluded on
 purpose — do not "complete" the charts by adding them back.
 
+**A seventh card deck, `time-kanji`, lives under the 日時 stamp** — 時 分 秒 半 午前 午後, each
+asked on its own as a kana card is, reading as `a` and the other spellings (`pun` for 分, `byou`
+for 秒) as `alt`. It is a plain deck because it *is* a plain deck: a fixed list of characters with
+one reading each, so the kana path — type, choose, write — fits it exactly and it needs no code.
+`script: "calendar"` is all that places it, since every filter compares `script`. Three things
+follow from it sitting in `state.decks`, all harmless and worth knowing: `chartReadings()` and
+`buildFlickIndex()` both see its six cards, and neither looks them up, because no chart cell and
+no grid holds a kanji; the derived decks name their sources, so Mixed kana is still exactly 214;
+and its id carries no `cal-` prefix, so `rev 4`'s migration — which matches on that prefix —
+cannot touch its records.
+
 **Six more decks are derived from those six**, and none of them is a new list of cards.
 `kana.json`'s `derived[]` carries each one's identity and the `sources` it is built from;
 `buildDerivedDecks()` fills in the cards at boot and holds **the same card objects**, not copies.
@@ -807,11 +818,17 @@ and a time drill opts in with `"meridiem": true`. Four things about it:
   neighbouring minutes in the right half would never test it. The rest are `timeNeighbours()`,
   kept to this half and to the drill's hours.
 - **It is unanalysable**, on `cal-time`'s reason twice over: eleven hours, twelve marks and two
-  halves is 264 faces against a run of twenty. `timeValues()` deals the halves the way it deals
-  hours and marks, so every run is half of each.
+  halves is 264 faces against a run of twenty. `timeValues()` deals the halves **over the finished
+  list**, a shuffled pair at a time, so every run is exactly half of each. They were first dealt
+  inside the loop beside hours and marks, where every skipped duplicate threw a half away and a run
+  could come out eleven to nine.
 
 `timeEntry()` is the one place an identity is read back into `{h, m, mer}`; Choosing under 9月
 needs it to build a reading for each neighbour.
+
+**The words on their own are a card deck, not a drill** — `time-kanji`, listed first under 日時
+because it is where to start. See the architecture section: it is kana-shaped content, and giving
+it a `kind` would have built a generator for six fixed cards.
 
 **Minutes stop at the five-minute marks**, deliberately: 3:47 is composition plus one more
 `irregular` entry, and a clock is read to the nearest five aloud far more often than not. It is a

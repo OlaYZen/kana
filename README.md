@@ -149,7 +149,7 @@ the five sound changes that break the pattern — 300 さんびゃく, 600 ろ�
 kana and the reading. Below those, the operator words, 十 before パーセント, and a dozen sums read
 aloud.
 
-**Time — the 日時 stamp.** Weekdays, months, dates and the clock, in nine drills with a table of
+**Time — the 日時 stamp.** Weekdays, months, dates and the clock, in ten drills with a table of
 their own. Most of it is counting with something on the end — 四月 is month four, 二十日 the
 twentieth, 四時 four o'clock — so it reads the same way round as the numbers:
 
@@ -169,6 +169,10 @@ default, because that is how calendars, tickets and signs print them; **九月**
 Typing and Choosing ask for the reading instead. Each form keeps its own best score and time, and
 weekdays look the same either way.
 
+- **Time kanji** is the words themselves, one at a time: 時 `ji`, 分 `fun` (or `pun`), 秒 `byō`,
+  半 `han`, 午前 `gozen` and 午後 `gogo`. It works like a kana deck — Typing and Choosing show the
+  kanji and want the reading, Writing shows the reading and wants the kanji — and is the place to
+  start before the drills that put them after a number.
 - **Weekdays** is the seven, each ending in ようび with the day's kanji in front: 月 moon, 火 fire,
   水 water, 木 wood, 金 gold, 土 earth, 日 sun. Since every one of them ends the same way, Writing
   takes just the part in front — **か** or `ka` for 火曜日 — as well as the whole **かようび**.
@@ -555,7 +559,7 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
 `一万二千三百四十五 いちまんにせんさんびゃくよんじゅうご` のように大きな数を分解した例。各行は
 「漢字・何であるか・かな・読み」の 4 つです。
 
-**時 — 日時 の印。** 曜日・月・日付・時刻の 9 つのドリルと、専用の一覧表が入っています。ほとんどは
+**時 — 日時 の印。** 曜日・月・日付・時刻の 10 個のドリルと、専用の一覧表が入っています。ほとんどは
 数え方に何かが付いたもの — 四月 は 4 番目の月、二十日 は 20 日目 — なので、向きは数字と同じです。
 
 - **タイピング** は **月曜日** を出して **Monday**、**20日** を出して読み方（`hatsuka`）を入力。
@@ -572,6 +576,9 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
 **九月**・**二十日**・**三時四十五分** は教科書の形です。数字で出すと答えの数がすでに見えているので、
 タイピングと選択では数ではなく読み方を訊きます。記録は表記ごとに別で、曜日はどちらでも同じです。
 
+- **Time kanji** は時刻に使う漢字そのもの。時 `ji`、分 `fun`（`pun` でも可）、秒 `byō`、半 `han`、
+  午前 `gozen`、午後 `gogo` を 1 つずつ。かなのデッキと同じで、タイピングと選択は漢字を出して読みを、
+  書き取りは読みを出して漢字を訊きます。数字と組み合わせるドリルの前に、まずこちらから。
 - **Weekdays** は 7 つ。どれも ようび で終わり、前に付く漢字がその日です。月・火・水・木・金・
   土・日。どれも同じ ようび で終わるので、書き取りは前の部分だけでも正解になります（火曜日 なら
   **か** や `ka`、もちろん **かようび** でも）。
