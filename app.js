@@ -1799,19 +1799,26 @@
   function timeValues(deck) {
     const hours = deck.hours ? deck.hours.slice() : [];
     if (!deck.hours) for (let h = 1; h <= calCounter(deck.counters[0]).max; h++) hours.push(h);
-    // 午前 and 午後 are dealt the same way, so a run is half of each
-    const halves = deck.meridiem ? CAL.meridiem : [null];
     const out = [], seen = new Set();
-    let hs = [], ms = [], ds = [];
+    let hs = [], ms = [];
     for (let guard = 0; out.length < deck.len && guard < deck.len * 40; guard++) {
       if (!hs.length) hs = shuffle(hours.slice());
       if (!ms.length) ms = shuffle(deck.minutes.slice());
-      if (!ds.length) ds = shuffle(halves.slice());
-      const h = hs.pop(), m = ms.pop(), mer = ds.pop();
-      const id = clockIdent(h, m) + (mer ? mer.id : "");
+      const h = hs.pop(), m = ms.pop();
+      const id = clockIdent(h, m);
       if (seen.has(id)) continue;       // the same face twice in one run
       seen.add(id);
-      out.push(mer ? { h: h, m: m, mer: mer } : { h: h, m: m });
+      out.push({ h: h, m: m });
+    }
+    // 午前 and 午後 are dealt over the finished list, a shuffled pair at a time,
+    // so a run is exactly half of each. Dealing them inside the loop above let
+    // every skipped duplicate throw a half away and tip the run to one side.
+    if (deck.meridiem) {
+      let halves = [];
+      out.forEach((v) => {
+        if (!halves.length) halves = shuffle(CAL.meridiem.slice());
+        v.mer = halves.pop();
+      });
     }
     return out;
   }
