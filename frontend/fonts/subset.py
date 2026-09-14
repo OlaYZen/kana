@@ -110,7 +110,8 @@ def check() -> None:
     every one of the eight files by glyphs nothing renders.
     """
     html = _outside((ROOT / "index.html").read_text(encoding="utf-8"), "<!--", "-->")
-    js = _outside((ROOT / "app.js").read_text(encoding="utf-8"), "/*", "*/")
+    js = "".join(_outside(p.read_text(encoding="utf-8"), "/*", "*/")
+                 for p in sorted((ROOT / "js").glob("*.js")))
     js = re.sub(r"(?m)//.*$", "", js)
     css = "".join(_outside(p.read_text(encoding="utf-8"), "/*", "*/")
                   for p in sorted((ROOT / "css").glob("*.css")))

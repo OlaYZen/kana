@@ -484,6 +484,25 @@
 
 </main>
 
-<script src="app.js"></script>
+<!-- Classic scripts sharing one global scope, so order is load-bearing: a file may
+     use anything an earlier one declares while it loads, and nothing a later one
+     does. wiring.js comes after the files its listeners point at; boot.js is last.
+     See CLAUDE.md, "Scripts". -->
+<script src="js/base.js"></script>
+<script src="js/fonts.js"></script>
+<script src="js/state.js"></script>
+<script src="js/screens.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/flick.js"></script>
+<script src="js/numbers.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/decks.js"></script>
+<script src="js/menu.js"></script>
+<script src="js/run.js"></script>
+<script src="js/backend.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/wiring.js"></script>
+<script src="js/boot.js"></script>
 </body>
 </html>
