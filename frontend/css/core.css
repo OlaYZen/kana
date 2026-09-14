@@ -354,6 +354,9 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   display:flex; align-items:center; justify-content:center;
 }
 .deck--combo .deck__sample{ font-size:18px; }
+/* Three full-width glyphs at 18px are 54px of ink in a 44–56px stamp, so 時分秒
+   wrapped onto two lines; at 13px they fit the narrowest one. */
+.deck--trio .deck__sample{ font-size:13px; letter-spacing:-.02em; }
 
 /* both are spans inside one grid cell — they must stack, not run together */
 .deck__name{ display:block; font-size:15px; font-weight:600; }
@@ -1535,6 +1538,8 @@ kbd{
   .deck{ grid-template-columns:56px 1fr auto; gap:14px; min-height:70px; padding:13px 15px; }
   .deck__sample{ height:48px; font-size:27px; }
   .deck--combo .deck__sample{ font-size:19px; }
+  /* after the combo size, or its equal specificity puts 時分秒 back at 19px */
+  .deck--trio .deck__sample{ font-size:14px; }
   .deck__name{ font-size:15.5px; }
   .feedback{ font-size:15px; min-height:44px; }
   .answer input{ font-size:19px; }
@@ -1605,6 +1610,8 @@ kbd{
   #menu .deck{ grid-template-columns:46px 1fr auto; gap:11px; min-height:64px; padding:11px 12px; }
   #menu .deck__sample{ height:42px; font-size:23px; }
   #menu .deck--combo .deck__sample{ font-size:17px; }
+  /* the rail's rules carry #menu, so the trio size has to as well */
+  #menu .deck--trio .deck__sample{ font-size:13px; }
   #menu .deck__name{ font-size:14.5px; }
   #menu .deck__meta{ font-size:11.5px; }
   #menu .deck__best{ font-size:15px; }

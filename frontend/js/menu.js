@@ -29,7 +29,12 @@ function buildMenu() {
 function deckRow(deck) {
   const b = document.createElement("button");
   b.type = "button";
-  b.className = "deck" + (deck.sample.length > 1 ? " deck--combo" : "");
+  // Sized by what the stamp actually shows: three full-width glyphs (時分秒)
+  // need a smaller face than two, where 10日 — two narrow digits and one kanji —
+  // does not.
+  const stamp = deckText(deck, deck.sample);
+  const wide = [...stamp].filter((ch) => ch.codePointAt(0) >= 0x3000).length;
+  b.className = "deck" + (stamp.length > 1 ? " deck--combo" : "") + (wide >= 3 ? " deck--trio" : "");
 
   // A flick run is its own skill and always scores as "flick", whatever the
   // answer mode is set to; a deck's figures are the selected mode's, which is
