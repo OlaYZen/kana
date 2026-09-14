@@ -42,7 +42,8 @@ el.settingsBtn.addEventListener("click", () => navTo(el.settings));
 el.settingsBackBtn.addEventListener("click", navBack);
 
 // Keyboard shortcuts, on the menu only: 1–5 pick a stamp, Q opens the quick
-// options dialog. Never during a run — Q there once opened the dialog over the
+// options dialog, and W, E, F and A open Your progress, Settings, the font
+// picker and Account. Never during a run — Q there once opened the dialog over the
 // card whenever the answer field had lost focus, a tap elsewhere or the
 // keyboard put away being enough — and 1–4 stay Choosing's. Never while typing
 // into a field, never with a modifier held, and never on a panel, which the
@@ -55,6 +56,13 @@ function shortcut(e) {
   if ((e.key === "q" || e.key === "Q") && onMenu) {
     e.preventDefault();
     openQuickDialog();
+    return true;
+  }
+  // Each opens what its button on More opens, by clicking that button — so a
+  // button hidden without a backend (Your progress, Account) leaves its key idle.
+  const button = onMenu && { w: el.statsBtn, e: el.settingsBtn, f: el.menuFontBtn, a: el.accountBtn }[String(e.key).toLowerCase()];
+  if (button) {
+    if (!button.classList.contains("hidden")) { e.preventDefault(); button.click(); }
     return true;
   }
   if (onMenu && /^[1-5]$/.test(e.key)) {

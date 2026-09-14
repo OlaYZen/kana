@@ -364,19 +364,19 @@
       <!-- Five ways onward and nothing else: every switch lives one step further
            in, on Settings, so this screen is a list you can read at a glance. -->
       <!-- Your progress leads, and it and Account are both hidden unless a backend answers /api/health -->
-      <button type="button" class="wide hidden" id="statsBtn">
+      <button type="button" class="wide hidden" id="statsBtn" aria-keyshortcuts="W">
         <span class="wide__mark" lang="ja">記録</span>
         <span class="wide__label">Your progress</span>
         <span class="wide__go" aria-hidden="true">▸</span>
       </button>
 
-      <button type="button" class="wide" id="settingsBtn">
+      <button type="button" class="wide" id="settingsBtn" aria-keyshortcuts="E">
         <span class="wide__mark" lang="ja">設定</span>
         <span class="wide__label">Settings</span>
         <span class="wide__go" aria-hidden="true">▸</span>
       </button>
 
-      <button type="button" class="wide" id="menuFontBtn">
+      <button type="button" class="wide" id="menuFontBtn" aria-keyshortcuts="F">
         <span class="wide__mark wide__mark--kana" lang="ja">あ</span>
         <span class="wide__label">Character font · <span id="menuFontName">Mincho</span></span>
         <span class="wide__go" aria-hidden="true">▸</span>
@@ -388,7 +388,7 @@
         <span class="wide__go" aria-hidden="true">▸</span>
       </button>
 
-      <button type="button" class="wide hidden" id="accountBtn">
+      <button type="button" class="wide hidden" id="accountBtn" aria-keyshortcuts="A">
         <span class="wide__mark" lang="ja">名</span>
         <span class="wide__label">Account · <span id="accountName">Sign in</span></span>
         <span class="wide__go" aria-hidden="true">▸</span>
@@ -494,7 +494,9 @@
 <h2 class="settings__h">Keyboard</h2>
       <p class="panel__note">
         On the menu, <kbd>1</kbd>–<kbd>5</kbd> switch between Hiragana, Katakana, Kana, Numbers
-        and Time, and <kbd>Q</kbd> opens your quick options. <kbd>Esc</kbd> goes back.
+        and Time, and <kbd>Q</kbd> opens your quick options. <kbd>W</kbd> opens Your progress,
+        <kbd>E</kbd> Settings, <kbd>F</kbd> the character font and <kbd>A</kbd> your account.
+        <kbd>Esc</kbd> goes back.
       </p>
     </div>
 
