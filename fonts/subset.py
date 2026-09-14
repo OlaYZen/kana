@@ -9,7 +9,7 @@ newer upstream release:
     python fonts/subset.py
 
 The upstream faces are 3.6-13 MB each because they carry thousands of kanji.
-This app renders kana, forty-one kanji of interface chrome, and Latin — 477
+This app renders kana, forty-four kanji of interface chrome, and Latin — 477
 characters — so each face is cut to that and lands at 32-110 KB.
 
 The cut is defined by *ranges*, never by the current contents of kana.json:
@@ -48,10 +48,11 @@ RANGES = [
 # Every kanji the interface itself renders: 設定 記録 五十音 名 字, the font
 # picker's 明朝 教科書体 丸 等幅, the numerals 一二三四五六七八九十百千万 that
 # both generated subjects write their values in, and the 月火水木金土日曜 時分秒半
-# the time stamp needs — the seven weekdays, and the counters a date, a month,
-# an hour, a minute and a second end in, plus the 半 of half past.
+# 午前後 the time stamp needs — the seven weekdays, the counters a date, a month,
+# an hour, a minute and a second end in, the 半 of half past, and the 午前 and
+# 午後 said before a time.
 # Verified against the sources by check().
-KANJI = "一七万三丸九二五体八六分十千半名四土字定幅教日明時曜書月朝木水火百科秒等記設金録音"
+KANJI = "一七万三丸九二五体八六分前十千午半名四土字定幅後教日明時曜書月朝木水火百科秒等記設金録音"
 
 # No vert/vrt2/palt: the app never sets writing-mode or font-feature-settings,
 # and dropping them prunes every vertical alternate glyph along with them — 30%
