@@ -982,12 +982,13 @@ above warns about:
 A new setting is pinnable the moment its `.modebar` row has a `data-setting`; `initQuick()` runs
 from boot after every setter, so the clones start from the state the originals are in.
 
-**Shortcuts** live in `shortcut()` in `wiring.js`: **1–5** pick a stamp on the menu (the stamps
-carry `aria-keyshortcuts`), and **Q** opens quick options on the menu or mid-run. Neither fires
-while a field has focus — Q is a letter someone may be typing, and in Typing and Writing the answer
-field always has it — nor with Ctrl, Alt or Cmd held, nor mid-composition, nor on a panel, which
-returns before `shortcut()` is reached. Digits stay Choosing's mid-run: the stamps only take them on
-the menu, where no card is listening.
+**Shortcuts** live in `shortcut()` in `wiring.js`, and both work **on the menu only**: **1–5** pick
+a stamp (the stamps carry `aria-keyshortcuts`), and **Q** opens quick options. Q shipped working
+mid-run too, guarded by "not while a field has focus" — and that guard is not enough, because the
+answer field loses focus all the time: a tap on the square, the keyboard put away, a click
+elsewhere. A Q after any of those opened the dialog over the card. Don't bring it back mid-run.
+Neither shortcut fires while a field has focus, with Ctrl, Alt or Cmd held, mid-composition, or on a
+panel, which returns before `shortcut()` is reached; and digits stay Choosing's during a run.
 
 **Layout model.** `body` → `.stage` → one `.screen` flex column per screen. `.play` is four bands:
 `.playbar` (fixed) / `.revealbar` (fixed, touch only) / `.playmain` (flexes, holds the writing
@@ -1010,12 +1011,11 @@ with `navBack()`. What that bought, in order of how much it mattered:
   card. `show()` is the plain move that cuts the trail; every "go to the menu" path uses it.
 
 **The one exception is the quick options dialog**, `#quickDialog`, and it is a real `<dialog>` on
-purpose. It has to open over whatever is on screen — a card mid-run included — and come straight
-back, which is exactly the job a screen and its trail do badly. What sank the old sheets does not
+purpose. It opens over the menu, from Q, and has to come straight back, which is exactly the job a
+screen and its trail do badly. What sank the old sheets does not
 apply: it holds a handful of switches, so there is no height cap deciding whether a way out is
 visible, and every way it closes — ✕, Escape, a click on the backdrop — lands on the one `close`
-event, where `afterQuickDialog()` puts focus back (into the answer field mid-card, for the reason
-below). The panel inside fills the dialog, which is what makes "the click's target is the dialog"
+event, where `afterQuickDialog()` puts focus back where it was. The panel inside fills the dialog, which is what makes "the click's target is the dialog"
 mean "the backdrop". While it is open the document keydown handler returns first, so no digit or
 Escape reaches the screen behind it. jsdom has no modal dialogs, so a suite that opens it has to
 stub `showModal`/`close` and fire `close` itself.

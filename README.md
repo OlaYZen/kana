@@ -270,14 +270,14 @@ so nothing is ever half a panel with the way out below the fold. The deck rows a
 the answer mode their figures belong to.
 
 **Quick access** puts the settings you change most back on the menu, just above More, and in a
-**quick options** box that **Q** opens from the menu or in the middle of a run. Answer by is there
+**quick options** box that **Q** opens from the menu. Answer by is there
 to start with; under **Settings → Quick access** any setting can be switched on or off, and the
 choice is kept on that device, since a phone and a laptop have different room to spare. Unpin
 Answer by and More shows the current mode instead.
 
 **Keyboard.** On the menu, **1–5** switch between Hiragana, Katakana, Kana, Numbers and Time, and
-**Q** opens quick options there and during a run. Neither does anything while you are typing into a
-field, so an answer with a q in it is just an answer. **Esc** goes back from any screen and closes
+**Q** opens quick options. Neither does anything during a run or while you are typing into a field,
+so a q in an answer is just an answer. **Esc** goes back from any screen and closes
 quick options.
 
 **On a wide screen the menu becomes a rail.** From about 1100px the deck list stays put on the
@@ -681,13 +681,13 @@ All characters & romaji、Your progress、Account — があります。**Settin
 デッキの行には、その数字がどの答え方のものかが表示されます。
 
 **クイックアクセス**を使うと、よく変える設定をメニューの More ボタンのすぐ上と、**Q** で開く
-**クイックオプション**に置けます（メニューでも練習中でも開けます）。最初は Answer by（答え方）だけが
+**クイックオプション**に置けます（メニューで開けます）。最初は Answer by（答え方）だけが
 出ています。**Settings → Quick access** でどの設定もオン・オフでき、この選択は端末ごとに保存されます
 （スマートフォンとパソコンでは使える広さが違うため）。Answer by を外すと、More ボタンに今の答え方が
 表示されます。
 
 **キーボード。** メニューでは **1〜5** でひらがな・カタカナ・かな・数字・時を切り替え、**Q** で
-クイックオプションを開きます（練習中も使えます）。入力欄に文字を打っている間はどちらも反応しないので、
+クイックオプションを開きます。練習中や入力欄に文字を打っている間はどちらも反応しないので、
 答えに q が入っていても大丈夫です。**Esc** はどの画面からも戻り、クイックオプションも閉じます。
 
 **画面が広いときはメニューが左に残ります。** 1100px あたりから、デッキ一覧が左に固定され、右側に
