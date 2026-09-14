@@ -955,8 +955,9 @@ the rail: the rail is the same element, so promoting Progress or the chart into 
 second copy of a row that already exists, and rows drift the moment there are two of them.
 
 **More, Settings, and quick access.** The menu's one button is **More** (`#options` in the code),
-and More is five buttons and nothing else: Settings, Character font, All characters & romaji, Your
-progress, Account. **Settings** (`#settings`) holds every switch — Practice, Display — plus the
+and More is five buttons and nothing else: Your progress first, then Settings, Character font, All
+characters & romaji, Account. Your progress and Account are hidden without a backend, so on a
+static host Settings is what leads. **Settings** (`#settings`) holds every switch — Practice, Display — plus the
 Quick access toggles and a Keyboard note. Any row carrying `data-setting` can be pinned, and a
 pinned row shows in two places: at the foot of the menu, above More, and in the **quick options
 dialog** the Q key opens. Answer by is pinned by default, so the most-changed setting is back on the
@@ -1291,7 +1292,9 @@ These each cost a real bug once. Comments in the source mark most of them.
   ticking counter turns practice into a race. Hidden is the default for that reason; `setClock()` syncs the choice through `store`,
   and `runClockTick()` is the only thing that repaints the play bar's clock — it is a display,
   and nothing is measured by counting its ticks. The results screen shows the total and the best
-  time with `fmtExact()`, to the millisecond, never rounded: those are the figures the records keep.
+  time with `fmtExact()`, to the millisecond, never rounded: those are the figures the records keep. The menu's deck rows show the best time the same way,
+  `0:11.601` rather than `0:12`, and so does each row's accessible name; only the live clock in the
+  play bar stays in whole seconds, where milliseconds would just flicker.
 - **Never select `.seg__btn` document-wide.** Seven switches share the class now — answer mode,
   prompt form, date form, timer, theme, performance, and the progress screen's device switch. A global query wires
   `setMode(undefined)` onto the others and blanks their `aria-checked` on every mode change. Each

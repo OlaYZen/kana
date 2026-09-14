@@ -228,7 +228,7 @@ isn't drilled: it has no vowel, and which key it sits on varies between keyboard
 **Timer during a run · Hidden / Shown** in Settings puts a clock in the bar at the top while you
 practise. It is hidden unless you turn it on, because a ticking counter turns practice into a race;
 the run is timed either way, and the results screen always shows the exact time — `1:23.456`, to
-the millisecond, the same figure your fastest clean run is kept in. It follows your account.
+the millisecond, the same figure your fastest clean run is kept in, and the one the deck list shows beside each deck. It follows your account.
 
 **Performance · Normal / Fast** in Settings turns every animation off. The 〇 stamp goes with them,
 so a right answer moves straight to the next character instead of pausing for it — which makes a
@@ -263,8 +263,8 @@ into a race. Missed drills don't count towards records.
 
 **The menu stays out of the way.** It is the script switch, the list of decks, and one **More**
 button — so the deck list keeps the screen instead of losing a third of a phone to stacked
-settings. **More** is five buttons: **Settings**, Character font, All characters & romaji, Your
-progress and Account. **Settings** has every switch — answer mode, prompts, dates, timer, theme,
+settings. **More** is five buttons: **Your progress** first, then **Settings**, Character font, All
+characters & romaji and Account. **Settings** has every switch — answer mode, prompts, dates, timer, theme,
 performance — plus quick access and the keyboard shortcuts. They are screens rather than pop-ups,
 so nothing is ever half a panel with the way out below the fold. The deck rows are labelled with
 the answer mode their figures belong to.
@@ -567,7 +567,7 @@ python -m http.server 8000 --directory frontend
 
 **Timer during a run · Hidden / Shown** を設定で Shown にすると、練習中に上のバーへ時計が出ます。
 時間が刻まれると練習が競争になってしまうので、既定は非表示です。計測はどちらでも行われ、結果画面には
-いつも正確なタイム（`1:23.456` のようにミリ秒まで）が出ます。最速記録もこの値で保存されます。この設定は
+いつも正確なタイム（`1:23.456` のようにミリ秒まで）が出ます。最速記録もこの値で保存され、デッキ一覧にもこの値が表示されます。この設定は
 アカウントに同期されます。
 
 **パフォーマンス · Normal / Fast** は設定にあります。Fast にするとアニメーションが全部止まります。
@@ -674,8 +674,8 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
 
 **メニューは邪魔をしません。** 置いてあるのは文字種の切り替え、デッキの一覧、そして **More**
 ボタンだけです。設定を積み上げるとスマートフォンの画面の 3 分の 1 が消えてしまい、本当に使いたい
-デッキ一覧が狭くなるからです。**More** には 5 つのボタン — **Settings**、Character font、
-All characters & romaji、Your progress、Account — があります。**Settings** にはすべての切り替え
+デッキ一覧が狭くなるからです。**More** には 5 つのボタン — 先頭の **Your progress**、**Settings**、
+Character font、All characters & romaji、Account — があります。**Settings** にはすべての切り替え
 （答え方、出題の形、日付の表記、タイマー、テーマ、パフォーマンス）と、クイックアクセス、キーボード
 操作の説明があります。どれもポップアップではなく画面なので、下に隠れて戻れないということがありません。
 デッキの行には、その数字がどの答え方のものかが表示されます。
