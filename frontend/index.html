@@ -52,23 +52,23 @@
          drills, which are not kana at all. Both are a `script` downstream — see
          CLAUDE.md — which is what keeps every filter to one comparison. -->
     <div class="scriptbar" id="scriptSwitch" role="radiogroup" aria-label="Script">
-      <button type="button" class="hanko" data-script="hiragana" role="radio" aria-checked="true">
+      <button type="button" class="hanko" data-script="hiragana" role="radio" aria-keyshortcuts="1" aria-checked="true">
         <span class="hanko__glyph" lang="ja">あ</span>
         <span class="hanko__label">Hiragana</span>
       </button>
-      <button type="button" class="hanko" data-script="katakana" role="radio" aria-checked="false">
+      <button type="button" class="hanko" data-script="katakana" role="radio" aria-keyshortcuts="2" aria-checked="false">
         <span class="hanko__glyph" lang="ja">ア</span>
         <span class="hanko__label">Katakana</span>
       </button>
-      <button type="button" class="hanko" data-script="kana" role="radio" aria-checked="false">
+      <button type="button" class="hanko" data-script="kana" role="radio" aria-keyshortcuts="3" aria-checked="false">
         <span class="hanko__glyph hanko__glyph--pair" lang="ja">あア</span>
         <span class="hanko__label">Kana</span>
       </button>
-      <button type="button" class="hanko" data-script="number" role="radio" aria-checked="false">
+      <button type="button" class="hanko" data-script="number" role="radio" aria-keyshortcuts="4" aria-checked="false">
         <span class="hanko__glyph" lang="ja">十</span>
         <span class="hanko__label">Numbers</span>
       </button>
-      <button type="button" class="hanko" data-script="calendar" role="radio" aria-checked="false">
+      <button type="button" class="hanko" data-script="calendar" role="radio" aria-keyshortcuts="5" aria-checked="false">
         <span class="hanko__glyph hanko__glyph--pair" lang="ja">日時</span>
         <span class="hanko__label">Time</span>
       </button>
@@ -83,12 +83,15 @@
     </div>
 
     <!-- Everything that used to sit stacked here — answer mode, font, chart,
-         progress, account — now lives on the #options screen. Five blocks took
-         a third of a phone screen away from the deck list. On a wide window
-         this row is the foot of the rail and behaves exactly the same. -->
+         progress, account — lives behind More (#options) and Settings. Five blocks
+         took a third of a phone screen away from the deck list. What comes back
+         is only what the user pins as quick access, just above this button; on a
+         wide window both sit at the foot of the rail and behave the same. -->
+    <div class="quick hidden" id="quickAccess" role="group" aria-label="Quick access"></div>
+
     <button type="button" class="wide wide--bar" id="moreBtn">
-      <span class="wide__mark" lang="ja">設定</span>
-      <span class="wide__label">Options · <span id="moreMode">Typing</span></span>
+      <span class="wide__mark" lang="ja">ほか</span>
+      <span class="wide__label">More<span id="moreModeWrap"> · <span id="moreMode">Typing</span></span></span>
       <span class="wide__go" aria-hidden="true">▸</span>
     </button>
   </section>
@@ -355,72 +358,16 @@
        the tallest of them — this one — was what set that cap. A screen scrolls
        instead, and on a wide window it is the pane beside the deck rail. -->
   <section id="options" class="screen panel hidden" aria-labelledby="optionsTitle">
-    <p class="eyebrow" id="optionsTitle"><span class="mark" lang="ja">設定</span> Options</p>
+    <p class="eyebrow" id="optionsTitle"><span class="mark" lang="ja">ほか</span> More</p>
 
     <div class="panel__scroll">
-      <div class="modebar modebar--stack">
-        <span class="modebar__label">Answer by</span>
-        <div class="seg" id="modeSwitch" role="radiogroup" aria-label="Answer mode">
-          <button type="button" class="seg__btn" data-mode="type" role="radio" aria-checked="true">Typing</button>
-          <button type="button" class="seg__btn" data-mode="choose" role="radio" aria-checked="false">Choosing</button>
-          <button type="button" class="seg__btn" data-mode="write" role="radio" aria-checked="false">Writing</button>
-        </div>
-      </div>
-
-      <!-- Only the number and calendar drills read this: 六 or "roku", 二十日 or
-           "hatsuka". Both are worth practising and they are different questions,
-           so each prompt form keeps its own records. Writing ignores it — that
-           direction asks with 6 or 20日 and answers in kana. -->
-      <div class="modebar modebar--stack">
-        <span class="modebar__label">Numbers &amp; dates ask with</span>
-        <div class="seg" id="promptSwitch" role="radiogroup" aria-label="Number and date prompts">
-          <button type="button" class="seg__btn" data-prompt="kanji" role="radio" aria-checked="true">Kanji</button>
-          <button type="button" class="seg__btn" data-prompt="reading" role="radio" aria-checked="false">Reading</button>
-        </div>
-      </div>
-
-      <!-- How months, dates and times are written: 9月 and 3時45分 as nearly
-           everything prints them, or 九月 and 三時四十五分. With 9月 on the
-           square the number is already showing, so Typing and Choosing ask for
-           the reading instead. Weekdays look the same either way. -->
-      <div class="modebar modebar--stack">
-        <span class="modebar__label">Dates &amp; times written as</span>
-        <div class="seg" id="datesSwitch" role="radiogroup" aria-label="How dates and times are written">
-          <button type="button" class="seg__btn" data-dates="numeral" role="radio" aria-checked="true" lang="ja">9月</button>
-          <button type="button" class="seg__btn" data-dates="kanji" role="radio" aria-checked="false" lang="ja">九月</button>
-        </div>
-      </div>
-
-      <!-- A run is always timed; this only decides whether the clock is on
-           screen while you practise. Hidden by default, because a ticking
-           counter turns practice into a race. Synced, like the two above. -->
-      <div class="modebar modebar--stack">
-        <span class="modebar__label">Timer during a run</span>
-        <div class="seg" id="clockSwitch" role="radiogroup" aria-label="Timer during a run">
-          <button type="button" class="seg__btn" data-clock="hidden" role="radio" aria-checked="true">Hidden</button>
-          <button type="button" class="seg__btn" data-clock="shown" role="radio" aria-checked="false">Shown</button>
-        </div>
-      </div>
-
-      <!-- Theme is this device's alone — it is never synced to an account. -->
-      <div class="modebar modebar--stack">
-        <span class="modebar__label">Theme</span>
-        <div class="seg" id="themeSwitch" role="radiogroup" aria-label="Theme">
-          <button type="button" class="seg__btn" data-theme="auto" role="radio" aria-checked="true">Auto</button>
-          <button type="button" class="seg__btn" data-theme="light" role="radio" aria-checked="false">Light</button>
-          <button type="button" class="seg__btn" data-theme="dark" role="radio" aria-checked="false">Dark</button>
-        </div>
-      </div>
-
-      <!-- Like the theme, this belongs to the device rather than the account: a
-           phone that stutters is a fact about that phone. -->
-      <div class="modebar modebar--stack">
-        <span class="modebar__label">Performance</span>
-        <div class="seg" id="perfSwitch" role="radiogroup" aria-label="Performance mode">
-          <button type="button" class="seg__btn" data-perf="off" role="radio" aria-checked="true">Normal</button>
-          <button type="button" class="seg__btn" data-perf="on" role="radio" aria-checked="false">Fast</button>
-        </div>
-      </div>
+      <!-- Five ways onward and nothing else: every switch lives one step further
+           in, on Settings, so this screen is a list you can read at a glance. -->
+      <button type="button" class="wide" id="settingsBtn">
+        <span class="wide__mark" lang="ja">設定</span>
+        <span class="wide__label">Settings</span>
+        <span class="wide__go" aria-hidden="true">▸</span>
+      </button>
 
       <button type="button" class="wide" id="menuFontBtn">
         <span class="wide__mark wide__mark--kana" lang="ja">あ</span>
@@ -449,6 +396,99 @@
     </div>
 
     <button type="button" class="link" id="optionsBackBtn">← Back</button>
+  </section>
+
+  <!-- ───────────── SETTINGS ───────────── -->
+  <section id="settings" class="screen panel hidden" aria-labelledby="settingsTitle">
+    <p class="eyebrow" id="settingsTitle"><span class="mark" lang="ja">設定</span> Settings</p>
+
+    <div class="panel__scroll">
+      <!-- Every row with data-setting can be pinned to quick access on the menu.
+           The copy there is cloned from the row here, and a tap on it clicks the
+           button here — see js/quick.js — so this markup is the only copy. -->
+      <h2 class="settings__h">Practice</h2>
+
+      <div class="modebar modebar--stack" data-setting="mode">
+        <span class="modebar__label">Answer by</span>
+        <div class="seg" id="modeSwitch" role="radiogroup" aria-label="Answer mode">
+          <button type="button" class="seg__btn" data-mode="type" role="radio" aria-checked="true">Typing</button>
+          <button type="button" class="seg__btn" data-mode="choose" role="radio" aria-checked="false">Choosing</button>
+          <button type="button" class="seg__btn" data-mode="write" role="radio" aria-checked="false">Writing</button>
+        </div>
+      </div>
+
+      <!-- Only the number and calendar drills read this: 六 or "roku", 二十日 or
+           "hatsuka". Both are worth practising and they are different questions,
+           so each prompt form keeps its own records. Writing ignores it — that
+           direction asks with 6 or 20日 and answers in kana. -->
+      <div class="modebar modebar--stack" data-setting="prompt">
+        <span class="modebar__label">Numbers &amp; dates ask with</span>
+        <div class="seg" id="promptSwitch" role="radiogroup" aria-label="Number and date prompts">
+          <button type="button" class="seg__btn" data-prompt="kanji" role="radio" aria-checked="true">Kanji</button>
+          <button type="button" class="seg__btn" data-prompt="reading" role="radio" aria-checked="false">Reading</button>
+        </div>
+      </div>
+
+      <!-- How months, dates and times are written: 9月 and 3時45分 as nearly
+           everything prints them, or 九月 and 三時四十五分. With 9月 on the
+           square the number is already showing, so Typing and Choosing ask for
+           the reading instead. Weekdays look the same either way. -->
+      <div class="modebar modebar--stack" data-setting="dates">
+        <span class="modebar__label">Dates &amp; times written as</span>
+        <div class="seg" id="datesSwitch" role="radiogroup" aria-label="How dates and times are written">
+          <button type="button" class="seg__btn" data-dates="numeral" role="radio" aria-checked="true" lang="ja">9月</button>
+          <button type="button" class="seg__btn" data-dates="kanji" role="radio" aria-checked="false" lang="ja">九月</button>
+        </div>
+      </div>
+
+      <!-- A run is always timed; this only decides whether the clock is on
+           screen while you practise. Hidden by default, because a ticking
+           counter turns practice into a race. Synced, like the two above. -->
+      <div class="modebar modebar--stack" data-setting="clock">
+        <span class="modebar__label">Timer during a run</span>
+        <div class="seg" id="clockSwitch" role="radiogroup" aria-label="Timer during a run">
+          <button type="button" class="seg__btn" data-clock="hidden" role="radio" aria-checked="true">Hidden</button>
+          <button type="button" class="seg__btn" data-clock="shown" role="radio" aria-checked="false">Shown</button>
+        </div>
+      </div>
+
+      <h2 class="settings__h">Display</h2>
+
+      <!-- Theme is this device's alone — it is never synced to an account. -->
+      <div class="modebar modebar--stack" data-setting="theme">
+        <span class="modebar__label">Theme</span>
+        <div class="seg" id="themeSwitch" role="radiogroup" aria-label="Theme">
+          <button type="button" class="seg__btn" data-theme="auto" role="radio" aria-checked="true">Auto</button>
+          <button type="button" class="seg__btn" data-theme="light" role="radio" aria-checked="false">Light</button>
+          <button type="button" class="seg__btn" data-theme="dark" role="radio" aria-checked="false">Dark</button>
+        </div>
+      </div>
+
+      <!-- Like the theme, this belongs to the device rather than the account: a
+           phone that stutters is a fact about that phone. -->
+      <div class="modebar modebar--stack" data-setting="perf">
+        <span class="modebar__label">Performance</span>
+        <div class="seg" id="perfSwitch" role="radiogroup" aria-label="Performance mode">
+          <button type="button" class="seg__btn" data-perf="off" role="radio" aria-checked="true">Normal</button>
+          <button type="button" class="seg__btn" data-perf="on" role="radio" aria-checked="false">Fast</button>
+        </div>
+      </div>
+
+      <!-- Which rows are pinned is kept on this device, like the theme: how much
+           of the menu there is room for depends on the screen. -->
+      <h2 class="settings__h">Quick access</h2>
+      <p class="panel__note">Pin a setting to the menu, so it is one tap away instead of two screens.</p>
+      <div class="qtoggles" id="quickToggles"></div>
+
+<h2 class="settings__h">Keyboard</h2>
+      <p class="panel__note">
+        On the menu, <kbd>1</kbd>–<kbd>5</kbd> switch between Hiragana, Katakana, Kana, Numbers
+        and Time. <kbd>Q</kbd> opens your quick options, on the menu or during a run, whenever you
+        are not typing into a field. <kbd>Esc</kbd> goes back.
+      </p>
+    </div>
+
+    <button type="button" class="link" id="settingsBackBtn">← Back</button>
   </section>
 
   <!-- ───────────── FONT PICKER ───────────── -->
@@ -497,6 +537,24 @@
 
 </main>
 
+<!-- Quick options: the pinned settings again, as a dialog, so Q can bring them
+     up from the menu or mid-run without leaving what you are doing. The app's
+     one modal — see CLAUDE.md. It closes on ✕, Escape or a click on the
+     backdrop; the panel inside fills it, which is what lets a click on the
+     dialog element itself mean the backdrop. js/quick.js fills it. -->
+<dialog class="quickdlg" id="quickDialog" aria-labelledby="quickDialogTitle">
+  <div class="quickdlg__panel">
+    <div class="quickdlg__head">
+      <h2 class="quickdlg__title" id="quickDialogTitle">Quick options</h2>
+      <button type="button" class="iconbtn" id="quickDialogClose" aria-label="Close quick options" title="Close">✕</button>
+    </div>
+    <div class="quickdlg__body" id="quickDialogBody"></div>
+    <p class="panel__note hidden" id="quickDialogEmpty">Nothing is pinned yet.</p>
+    <button type="button" class="link quickdlg__edit" id="quickDialogEdit">Choose what goes here</button>
+  </div>
+</dialog>
+
+
 <!-- Classic scripts sharing one global scope, so order is load-bearing: a file may
      use anything an earlier one declares while it loads, and nothing a later one
      does. wiring.js comes after the files its listeners point at; boot.js is last.
@@ -515,6 +573,7 @@
 <script src="js/run.js"></script>
 <script src="js/backend.js"></script>
 <script src="js/progress.js"></script>
+<script src="js/quick.js"></script>
 <script src="js/wiring.js"></script>
 <script src="js/boot.js"></script>
 </body>

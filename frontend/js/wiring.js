@@ -34,10 +34,35 @@ el.input.addEventListener("keydown", enterSubmits);
 el.kanaInput.addEventListener("keydown", enterSubmits);
 el.numInput.addEventListener("keydown", enterSubmits);
 
-// Options is a screen, so everything it leads to is one step deeper and one
-// step back — no sheet to close first, and nothing that can stack.
+// More and Settings are screens, so everything they lead to is one step deeper
+// and one step back — no sheet to close first, and nothing that can stack.
 el.moreBtn.addEventListener("click", () => navTo(el.options));
 el.optionsBackBtn.addEventListener("click", navBack);
+el.settingsBtn.addEventListener("click", () => navTo(el.settings));
+el.settingsBackBtn.addEventListener("click", navBack);
+
+// Keyboard shortcuts: 1–5 pick a stamp on the menu, and Q opens the quick
+// options dialog on the menu or mid-run. Never while typing into a field — Q is
+// a letter someone may be typing — never with a modifier held, and never on a
+// panel, which the handler below has already returned for. Mid-run, 1–4 stay
+// Choosing's: the stamps only answer to digits on the menu.
+function shortcut(e) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return false;
+  const t = e.target;
+  if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return false;
+  const onMenu = activeScreen() === el.menu;
+  if ((e.key === "q" || e.key === "Q") && (onMenu || !el.play.classList.contains("hidden"))) {
+    e.preventDefault();
+    openQuickDialog();
+    return true;
+  }
+  if (onMenu && /^[1-5]$/.test(e.key)) {
+    const stamp = el.scriptSwitch.children[Number(e.key) - 1];
+    if (stamp && !stamp.classList.contains("hidden")) stamp.click();
+    return true;
+  }
+  return false;
+}
 
 el.playFontBtn.addEventListener("click", openFontPicker);
 el.menuFontBtn.addEventListener("click", openFontPicker);
@@ -54,6 +79,9 @@ document.addEventListener("keydown", (e) => {
   // An Escape during IME composition cancels the conversion; it is not a
   // request to leave the screen. Same guard as Enter in enterSubmits.
   if (e.isComposing || e.keyCode === 229) return;
+  // The quick options dialog owns the keyboard while it is open; <dialog>
+  // handles its own Escape.
+  if (el.quickDialog.open) return;
   // Escape backs out of a panel, which is what <dialog> used to do for free —
   // one layer at a time. The change-password form inside Account closes first,
   // as its Cancel does, and only the next Escape leaves the screen.
@@ -72,6 +100,7 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") toMenu();
     return;
   }
+  if (shortcut(e)) return;
   if (el.play.classList.contains("hidden")) return;
   if (e.key === "Escape") { toMenu(); return; }
   if (state.mode !== "choose") return;

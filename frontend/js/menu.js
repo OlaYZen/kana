@@ -79,8 +79,8 @@ function setMode(mode) {
   Array.from(el.modeSwitch.children).forEach((b) =>
     b.setAttribute("aria-checked", String(b.dataset.mode === mode)));
   store.write({ mode: mode });
-  // the mode lives behind the Options sheet now, so the button that opens it
-  // carries the current value — otherwise it is invisible from the menu
+  // unless Answer by is pinned to quick access the mode is invisible from the
+  // menu, so the Settings button carries it; quick.js hides it when pinned
   el.moreMode.textContent = MODE_LABEL[mode] || mode;
   // the deck list shows this mode's records, so it has to be rebuilt too
   if (el.play.classList.contains("hidden")) buildMenu();

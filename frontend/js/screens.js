@@ -12,7 +12,7 @@
    `data-screen` on <body> is how the stylesheet knows which one is up, which
    is what lets the wide layout keep the menu on screen beside it. */
 const SCREENS = [el.menu, el.play, el.end, el.fatal, el.auth, el.stats,
-                 el.options, el.fontPicker, el.chart];
+                 el.options, el.settings, el.fontPicker, el.chart];
 
 function paint(screen) {
   SCREENS.forEach((s) => s.classList.toggle("hidden", s !== screen));
@@ -60,7 +60,7 @@ const activeScreen = () =>
 // them, and while one is up it owns the keyboard. Account and progress were
 // missing — they have always been navTo() screens with a Back button, and
 // Escape simply did nothing on them.
-const PANELS = [el.options, el.fontPicker, el.chart, el.auth, el.stats];
+const PANELS = [el.options, el.settings, el.fontPicker, el.chart, el.auth, el.stats];
 const onPanel = () => PANELS.indexOf(activeScreen()) >= 0;
 
 // Which pool this run's timings belong to. Typing romaji on a keyboard and

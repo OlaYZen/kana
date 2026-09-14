@@ -50,6 +50,8 @@
   --guide:    #4A4335;
 
   --press:    rgba(255,255,255,.09);
+  /* on sumi the backdrop has to darken further to separate the dialog at all */
+  --backdrop: rgba(0,0,0,.62);
 
   /* a shadow on a dark ground has to be near-black and tighter, or it just
      fogs the area around the element instead of lifting it */

@@ -43,7 +43,12 @@ const el = {
   pwSubmit: $("pwSubmit"), pwCancel: $("pwCancel"),
   accountBtn: $("accountBtn"), accountName: $("accountName"),
   moreBtn: $("moreBtn"), options: $("options"), optionsBackBtn: $("optionsBackBtn"),
-  moreMode: $("moreMode"),
+  moreMode: $("moreMode"), moreModeWrap: $("moreModeWrap"),
+  quick: $("quickAccess"), quickToggles: $("quickToggles"),
+  settings: $("settings"), settingsBtn: $("settingsBtn"), settingsBackBtn: $("settingsBackBtn"),
+  quickDialog: $("quickDialog"), quickDialogBody: $("quickDialogBody"),
+  quickDialogClose: $("quickDialogClose"), quickDialogEmpty: $("quickDialogEmpty"),
+  quickDialogEdit: $("quickDialogEdit"),
   stats: $("stats"), statsBtn: $("statsBtn"), statsBody: $("statsBody"),
   statsBackBtn: $("statsBackBtn"), deckPick: $("deckPick"),
   statsScriptSwitch: $("statsScriptSwitch"),
@@ -71,6 +76,9 @@ const TOKEN_KEY = "kana.token";  // session token: deliberately outside the
                                  // business making that round trip
 const THEME_KEY = "kana.theme";  // light/dark: outside it too, and for a
                                  // second reason — see the theme section
+// Which Settings rows are pinned to the menu — this device's alone, like the
+// theme: how much menu there is room for is a fact about the screen.
+const QUICK_KEY = "kana.quick";
 const PERF_KEY = "kana.perf";    // outside it for the theme's reason exactly:
                                  // whether animation costs this device
                                  // anything is a fact about this device

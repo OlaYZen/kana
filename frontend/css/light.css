@@ -65,6 +65,8 @@
 
   /* the pressed/hover wash on a control with no fill of its own */
   --press:    rgba(0,0,0,.07);
+  /* behind the quick options dialog — ink, thinned, so the page stays legible */
+  --backdrop: rgba(36,33,28,.42);
 
   /* Shadows are whole values, not tints, because a dark ground needs a
      different spread and opacity, not the same shadow in another colour. */

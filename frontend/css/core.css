@@ -419,6 +419,98 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
    stacked here is behind it, so the deck list keeps the screen. */
 .wide--bar{ margin-top:12px; }
 
+/* ── settings page ────────────────────────────────────────────────────── */
+.settings__h{
+  margin:22px 2px 10px; padding-top:14px;
+  border-top:1px solid var(--hairline);
+  font-family:var(--sans); font-size:12px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--c-ink-soft);
+}
+.settings__h:first-of-type{ margin-top:4px; padding-top:0; border-top:none; }
+
+/* Quick access: Settings rows pinned to the foot of the menu, a little tighter
+   than on the page they come from, since they share the screen with the decks. */
+/* Capped, and scrolling past the cap: pin all six on a 320x568 phone and they
+   stand 394px tall, which left the deck list no height at all and pushed the
+   Settings button off the bottom of the screen. The deck list is what the menu
+   is for, and the button is the way to unpin them again, so both keep their
+   room however much is pinned; on a screen with space, six fit under the cap. */
+.quick{
+  flex:0 0 auto; margin-top:10px;
+  max-height:38dvh; overflow-y:auto; overscroll-behavior:contain;
+}
+/* It never shrinks below the cap — a shrinkable area squeezed the one default
+   row to a 25px sliver on a landscape phone — so on a short screen the cap is
+   what tightens instead, still clearing a whole row. */
+@media (max-height:450px){ .quick{ max-height:24dvh; } }
+.quick .modebar--stack{ margin-bottom:8px; gap:4px; }
+.quick .modebar--stack:last-child{ margin-bottom:0; }
+.quick .seg__btn{ min-height:34px; }
+
+/* The pin toggles — switches, not checkboxes: each takes effect at once. */
+.qtoggles{ display:grid; gap:8px; margin-top:10px; }
+.qtoggle{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  width:100%; min-height:var(--tap); padding:0 12px;
+  background:var(--paper-card); border:1px solid var(--hairline); border-radius:var(--r-lg);
+  color:var(--c-ink); font-family:var(--sans); font-size:14px; font-weight:600;
+  text-align:left; cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+@media (hover:hover){ .qtoggle:hover{ border-color:var(--hairline-2); background:var(--paper-lift); } }
+.qtoggle__label{ flex:1; min-width:0; }
+.qtoggle__track{
+  flex:0 0 auto; position:relative;
+  width:42px; height:24px; border-radius:12px;
+  background:var(--paper-sunk); border:1px solid var(--hairline-2);
+  transition:background .15s, border-color .15s;
+}
+.qtoggle__thumb{
+  position:absolute; top:2px; left:2px;
+  width:18px; height:18px; border-radius:50%;
+  background:var(--paper-lift); box-shadow:var(--shadow-fine);
+  transition:transform .15s, background .15s;
+}
+.qtoggle[aria-checked="true"] .qtoggle__track{ background:var(--accent); border-color:var(--accent); }
+.qtoggle[aria-checked="true"] .qtoggle__thumb{ transform:translateX(18px); background:var(--on-fill); }
+
+/* Key names in the Keyboard note. */
+kbd{
+  font-family:var(--mono); font-size:.9em;
+  padding:1px 5px; border-radius:4px;
+  border:1px solid var(--hairline-2); border-bottom-width:2px;
+  background:var(--paper); color:var(--c-ink);
+}
+
+/* ── quick options dialog ─────────────────────────────────────────────── */
+/* The app's one modal, opened with Q. The panel inside fills it and carries all
+   the padding, so a click whose target is the <dialog> itself can only have
+   landed on the backdrop — that is how js/quick.js tells the two apart. */
+.quickdlg{
+  width:min(420px, calc(100% - 2 * var(--pad)));
+  max-height:calc(100dvh - 2 * var(--pad));
+  padding:0;
+  border:1px solid var(--hairline); border-radius:var(--r-lg);
+  background:var(--paper-card); color:var(--c-ink);
+  box-shadow:var(--shadow-square);
+}
+.quickdlg::backdrop{ background:var(--backdrop); }
+.quickdlg__panel{
+  max-height:inherit; overflow-y:auto; overscroll-behavior:contain;
+  padding:10px var(--pad) 14px;
+}
+.quickdlg__head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-bottom:8px;
+}
+.quickdlg__title{
+  margin:0;
+  font-family:var(--sans); font-size:12px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--c-ink-soft);
+}
+.quickdlg__body .modebar--stack{ margin-bottom:12px; }
+.quickdlg__edit{ margin-top:2px; }
+
 .wide{
   display:flex; align-items:center; gap:10px;
   width:100%; min-height:var(--tap);
@@ -1517,12 +1609,12 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   #menu .menu__scroll{ margin-inline:0; padding-inline:0; }
 
   /* ── the pane ─────────────────────────────────────────────────────────── */
-  #play, #end, #stats, #auth, #options, #fontPicker, #chart{
+  #play, #end, #stats, #auth, #options, #settings, #fontPicker, #chart{
     grid-column:2; min-width:0;
   }
   /* A measure, not the whole width: only the chart is a reference table that
      wants every pixel there is. */
-  #end, #stats, #auth, #options, #fontPicker{
+  #end, #stats, #auth, #options, #settings, #fontPicker{
     width:100%; max-width:540px; margin-inline:auto;
   }
   #chart{ width:100%; max-width:880px; margin-inline:auto; }

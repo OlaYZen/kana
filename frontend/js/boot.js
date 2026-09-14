@@ -96,6 +96,7 @@ fetch("kana.json", { cache: "no-cache" })
     setDates(state.dates);     // likewise — the calendar records depend on it
     setClock(state.showClock); // paints the Timer switch
     setMode(state.mode);
+    initQuick();               // after every setter: the pinned copies start from their state
 
     // A script with no decks in kana.json gets no button, and never gets
     // selected — otherwise the menu would open on an empty list. Derived
