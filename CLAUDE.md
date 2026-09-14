@@ -643,7 +643,7 @@ directions` all sit under the あ stamp. Don't simplify this to "never show the 
 deck's identity entirely.
 
 **Persistence** is localStorage key `kana.v1` (`STORE` in `app.js`), holding
-`{rev, mode, prompt, dates, clock, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
+`{rev, mode, prompt, dates, clock, times, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
 merges patches — never `setItem` directly. **Renaming that key wipes every record anyone has set**,
 because it is the only handle on a returning user's saved bests — the `hkk.v1` → `kana.v1` rename
 was only safe because `renameKeys()` moves the old value across first, and any future rename needs
@@ -983,12 +983,16 @@ above warns about:
 A new setting is pinnable the moment its `.modebar` row has a `data-setting`; `initQuick()` runs
 from boot after every setter, so the clones start from the state the originals are in.
 
-**Shortcuts** live in `shortcut()` in `wiring.js`, and both work **on the menu only**: **1–5** pick
-a stamp (the stamps carry `aria-keyshortcuts`), and **Q** opens quick options. Q shipped working
+**Shortcuts** live in `shortcut()` in `wiring.js`, and all of them work **on the menu only**: **1–5**
+pick a stamp, **Q** opens quick options, and **W**, **E**, **F** and **A** open Your progress,
+Settings, the font picker and Account. The last four work by clicking the button on More, so a
+button hidden without a backend (Your progress, Account) leaves its key idle rather than opening a
+screen with nothing on it; All characters has no key, deliberately. Every shortcut's control carries
+`aria-keyshortcuts`. Q shipped working
 mid-run too, guarded by "not while a field has focus" — and that guard is not enough, because the
 answer field loses focus all the time: a tap on the square, the keyboard put away, a click
 elsewhere. A Q after any of those opened the dialog over the card. Don't bring it back mid-run.
-Neither shortcut fires while a field has focus, with Ctrl, Alt or Cmd held, mid-composition, or on a
+No shortcut fires while a field has focus, with Ctrl, Alt or Cmd held, mid-composition, or on a
 panel, which returns before `shortcut()` is reached; and digits stay Choosing's during a run.
 
 **Layout model.** `body` → `.stage` → one `.screen` flex column per screen. `.play` is four bands:
@@ -1291,15 +1295,19 @@ These each cost a real bug once. Comments in the source mark most of them.
   shows it** — deliberate, a visible
   ticking counter turns practice into a race. Hidden is the default for that reason; `setClock()` syncs the choice through `store`,
   and `runClockTick()` is the only thing that repaints the play bar's clock — it is a display,
-  and nothing is measured by counting its ticks. The results screen shows the total and the best
-  time with `fmtExact()`, to the millisecond, never rounded: those are the figures the records keep. The menu's deck rows show the best time the same way,
-  `0:11.601` rather than `0:12`, and so does each row's accessible name; only the live clock in the
-  play bar stays in whole seconds, where milliseconds would just flicker.
-- **Never select `.seg__btn` document-wide.** Seven switches share the class now — answer mode,
-  prompt form, date form, timer, theme, performance, and the progress screen's device switch. A global query wires
+  and nothing is measured by counting its ticks. **How a time is written is a setting, `Times shown as · Rounded / Exact`**, and rounded is the
+  default. `fmtRun()` is the one formatter for the results screen, the best-time chip, the deck
+  list (text and accessible name) and the live clock: `fmtTime()` (`0:12`) unless `state.exactTimes`,
+  then `fmtExact()` (`0:11.601`), with the live clock repainting fast enough for its milliseconds to
+  run. **The progress report is the exception and always calls `fmtExact()`** — comparing two runs
+  of a deck is what it is for, and rounding erases the difference. The records themselves are kept
+  in milliseconds either way; this only decides how they are written. `setTimes()` syncs through
+  `store` like the timer, rebuilds the menu and restarts the clock.
+- **Never select `.seg__btn` document-wide.** Eight switches share the class now — answer mode,
+  prompt form, date form, timer, time format, theme, performance, and the progress screen's device switch. A global query wires
   `setMode(undefined)` onto the others and blanks their `aria-checked` on every mode change. Each
   has a handle of its own for exactly this reason: go through `el.modeSwitch` / `el.promptSwitch` /
-  `el.datesSwitch` / `el.clockSwitch` / `el.themeSwitch` / `el.perfSwitch` / `el.deviceSwitch`. The shared *layout* is `.modebar--stack`,
+  `el.datesSwitch` / `el.clockSwitch` / `el.timesSwitch` / `el.themeSwitch` / `el.perfSwitch` / `el.deviceSwitch`. The shared *layout* is `.modebar--stack`,
   which is a layout modifier and not a handle on the mode.
 - **`activeMode()` is a record key, not a test of what is on screen.** It carries a `-kanji` or
   `-reading` suffix for the generated drills, so `activeMode() !== "choose"` silently stopped being

@@ -227,8 +227,12 @@ isn't drilled: it has no vowel, and which key it sits on varies between keyboard
 
 **Timer during a run · Hidden / Shown** in Settings puts a clock in the bar at the top while you
 practise. It is hidden unless you turn it on, because a ticking counter turns practice into a race;
-the run is timed either way, and the results screen always shows the exact time — `1:23.456`, to
-the millisecond, the same figure your fastest clean run is kept in, and the one the deck list shows beside each deck. It follows your account.
+the run is timed either way, and the results screen shows how long it took. It follows your account.
+
+**Times shown as · Rounded / Exact** in Settings decides how a time is written: `0:12` by default,
+or `0:11.601` to the millisecond — on the results screen, beside each deck in the list, and on the
+timer. **Your progress** always shows the exact time whichever you pick, since telling two runs
+apart is what it is for. It follows your account too.
 
 **Performance · Normal / Fast** in Settings turns every animation off. The 〇 stamp goes with them,
 so a right answer moves straight to the next character instead of pausing for it — which makes a
@@ -276,8 +280,9 @@ choice is kept on that device, since a phone and a laptop have different room to
 Answer by and More shows the current mode instead.
 
 **Keyboard.** On the menu, **1–5** switch between Hiragana, Katakana, Kana, Numbers and Time, and
-**Q** opens quick options. Neither does anything during a run or while you are typing into a field,
-so a q in an answer is just an answer. **Esc** goes back from any screen and closes
+**Q** opens quick options, **W** Your progress, **E** Settings, **F** the character font and **A**
+your account. None of them does anything during a run or while you are typing into a field, so a
+letter in an answer is just a letter. **Esc** goes back from any screen and closes
 quick options.
 
 **On a wide screen the menu becomes a rail.** From about 1100px the deck list stays put on the
@@ -566,9 +571,13 @@ python -m http.server 8000 --directory frontend
 それぞれ自分の最高記録と時間を持ちます（デッキとも、互いとも別）。
 
 **Timer during a run · Hidden / Shown** を設定で Shown にすると、練習中に上のバーへ時計が出ます。
-時間が刻まれると練習が競争になってしまうので、既定は非表示です。計測はどちらでも行われ、結果画面には
-いつも正確なタイム（`1:23.456` のようにミリ秒まで）が出ます。最速記録もこの値で保存され、デッキ一覧にもこの値が表示されます。この設定は
-アカウントに同期されます。
+時間が刻まれると練習が競争になってしまうので、既定は非表示です。計測はどちらでも行われ、結果画面に
+タイムが出ます。この設定はアカウントに同期されます。
+
+設定の **Times shown as · Rounded / Exact** でタイムの表記を選べます。既定は `0:12` のように秒単位、
+Exact にすると `0:11.601` のようにミリ秒まで — 結果画面、デッキ一覧、タイマーのすべてで。
+**Your progress** は 2 回のランを比べるための画面なので、どちらを選んでもいつもミリ秒まで表示します。
+この設定もアカウントに同期されます。
 
 **パフォーマンス · Normal / Fast** は設定にあります。Fast にするとアニメーションが全部止まります。
 〇 の判子も出ないので、正解するとそのまま次の文字に進みます（速くなりますし、古い端末では描画も
@@ -687,8 +696,8 @@ Character font、All characters & romaji、Account — があります。**Setti
 表示されます。
 
 **キーボード。** メニューでは **1〜5** でひらがな・カタカナ・かな・数字・時を切り替え、**Q** で
-クイックオプションを開きます。練習中や入力欄に文字を打っている間はどちらも反応しないので、
-答えに q が入っていても大丈夫です。**Esc** はどの画面からも戻り、クイックオプションも閉じます。
+クイックオプション、**W** で進捗、**E** で設定、**F** でフォント、**A** でアカウントを開きます。
+練習中や入力欄に文字を打っている間はどれも反応しないので、答えに文字が入っていても大丈夫です。**Esc** はどの画面からも戻り、クイックオプションも閉じます。
 
 **画面が広いときはメニューが左に残ります。** 1100px あたりから、デッキ一覧が左に固定され、右側に
 今やっていること（練習、一覧表、設定、進捗）が入ります。練習中は書き取りの枠と入力欄が縦に
