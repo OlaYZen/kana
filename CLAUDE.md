@@ -772,7 +772,11 @@ already pick. `answersReading()` is the single test, and three things hang off i
 
 The Reading prompt and Writing are untouched — `kugatsu` → 9 still answers on the keypad, and
 Writing already asked with 9月. **`c.cal.numeral` sits beside `c.cal.face`, and `calFace()` is what
-picks between them** for the square, the feedback line and the missed list alike. The chart keeps
+picks between them** for the square, the feedback line and the missed list alike. **`deckText()` does the same for a
+calendar deck's own sample and subtitle** — the Native dates stamp is 10日 and Months reads "1月 to
+12月" under 9月 — on the deck row, in the play bar and on the results screen. Without it the deck
+list said 十日 while every card in the drill said 10日. `kana.json` keeps those in kanji, since
+`numeralText()` can only go that way round; a number drill's sample (十, 五十, 万) is untouched. The chart keeps
 one `x` column rather than two: `numeralText()` turns the kanji numerals in it into digits at render
 time, reading them back from `numbers`, so the two forms cannot drift and the generator still has
 one thing to emit.

@@ -164,7 +164,7 @@ twentieth, 四時 four o'clock — so it reads the same way round as the numbers
   `getsuyōbi` — spelt however you like: `juuni`, `jūni` and `juni` are all the same answer.
 
 **Dates & times written as · 9月 / 九月** in Settings decides how months, dates and times look
-everywhere — on the square, in the answer and in the table. **9月**, **20日** and **3時45分** is the
+everywhere — on the square, in the answer, in the deck list and in the table. **9月**, **20日** and **3時45分** is the
 default, because that is how calendars, tickets and signs print them; **九月**, **二十日** and
 **三時四十五分** is the textbook form. With digits on the square the number is already showing, so
 Typing and Choosing ask for the reading instead. Each form keeps its own best score and time, and
@@ -610,7 +610,7 @@ Fast の記録は他と同じ扱いです。正答率も最速記録も同じ 1 
   `jūni`、`juni` はすべて同じ答えです。
 
 設定の **Dates & times written as · 9月 / 九月** で、月・日付・時刻の表記が決まります（問題・答え・
-一覧表すべて）。既定は **9月**・**20日**・**3時45分** — カレンダーや切符、看板で目にする形です。
+デッキ一覧・一覧表すべて）。既定は **9月**・**20日**・**3時45分** — カレンダーや切符、看板で目にする形です。
 **九月**・**二十日**・**三時四十五分** は教科書の形です。数字で出すと答えの数がすでに見えているので、
 タイピングと選択では数ではなく読み方を訊きます。記録は表記ごとに別で、曜日はどちらでも同じです。
 
