@@ -1,0 +1,83 @@
+/* ==========================================================================
+   Light — the default theme: washi paper by day.
+
+   A theme is nothing but colour tokens. core.css draws every colour from one of
+   these custom properties and never names a colour itself, so a new theme is a
+   copy of this file with the values changed and the selector made
+   :root[data-theme="<name>"], the way dark.css does it. Declare every token
+   below: core.css falls back on none of them, and this file is what an
+   unrecognised theme name falls back to.
+
+   Cream ground, ink text, vermilion seal accent. The accents are deliberately
+   darker than a dark theme would use — the same red/gold/green at "glowing on
+   indigo" lightness fails contrast on cream.
+
+   --paper has a twin: THEME_COLOR in app.js and the theme-color meta in
+   index.html colour the browser's own chrome, and have to match it.
+   ========================================================================== */
+:root{
+  /* form controls, scrollbars and the caret follow the theme, not the OS */
+  color-scheme:light;
+
+  --paper:      #EFE9DC;  /* page ground */
+  --paper-card: #FBF8F1;  /* raised card / panel */
+  --paper-lift: #FFFDF7;  /* a card lifted further still — hover, active font */
+  --paper-sunk: #E7E0CE;  /* inset: progress track, pressed states */
+  --gap-empty:  #E3DCC9;  /* an intentionally blank chart cell */
+  --hairline:   #D8D0BC;  /* every border */
+  --hairline-2: #BFB59B;  /* hairline on hover */
+
+  --c-ink:      #24211C;  /* primary text */
+  --c-ink-soft: #5B564C;  /* secondary text */
+  --c-ink-mute: #6F6859;  /* tertiary — labels, hints, placeholders */
+  --on-fill:    #fff;     /* text on a filled accent — shu, matcha */
+
+  --shu:      #B23A26;  /* vermilion / seal red */
+  --shu-2:    #9A2F1D;
+  --shu-3:    #7E2717;  /* the seal's label colour, one step past shu-2 */
+  --matcha:   #4F6B22;  /* correct green */
+  --matcha-2: #455C1D;  /* its text companion, as shu-2 is to shu */
+  --brass:    #8A6410;  /* record gold */
+  --brass-2:  #B8892A;  /* lighter end of the progress gradient */
+  --ai:       #2B4570;  /* indigo — the katakana accent */
+  --ai-2:     #1B2C47;  /* its label colour, as shu-3 is to shu */
+  /* purple — the かな stamp, the decks that are both scripts at once. Red and
+     indigo mixed, which is exactly what that stamp holds, and it lands between
+     them on contrast too rather than reading as a louder third colour. */
+  --murasaki:   #5C3D7A;
+  --murasaki-2: #452A5C;  /* its label colour, as ai-2 is to ai */
+  /* 納戸 — the numbers accent. Deliberately outside the shu/ai/murasaki family,
+     because numbers are a different subject rather than a third script, and
+     equally deliberately not matcha or brass: green already means "correct" and
+     gold "your record" everywhere else, and a stamp is neither. */
+  --nando:      #236E70;
+  --nando-2:    #185657;
+  /* 栗 — the calendar accent. The hue circle was full by the time it was
+     needed: shu, brass, matcha, nando, ai and murasaki leave nothing but the
+     browns. So this one is told apart by being the unsaturated one — bark
+     against six dyes — and it suits the subject, since a calendar is the one
+     stamp about time rather than about writing. Not brass, which is gold and
+     already means "your record" everywhere else; this is darker and redder
+     than gold, and the two are never on screen together. */
+  --kuri:       #7A5230;
+  --kuri-2:     #5C4227;
+  --guide:    #C8BFA6;  /* practice-square cross guides */
+
+  /* the pressed/hover wash on a control with no fill of its own */
+  --press:    rgba(0,0,0,.07);
+
+  /* Shadows are whole values, not tints, because a dark ground needs a
+     different spread and opacity, not the same shadow in another colour. */
+  --shadow-fine:   0 1px 2px rgba(60,50,30,.14);          /* the seg thumb */
+  --shadow-square: 0 14px 30px -18px rgba(60,50,30,.42);
+
+  /* the writing square: paper on paper, so it needs its own lift */
+  --square-bg: linear-gradient(180deg, #FFFDF7 0%, #F4EEE0 140%);
+
+  /* The page ground. Declared once because a sticky element has to repaint it
+     to sit seamlessly over the page — see .stats .scriptbar. Always paired with
+     background-attachment:fixed, which is what makes the two line up. */
+  --page-bg:
+    radial-gradient(1100px 620px at 50% -12%, #FBF7EC 0%, transparent 62%),
+    var(--paper);
+}

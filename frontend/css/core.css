@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Kana Practice — single stylesheet, mobile-first.
+   Kana Practice — the stylesheet's core, mobile-first.
 
    Layout model
    ------------
@@ -14,17 +14,10 @@
 
    Colour
    ------
-   Washi paper throughout: cream ground, ink text, vermilion seal accent. The
-   accent colours are deliberately darker than a dark theme would use — the same
-   red/gold/green at "glowing on indigo" lightness fails contrast on cream.
-
-   Which is exactly why the dark theme re-declares them rather than inverting:
-   it is the same paper at night — sumi ground, warm off-white ink, the seal red
-   opened up to where it reads on a dark ground. Every colour in the sheet comes
-   from a custom property for that reason, including the translucent ones; a
-   literal colour below the :root blocks is a bug, because it can only be right
-   in one of the two themes. Shu-derived washes use color-mix so they follow the
-   accent by themselves and need no second declaration at all.
+   None in this file. Every colour comes from a custom property a theme
+   declares — light.css and dark.css beside this — so a literal colour here is
+   a bug: it can only be right in one theme. Shu-derived washes use color-mix,
+   so they follow the accent by themselves and need nothing from a theme.
 
    The theme is chosen in Options and applied as data-theme on <html> — light or
    dark, already resolved, never "auto" (app.js resolves that against the OS, so
@@ -59,115 +52,57 @@
    ========================================================================== */
 @font-face{
   font-family:"Noto Serif JP";
-  src:url("fonts/noto-serif-jp-var.woff2") format("woff2-variations"),
-      url("fonts/noto-serif-jp-var.woff2") format("woff2");
+  src:url("../fonts/noto-serif-jp-var.woff2") format("woff2-variations"),
+      url("../fonts/noto-serif-jp-var.woff2") format("woff2");
   font-weight:200 900;          /* variable axis — NOT a single weight */
   font-style:normal;
   font-display:block;
 }
 @font-face{
   font-family:"Noto Sans JP";
-  src:url("fonts/noto-sans-jp-var.woff2") format("woff2-variations"),
-      url("fonts/noto-sans-jp-var.woff2") format("woff2");
+  src:url("../fonts/noto-sans-jp-var.woff2") format("woff2-variations"),
+      url("../fonts/noto-sans-jp-var.woff2") format("woff2");
   font-weight:100 900;
   font-style:normal;
   font-display:block;
 }
 @font-face{
   font-family:"Klee One";
-  src:url("fonts/klee-one-400.woff2") format("woff2");
+  src:url("../fonts/klee-one-400.woff2") format("woff2");
   font-weight:400; font-style:normal; font-display:block;
 }
 @font-face{
   font-family:"Klee One";
-  src:url("fonts/klee-one-600.woff2") format("woff2");
+  src:url("../fonts/klee-one-600.woff2") format("woff2");
   font-weight:600; font-style:normal; font-display:block;
 }
 @font-face{
   font-family:"Zen Maru Gothic";
-  src:url("fonts/zen-maru-gothic-400.woff2") format("woff2");
+  src:url("../fonts/zen-maru-gothic-400.woff2") format("woff2");
   font-weight:400; font-style:normal; font-display:block;
 }
 @font-face{
   font-family:"Zen Maru Gothic";
-  src:url("fonts/zen-maru-gothic-700.woff2") format("woff2");
+  src:url("../fonts/zen-maru-gothic-700.woff2") format("woff2");
   font-weight:700; font-style:normal; font-display:block;
 }
 @font-face{
   font-family:"BIZ UDPGothic";
-  src:url("fonts/biz-udpgothic-400.woff2") format("woff2");
+  src:url("../fonts/biz-udpgothic-400.woff2") format("woff2");
   font-weight:400; font-style:normal; font-display:block;
 }
 @font-face{
   font-family:"BIZ UDPGothic";
-  src:url("fonts/biz-udpgothic-700.woff2") format("woff2");
+  src:url("../fonts/biz-udpgothic-700.woff2") format("woff2");
   font-weight:700; font-style:normal; font-display:block;
 }
 
+/* The tokens that are not colours — type, rounding, spacing — and the three that
+   only point at one. The accent roles and the focus glow follow whatever the
+   theme sets --shu to, so a theme never has to declare them. */
 :root{
-  --paper:      #EFE9DC;  /* page ground */
-  --paper-card: #FBF8F1;  /* raised card / panel */
-  --paper-lift: #FFFDF7;  /* a card lifted further still — hover, active font */
-  --paper-sunk: #E7E0CE;  /* inset: progress track, pressed states */
-  --gap-empty:  #E3DCC9;  /* an intentionally blank chart cell */
-  --hairline:   #D8D0BC;  /* every border */
-  --hairline-2: #BFB59B;  /* hairline on hover */
-
-  --c-ink:      #24211C;  /* primary text */
-  --c-ink-soft: #5B564C;  /* secondary text */
-  --c-ink-mute: #6F6859;  /* tertiary — labels, hints, placeholders */
-  --on-fill:    #fff;     /* text on a filled accent — shu, matcha */
-
-  --shu:      #B23A26;  /* vermilion / seal red */
-  --shu-2:    #9A2F1D;
-  --shu-3:    #7E2717;  /* the seal's label colour, one step past shu-2 */
-  --matcha:   #4F6B22;  /* correct green */
-  --matcha-2: #455C1D;  /* its text companion, as shu-2 is to shu */
-  --brass:    #8A6410;  /* record gold */
-  --brass-2:  #B8892A;  /* lighter end of the progress gradient */
-  --ai:       #2B4570;  /* indigo — the katakana accent */
-  --ai-2:     #1B2C47;  /* its label colour, as shu-3 is to shu */
-  /* purple — the かな stamp, the decks that are both scripts at once. Red and
-     indigo mixed, which is exactly what that stamp holds, and it lands between
-     them on contrast too rather than reading as a louder third colour. */
-  --murasaki:   #5C3D7A;
-  --murasaki-2: #452A5C;  /* its label colour, as ai-2 is to ai */
-  /* 納戸 — the numbers accent. Deliberately outside the shu/ai/murasaki family,
-     because numbers are a different subject rather than a third script, and
-     equally deliberately not matcha or brass: green already means "correct" and
-     gold "your record" everywhere else, and a stamp is neither. */
-  --nando:      #236E70;
-  --nando-2:    #185657;
-  /* 栗 — the calendar accent. The hue circle was full by the time it was
-     needed: shu, brass, matcha, nando, ai and murasaki leave nothing but the
-     browns. So this one is told apart by being the unsaturated one — bark
-     against six dyes — and it suits the subject, since a calendar is the one
-     stamp about time rather than about writing. Not brass, which is gold and
-     already means "your record" everywhere else; this is darker and redder
-     than gold, and the two are never on screen together. */
-  --kuri:       #7A5230;
-  --kuri-2:     #5C4227;
-  --guide:    #C8BFA6;  /* practice-square cross guides */
-
-  /* the pressed/hover wash on a control with no fill of its own */
-  --press:    rgba(0,0,0,.07);
   /* focused text field — mixed from the accent, so it needs no dark twin */
   --focus-glow: 0 0 0 3px color-mix(in srgb, var(--shu) 16%, transparent);
-
-  /* Shadows are whole values, not tints, because a dark ground needs a
-     different spread and opacity, not the same shadow in another colour. */
-  --shadow-fine:   0 1px 2px rgba(60,50,30,.14);          /* the seg thumb */
-  --shadow-square: 0 14px 30px -18px rgba(60,50,30,.42);
-
-  /* the writing square: paper on paper, so it needs its own lift */
-  --square-bg: linear-gradient(180deg, #FFFDF7 0%, #F4EEE0 140%);
-
-  /* The page ground. Declared once because a sticky element has to repaint it
-     to sit seamlessly over the page — see .stats .scriptbar. Always paired with
-     background-attachment:fixed, which is what makes the two line up. */
-  --page-bg:
-    radial-gradient(1100px 620px at 50% -12%, #FBF7EC 0%, transparent 62%),
-    var(--paper);
 
   --accent:      var(--shu);   /* flips per script inside the chart */
   --accent-dark: var(--shu-3); /* the accent's label colour, not "dark theme" */
@@ -198,76 +133,9 @@
   --safe-r: env(safe-area-inset-right, 0px);
 }
 
-/* ── dark ─────────────────────────────────────────────────────────────────
-   The same washi at night, not an inversion. Only the palette moves: nothing
-   below re-lays-out, and no rule anywhere else in this file tests the theme.
-
-   Two things drove the numbers. The ground is warm (a red-leaning near-black),
-   because a neutral #111 under cream-white text reads as a different app
-   wearing the same layout. And the accents all move *up* in lightness — the
-   comment at the top of the file cuts both ways, so the seal red that reads on
-   cream is mud on sumi, and gets opened up here instead of being reused. */
-:root[data-theme="dark"]{
-  --paper:      #1B1916;
-  --paper-card: #24211B;
-  --paper-lift: #2C2820;
-  --paper-sunk: #131210;
-  --gap-empty:  #1F1C17;
-  --hairline:   #38332B;
-  --hairline-2: #574F41;
-
-  --c-ink:      #EDE6D6;
-  --c-ink-soft: #B5AC99;
-  /* 4.5:1 on --paper-card is the floor here, not on the page ground: labels and
-     hints sit on cards more often than not, and a card is the lighter of the
-     two. #8E8573 clears the ground and fails the card, which is the trap. */
-  --c-ink-mute: #99907D;
-  /* the fills are light here, so what sits on them is the ground, not white */
-  --on-fill:    #1B1916;
-
-  --shu:      #E2604A;
-  --shu-2:    #F07D66;
-  --shu-3:    #F2907A;
-  --matcha:   #93B94E;
-  --matcha-2: #A6C863;
-  --brass:    #D8AC58;
-  --brass-2:  #F0CE8C;
-  --ai:       #7E9CD8;
-  --ai-2:     #A3BAE6;
-  --murasaki:   #B18FD8;
-  --murasaki-2: #C6ACE6;
-  --nando:      #6BB8B9;
-  --nando-2:    #86C7C8;
-  --kuri:       #C99A70;
-  --kuri-2:     #D6AE86;
-  --guide:    #4A4335;
-
-  --press:    rgba(255,255,255,.09);
-
-  /* a shadow on a dark ground has to be near-black and tighter, or it just
-     fogs the area around the element instead of lifting it */
-  --shadow-fine:   0 1px 2px rgba(0,0,0,.45);
-  --shadow-square: 0 14px 30px -20px rgba(0,0,0,.75);
-
-  --square-bg: linear-gradient(180deg, #2A251D 0%, #1D1A15 140%);
-
-  /* The glow sits *much* closer to the ground than the light theme's does, and
-     copying that one's step across is the mistake here: identical RGB deltas
-     are not identical gradients. On cream, +12 on 239 is a 4% lift the eye
-     reads as almost nothing; on sumi the same +12 on 27 is +58% luminance and
-     reads as a spotlight. What has to match is the *proportion*, which puts
-     this three points off the ground, not twelve. Keep it neutral too — a warm
-     step reads as a glow rather than as paper catching light. */
-  --page-bg:
-    radial-gradient(1100px 620px at 50% -12%, #1E1C19 0%, transparent 62%),
-    var(--paper);
-}
-
 *{ box-sizing:border-box; }
 
-html{ -webkit-text-size-adjust:100%; color-scheme:light; }
-/* form controls, scrollbars and the caret follow the theme, not the OS */
-:root[data-theme="dark"]{ color-scheme:dark; }
+html{ -webkit-text-size-adjust:100%; }
 
 body{
   margin:0;

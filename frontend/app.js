@@ -694,7 +694,7 @@
   const THEMES = ["auto", "light", "dark"];
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
 
-  // matches the two grounds in styles.css — the browser's own chrome (status
+  // matches the two grounds in css/light.css and css/dark.css — the browser's own chrome (status
   // bar, address bar) has to sit on the same paper the page does
   const THEME_COLOR = { light: "#EFE9DC", dark: "#1B1916" };
 

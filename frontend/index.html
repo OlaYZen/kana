@@ -19,7 +19,10 @@
      the source the .ico is generated from. -->
 <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="styles.css">
+<!-- A theme is only colour tokens; core.css draws every colour from them. -->
+<link rel="stylesheet" href="css/light.css">
+<link rel="stylesheet" href="css/dark.css">
+<link rel="stylesheet" href="css/core.css">
 <!-- Theme, before first paint. The stylesheet keys off data-theme, and app.js
      is loaded at the end of <body> — setting it there would show a light flash
      on every load for anyone using the dark theme. Deliberately duplicated and

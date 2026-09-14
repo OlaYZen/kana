@@ -1,0 +1,71 @@
+/* ==========================================================================
+   Dark — the same washi at night, not an inversion.
+
+   Only the palette moves: nothing in core.css re-lays-out, and no rule there
+   tests the theme. Every token light.css declares is declared again here.
+
+   Two things drove the numbers. The ground is warm (a red-leaning near-black),
+   because a neutral #111 under cream-white text reads as a different app
+   wearing the same layout. And the accents all move *up* in lightness — the
+   note at the top of light.css cuts both ways, so the seal red that reads on
+   cream is mud on sumi, and gets opened up here instead of being reused.
+
+   --paper's twin is THEME_COLOR.dark in app.js.
+   ========================================================================== */
+:root[data-theme="dark"]{
+  color-scheme:dark;
+
+  --paper:      #1B1916;
+  --paper-card: #24211B;
+  --paper-lift: #2C2820;
+  --paper-sunk: #131210;
+  --gap-empty:  #1F1C17;
+  --hairline:   #38332B;
+  --hairline-2: #574F41;
+
+  --c-ink:      #EDE6D6;
+  --c-ink-soft: #B5AC99;
+  /* 4.5:1 on --paper-card is the floor here, not on the page ground: labels and
+     hints sit on cards more often than not, and a card is the lighter of the
+     two. #8E8573 clears the ground and fails the card, which is the trap. */
+  --c-ink-mute: #99907D;
+  /* the fills are light here, so what sits on them is the ground, not white */
+  --on-fill:    #1B1916;
+
+  --shu:      #E2604A;
+  --shu-2:    #F07D66;
+  --shu-3:    #F2907A;
+  --matcha:   #93B94E;
+  --matcha-2: #A6C863;
+  --brass:    #D8AC58;
+  --brass-2:  #F0CE8C;
+  --ai:       #7E9CD8;
+  --ai-2:     #A3BAE6;
+  --murasaki:   #B18FD8;
+  --murasaki-2: #C6ACE6;
+  --nando:      #6BB8B9;
+  --nando-2:    #86C7C8;
+  --kuri:       #C99A70;
+  --kuri-2:     #D6AE86;
+  --guide:    #4A4335;
+
+  --press:    rgba(255,255,255,.09);
+
+  /* a shadow on a dark ground has to be near-black and tighter, or it just
+     fogs the area around the element instead of lifting it */
+  --shadow-fine:   0 1px 2px rgba(0,0,0,.45);
+  --shadow-square: 0 14px 30px -20px rgba(0,0,0,.75);
+
+  --square-bg: linear-gradient(180deg, #2A251D 0%, #1D1A15 140%);
+
+  /* The glow sits *much* closer to the ground than the light theme's does, and
+     copying that one's step across is the mistake here: identical RGB deltas
+     are not identical gradients. On cream, +12 on 239 is a 4% lift the eye
+     reads as almost nothing; on sumi the same +12 on 27 is +58% luminance and
+     reads as a spotlight. What has to match is the *proportion*, which puts
+     this three points off the ground, not twelve. Keep it neutral too — a warm
+     step reads as a glow rather than as paper catching light. */
+  --page-bg:
+    radial-gradient(1100px 620px at 50% -12%, #1E1C19 0%, transparent 62%),
+    var(--paper);
+}
