@@ -94,6 +94,9 @@ Array.from(el.promptSwitch.children).forEach((b) =>
 Array.from(el.datesSwitch.children).forEach((b) =>
   b.addEventListener("click", () => setDates(b.dataset.dates)));
 
+Array.from(el.clockSwitch.children).forEach((b) =>
+  b.addEventListener("click", () => setClock(b.dataset.clock === "shown")));
+
 Array.from(el.themeSwitch.children).forEach((b) =>
   b.addEventListener("click", () => setTheme(b.dataset.theme)));
 

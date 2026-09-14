@@ -208,6 +208,7 @@ function applyStoredPrefs() {
   applyFont(saved.font);
   if (PROMPTS.includes(saved.prompt)) setPrompt(saved.prompt);
   if (DATE_FORMS.includes(saved.dates)) setDates(saved.dates);
+  if (saved.clock === "shown" || saved.clock === "hidden") setClock(saved.clock === "shown");
   if (MODES.includes(saved.mode)) setMode(saved.mode);
   const known = SCRIPTS.indexOf(saved.script) > -1;
   const hasDecks = allDecks().some((d) => d.script === saved.script);

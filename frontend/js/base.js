@@ -9,7 +9,7 @@ const el = {
   decks: $("decks"), menuScroll: document.querySelector(".menu__scroll"),
   flickDecks: $("flickDecks"), flickTitle: $("flickTitle"),
   scriptSwitch: $("scriptSwitch"),
-  playMark: $("playMark"), playLabel: $("playLabel"),
+  playMark: $("playMark"), playLabel: $("playLabel"), playClock: $("playClock"),
   square: $("square"), glyph: $("glyph"), feedback: $("feedback"),
   typeMode: $("typeMode"), chooseMode: $("chooseMode"), writeMode: $("writeMode"),
   numberMode: $("numberMode"), numInput: $("numInput"), numSubmitBtn: $("numSubmitBtn"),
@@ -48,13 +48,14 @@ const el = {
   statsBackBtn: $("statsBackBtn"), deckPick: $("deckPick"),
   statsScriptSwitch: $("statsScriptSwitch"),
   themeColor: document.querySelector('meta[name="theme-color"]'),
-  // Five switches now share .seg__btn. Never select that class document-wide:
+  // Seven switches now share .seg__btn. Never select that class document-wide:
   // the device switch has no data-mode, so a global query wires
   // setMode(undefined) onto it and blanks its aria-checked every time the
   // answer mode changes. Each switch has an id of its own for that reason.
   modeSwitch: $("modeSwitch"),
   promptSwitch: $("promptSwitch"),
   datesSwitch: $("datesSwitch"),
+  clockSwitch: $("clockSwitch"),
   themeSwitch: $("themeSwitch"),
   perfSwitch: $("perfSwitch"),
   deviceSwitch: document.querySelector(".seg--device")

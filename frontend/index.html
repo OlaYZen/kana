@@ -228,6 +228,8 @@
         <span class="playbar__mark" id="playMark" lang="ja">かな</span>
         <span id="playLabel">Hiragana</span>
       </h1>
+      <!-- Only shown when the Timer switch in Options says so. -->
+      <span class="playbar__clock hidden" id="playClock" role="timer" aria-label="Time on this run">0:00</span>
       <button type="button" class="iconbtn iconbtn--kana" id="playFontBtn"
               aria-label="Change the character font" title="Character font" lang="ja">字</button>
       <button type="button" class="iconbtn" id="restartBtn" aria-label="Restart this deck" title="Restart deck">↻</button>
@@ -386,6 +388,17 @@
         <div class="seg" id="datesSwitch" role="radiogroup" aria-label="How dates and times are written">
           <button type="button" class="seg__btn" data-dates="numeral" role="radio" aria-checked="true" lang="ja">9月</button>
           <button type="button" class="seg__btn" data-dates="kanji" role="radio" aria-checked="false" lang="ja">九月</button>
+        </div>
+      </div>
+
+      <!-- A run is always timed; this only decides whether the clock is on
+           screen while you practise. Hidden by default, because a ticking
+           counter turns practice into a race. Synced, like the two above. -->
+      <div class="modebar modebar--stack">
+        <span class="modebar__label">Timer during a run</span>
+        <div class="seg" id="clockSwitch" role="radiogroup" aria-label="Timer during a run">
+          <button type="button" class="seg__btn" data-clock="hidden" role="radio" aria-checked="true">Hidden</button>
+          <button type="button" class="seg__btn" data-clock="shown" role="radio" aria-checked="false">Shown</button>
         </div>
       </div>
 

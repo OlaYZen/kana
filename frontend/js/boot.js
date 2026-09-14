@@ -94,6 +94,7 @@ fetch("kana.json", { cache: "no-cache" })
     applyFont(store.read().font);
     setPrompt(state.prompt);   // before setMode: buildMenu() reads it
     setDates(state.dates);     // likewise — the calendar records depend on it
+    setClock(state.showClock); // paints the Timer switch
     setMode(state.mode);
 
     // A script with no decks in kana.json gets no button, and never gets

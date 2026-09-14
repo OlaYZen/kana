@@ -11,17 +11,6 @@ let statsScript = null;    // re-synced from the menu on every openStats()
 
 const fmtMs = (ms) => (ms == null ? "—" : (ms / 1000).toFixed(1) + "s");
 
-// A run's exact length, milliseconds and all. fmtTime rounds to the second,
-// which is right on the results screen but hides the difference between two
-// runs of the same deck when you are chasing your own time.
-function fmtExact(ms) {
-  const total = Math.max(0, Math.round(ms));
-  const mins = Math.floor(total / 60000);
-  const secs = Math.floor(total % 60000 / 1000);
-  return mins + ":" + (secs < 10 ? "0" : "") + secs +
-         "." + String(total % 1000).padStart(3, "0");
-}
-
 // When a run was finished. The server stamps runs in UTC; `Date` renders that
 // in the device's own zone, which is the only one the person reading it was
 // ever in. Formatted here rather than with toLocaleString so the shape is the

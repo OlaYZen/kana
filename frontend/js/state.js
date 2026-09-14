@@ -26,6 +26,8 @@ const state = {
   prompt: PROMPTS.includes(store.read().prompt) ? store.read().prompt : "kanji",
   // how months, dates and times are written — 9月 unless 九月 was chosen
   dates: DATE_FORMS.includes(store.read().dates) ? store.read().dates : "numeral",
+  // whether the run clock is on screen mid-run — hidden unless chosen
+  showClock: store.read().clock === "shown",
   answered: 0, correct: 0, streak: 0, bestStreak: 0,
   missed: [],        // unique wrong cards, chart order
   graded: false,     // answer already scored — waiting to advance
@@ -36,6 +38,7 @@ const state = {
   calendar: null,    // "week" | "month" | "day" while a calendar drill is running
   isDrill: false,
   timer: 0,          // pending auto-advance, cleared whenever the card changes
+  clockTick: 0,      // interval repainting the play bar's clock, when it is shown
   answers: [],       // per-card log for this run, posted at the end
   cardAt: 0,         // performance.now() when the current card was shown
   startedAt: 0,      // performance.now() when the run began
@@ -137,23 +140,68 @@ const typedField = () =>
       : { input: el.input, submit: el.submitBtn };
 
 /* ---------- clock ---------- */
-// The run is timed, but deliberately never shown while practising — a ticking
-// counter turns practice into a race. The total appears once, on the results
-// screen, where it's information rather than pressure.
+// The run is always timed, and by default the clock stays off screen while
+// practising — a ticking counter turns practice into a race for anyone who
+// didn't ask for one. The Timer switch in Options puts it in the play bar for
+// those who do. Either way the results screen shows the total exactly, to the
+// millisecond, because that is the figure the record is kept in.
 const elapsed = () =>
   state.finishedMs || (state.startedAt ? performance.now() - state.startedAt : 0);
 
+// Whole seconds: the live clock in the play bar and the deck rows on the menu,
+// where a millisecond figure would only flicker or crowd the row.
 function fmtTime(ms) {
   const total = Math.max(0, Math.round(ms / 1000));
   const m = Math.floor(total / 60), s = total % 60;
   return m + ":" + (s < 10 ? "0" : "") + s;
 }
 
+// A run's exact length, milliseconds and all — what the results screen and the
+// progress report show. Rounding there hides the difference between two runs
+// of the same deck when you are chasing your own time.
+function fmtExact(ms) {
+  const total = Math.max(0, Math.round(ms));
+  const mins = Math.floor(total / 60000);
+  const secs = Math.floor(total % 60000 / 1000);
+  return mins + ":" + (secs < 10 ? "0" : "") + secs +
+         "." + String(total % 1000).padStart(3, "0");
+}
+
 function startClock() {
   state.startedAt = performance.now();
   state.finishedMs = 0;
+  runClockTick();
+}
+
+// Repaints the play bar's clock while a run is going and the Timer switch says
+// to show it. Four times a second keeps a whole-second display from visibly
+// lagging; nothing is measured off this — the run is timed from
+// performance.now(), never by counting ticks.
+function runClockTick() {
+  clearInterval(state.clockTick);
+  state.clockTick = 0;
+  const running = Boolean(state.startedAt) && !state.finishedMs;
+  el.playClock.classList.toggle("hidden", !state.showClock);
+  if (!state.showClock || !running) return;
+  const paint = () => { el.playClock.textContent = fmtTime(elapsed()); };
+  paint();
+  state.clockTick = setInterval(paint, 250);
+}
+
+// Synced through `store` like the prompt and date settings: whether you want
+// to see a clock is about how you practise, not about the screen in front of
+// you. Mid-run it takes effect at once.
+function setClock(shown) {
+  state.showClock = Boolean(shown);
+  Array.from(el.clockSwitch.children).forEach((b) =>
+    b.setAttribute("aria-checked", String((b.dataset.clock === "shown") === state.showClock)));
+  store.write({ clock: state.showClock ? "shown" : "hidden" });
+  runClockTick();
 }
 
 function stopClock(keep) {
+  // an abandoned run is not running any more, so nothing may keep ticking
+  if (!keep) state.startedAt = 0;
   state.finishedMs = keep ? performance.now() - state.startedAt : 0;
+  runClockTick();
 }

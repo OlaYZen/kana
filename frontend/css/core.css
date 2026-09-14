@@ -1055,6 +1055,15 @@ button{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
   font-family:var(--kana); font-size:18px;
   letter-spacing:0; text-transform:none; color:var(--c-ink);
 }
+/* The optional run clock. It never shrinks — the title beside it is the one
+   that ellipsises — and tabular figures keep it from jittering as it ticks. */
+.playbar__clock{
+  flex:0 0 auto;
+  font-family:var(--mincho); font-size:15px;
+  font-variant-numeric:tabular-nums;
+  color:var(--c-ink-soft);
+  padding:0 2px;
+}
 
 /* ── play: reveal, above the square on touch ──────────────────────────── */
 /* Two reveal buttons exist, one here and one in the dock, and exactly one is
