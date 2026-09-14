@@ -1001,6 +1001,10 @@ enforced in `analytics.py`, and each one costs data on purpose:
   run in UTC ISO-8601 and the client renders it in the device's own zone. `fmtWhen()` formats it
   by hand rather than with `toLocaleString`, so the shape is the same everywhere — one history
   reading `05.08.26` on a phone and `8/5/26` on a laptop looks like two.
+- **`fastest_run_ids` tags the run holding the time record**, one per mode, with a brass
+  *Fastest* pill in the Runs list. It follows the best-time rule — flawless runs only — and is
+  chosen from all history, not from the 25 listed: when the record is older than the list, nothing
+  is tagged rather than the quickest of what happens to be on screen. A tie goes to the earlier run.
 - **Mobile and desktop are never pooled.** Typing romaji on a keyboard and flicking on glass are
   different physical acts. Every figure belongs to one bucket; the client sends `device` from the
   same `TOUCH` test the rest of the app uses.
