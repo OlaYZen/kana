@@ -88,7 +88,7 @@ unchanged.
 Every deck keeps its own records and its own progress report, including the derived ones. A run of
 Mixed kana is not a run of the six decks it's built from, and doesn't count towards them.
 
-**Three ways to answer**, switchable under **Settings** (and on the menu itself — see quick access below):
+**Four ways to answer**, switchable under **Settings** (and on the menu itself — see quick access below):
 
 - **Typing** — the character is shown, you type its sound. Alternate romanisations are accepted,
   so `si`, `shi`, `hu`, `fu`, `sya`, `sha` and `nn` all count.
@@ -98,6 +98,18 @@ Mixed kana is not a run of the six decks it's built from, and doesn't count towa
   familiarity with a Japanese keyboard, so it needs an IME: switch to the Japanese keyboard on a
   phone, or a Japanese input method on a desktop. Both readings of an ambiguous sound are
   accepted — `ji` takes じ or ぢ, `zu` takes ず or づ.
+- **Drawing** — the sound is shown and you draw the character on the square, from memory, with a
+  finger, a pen or the mouse. It is graded on what you drew, not how: stroke order and direction
+  don't matter, and strokes joined up the way people write — コ in one stroke — count. What fails is
+  a different character, so シ drawn for ツ fails. A miss says why (*That looks more like る*,
+  *Something's missing*) and shows the answer faintly behind your ink. **Undo**, **Clear** and **Check** sit under the square; Enter
+  checks and Backspace undoes. It covers the base and dakuten kana: combination kana and the number
+  and time drills can't be drawn yet, and say so in the deck list. The stroke data is from
+  [KanjiVG](https://kanjivg.tagaini.net/), under CC BY-SA 3.0 — see
+  `frontend/strokes/KanjiVG-LICENSE.txt`.
+  **Easy drawing**, a switch in Settings, shows the character faintly on the square so you can draw
+  over it. It is graded the same way and keeps its own records, apart from Drawing's — a place to
+  learn a shape before you draw it from memory.
 
 **Numbers — the 十 stamp.** Counting has a seal stamp of its own, beside あ, ア and あア, holding
 three drills and a reference table. It isn't kana, so it gets its own colour (a deep teal) and its
@@ -401,12 +413,16 @@ frontend/            everything the browser loads
   css/light.css      the light theme — colour tokens only
   css/dark.css       the dark theme — colour tokens only
   kana.json          all content — decks, cards, chart layout, font options
-  js/                all front-end logic, seventeen scripts loaded in order
+  js/                all front-end logic, nineteen scripts loaded in order
   icon.svg           the app icon, and the source favicon.ico is built from
   favicon.ico        the same icon at six sizes, 16 to 256
   fonts/             the five bundled Japanese faces, subset to kana
     LICENSES.txt     SIL OFL 1.1, all five, in full
     subset.py        regenerates the subsets; never runs to serve the app
+  strokes/           stroke data for Drawing, from KanjiVG
+    kana-strokes.json    every drawable kana's strokes, as points
+    KanjiVG-LICENSE.txt  CC BY-SA 3.0, the licence that file is under
+    build.py         regenerates it; never runs to serve the app
 
 backend/             the optional server, and its database (kana.db, not in git)
   requirements.txt three dependencies
@@ -523,7 +539,7 @@ python -m http.server 8000 --directory frontend
 記録と進捗レポートはデッキごとに別で、混ぜたデッキも同じです。Mixed kana を 1 回やっても、元の
 6 デッキをやったことにはなりません。
 
-**答え方は 3 種類**、「Settings」から切り替えられます（メニューのクイックアクセスからも）。
+**答え方は 4 種類**、「Settings」から切り替えられます（メニューのクイックアクセスからも）。
 
 - **タイピング** — 文字が出るので、その読みをローマ字で入力します。別の綴りも受け付けるので、
   `si`、`shi`、`hu`、`fu`、`sya`、`sha`、`nn` のどれでも正解です。
@@ -532,6 +548,15 @@ python -m http.server 8000 --directory frontend
 - **ライティング** — 読みのほうが出るので、文字を入力します。日本語キーボードに慣れるためのモード
   なので IME が必要です。読みが重なる場合は両方受け付けます。`ji` は じ でも ぢ でも、`zu` は ず
   でも づ でも正解です。
+- **ドローイング** — 読みが出るので、その文字を覚えている通りに、四角の中へ指・ペン・マウスで書きます。
+  採点するのは書いた形で、書き方ではありません。書き順や筆の向きは問わず、コ を一筆で書くような
+  続け書きも正解です。不正解になるのは別の文字に見えるときで、ツ のつもりで シ を書くと不正解です。
+  間違えると理由（*That looks more like る*、*Something's missing* など）が出て、答えの文字が線の後ろに薄く表示されます。四角の下に **Undo**・
+  **Clear**・**Check** があり、Enter で採点、Backspace で 1 画戻せます。対象は清音と濁音のかなで、
+  拗音と数字・時のドリルはまだ書けません（デッキ一覧にそう表示されます）。筆順データは
+  [KanjiVG](https://kanjivg.tagaini.net/) のもので、CC BY-SA 3.0 です（`frontend/strokes/KanjiVG-LICENSE.txt`）。
+  Settings の **Easy drawing** をオンにすると、四角に文字が薄く表示され、その上からなぞって書けます。
+  採点は同じで、記録はドローイングとは別に残ります。覚えて書く前に、形を覚える練習に使えます。
 
 **数字 — 十 の印。** 数え方には専用の印があります。あ・ア・あア の隣の 十 で、ドリルが 3 つと一覧表が
 入っています。かなではないので色も別（納戸色）、記録も別ですが、解答モードはデッキと同じ 3 つで、
@@ -810,12 +835,16 @@ frontend/            ブラウザが読み込むもの全部
   css/light.css      ライトテーマ — 色の変数だけ
   css/dark.css       ダークテーマ — 色の変数だけ
   kana.json          内容全部 — デッキ、カード、表のレイアウト、フォント
-  js/                フロント側のロジック全部、順番に読み込む 17 ファイル
+  js/                フロント側のロジック全部、順番に読み込む 19 ファイル
   icon.svg           アプリのアイコン。favicon.ico の生成元でもあります
   favicon.ico        同じアイコンを 16〜256 の 6 サイズで収めたもの
   fonts/             同梱の日本語書体 5 つ（かなに絞ったサブセット）
     LICENSES.txt     5 つ分の SIL OFL 1.1 全文
     subset.py        サブセットを作り直すスクリプト（配信時には動きません）
+  strokes/           ドローイング用の筆順データ（KanjiVG より）
+    kana-strokes.json    書けるかな全部の画を点の列にしたもの
+    KanjiVG-LICENSE.txt  そのファイルのライセンス、CC BY-SA 3.0
+    build.py         それを作り直すスクリプト（配信時には動きません）
 
 backend/             任意のサーバーとそのデータベース（kana.db、git には入りません）
   requirements.txt 依存 3 つ

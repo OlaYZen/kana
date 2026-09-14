@@ -17,10 +17,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `frontend/index.html` | markup only — ten screens (`#menu`, `#auth`, `#stats`, `#play`, `#end`, `#fatal`, `#options` — shown as More — `#settings`, `#fontPicker`, `#chart`) and one dialog, `#quickDialog`; `#play` holds one answer block per kind of answer (`#typeMode`, `#writeMode`, `#numberMode`, `#chooseMode`) |
 | `frontend/css/` | `core.css`, every rule and no colour, mobile-first; `light.css` and `dark.css`, one theme each and nothing but colour tokens |
 | `frontend/kana.json` | **all content** — `fonts[]`, `charts[]`, `decks[]`, `derived[]`, `numbers{}`. No kana, font name or number reading lives in JS or CSS |
-| `frontend/js/` | all front-end logic, seventeen classic scripts that `index.html` loads in order — see **Scripts** |
+| `frontend/js/` | all front-end logic, nineteen classic scripts that `index.html` loads in order — see **Scripts** |
 | `frontend/icon.svg` | the app icon, and the source the `.ico` is generated from — see **The icon** |
 | `frontend/favicon.ico` | six sizes rasterised from `icon.svg`; what `<link rel="icon">` points at |
 | `frontend/fonts/` | the five bundled Japanese faces, subset to kana, plus `LICENSES.txt` and the `subset.py` that regenerates them — see **Bundled fonts** |
+| `frontend/strokes/` | `kana-strokes.json`, KanjiVG's strokes for the drawable kana as points; `KanjiVG-LICENSE.txt`; and the `build.py` that regenerates them — see **Drawing** |
 | `start.sh` | install / update / run, executable in git (mode `100755`) |
 | `backend/` | the optional FastAPI server |
 | `ux-rules.md` | the UX patterns every GUI change has to follow — see **UI changes follow ux-rules.md** |
@@ -43,10 +44,10 @@ to its own files relatively (`kana.json`, `fonts/…`), so the move changed noth
 
 ### Scripts
 
-**The front-end logic is seventeen classic scripts in `js/`, not modules**, and `index.html` loads
+**The front-end logic is nineteen classic scripts in `js/`, not modules**, and `index.html` loads
 them in this order: `base` → `fonts` → `state` → `screens` → `theme` → `chart` → `flick` →
-`numbers` → `calendar` → `decks` → `menu` → `run` → `backend` → `progress` → `quick` → `wiring` →
-`boot`.
+`numbers` → `calendar` → `decks` → `menu` → `run` → `grade` → `draw` → `backend` → `progress` →
+`quick` → `wiring` → `boot`.
 They were one IIFE, `app.js`, cut at its section banners with not a line of logic changed. Classic
 scripts share one global scope, which is what let the cut be mechanical: every function still sees
 every other, as it did inside the IIFE. Modules would have meant an import and an export for most
@@ -106,7 +107,8 @@ or font options is a JSON edit, never a code edit. Keys prefixed `//` (`"//fonts
 `"//derived"`) are prose comments for the section that follows; JSON has no comment syntax and
 `app.js` ignores them. Keep them current when the shape they describe changes.
 
-- deck: `{id, label, script, sample, subtitle, note, cards[]}` — `script` is `"hiragana"`/`"katakana"`
+- deck: `{id, label, script, sample, subtitle, note, draw?, cards[]}` — `script` is `"hiragana"`/`"katakana"`;
+  `draw: true` makes its cards drawable, and is what `strokes/build.py` builds stroke data for
 - card: `{q, a, alt?}` — `q` is the kana, `a` the canonical romaji, `alt` extra accepted spellings
   (`si` for `shi`, `hu` for `fu`, `sya` for `sha`, `nn` for `n` …)
 - font: `{id, label, ja, note, families[], generic}` — `families` are probed at boot; omit it for
@@ -263,14 +265,14 @@ and five misses that all came from one category have nothing to interleave with.
 with fewer than two surviving sources is dropped at boot rather than offered as a run of one
 category, which is also what stops `mixFits()` being asked a meaningless question.
 
-**Three answer modes**, chosen in Settings and held in `state.mode`:
+**Four answer modes**, chosen in Settings and held in `state.mode`:
 
 | mode | prompt | answer | graded by |
 |---|---|---|---|
 | `type` | kana | romaji, typed | `accepts()` — canonical `a` plus every `alt` |
 | `choose` | kana | romaji, 1 of 4 | exact match on `a` |
 | `write` | **romaji** | **kana, typed** | `writeAccepts()` — see the invariant below |
-
+| `draw` | romaji, on the line under a blank square | **kana, drawn on the square** | `gradeDrawing()` — see **Drawing** |
 Plus `flick`, which is not selectable here — see the flick drills below.
 
 `write` exists to build familiarity with the Japanese keyboard, so it needs a real IME; the
@@ -644,7 +646,7 @@ directions` all sit under the あ stamp. Don't simplify this to "never show the 
 deck's identity entirely.
 
 **Persistence** is localStorage key `kana.v1` (`STORE` in `app.js`), holding
-`{rev, mode, prompt, dates, clock, times, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
+`{rev, mode, prompt, dates, clock, times, easy, script, deck, font, best, bestTime}`. All writes go through the `store` helper, which
 merges patches — never `setItem` directly. **Renaming that key wipes every record anyone has set**,
 because it is the only handle on a returning user's saved bests — the `hkk.v1` → `kana.v1` rename
 was only safe because `renameKeys()` moves the old value across first, and any future rename needs
@@ -900,6 +902,146 @@ it a `kind` would have built a generator for six fixed cards.
 **Minutes stop at the five-minute marks**, deliberately: 3:47 is composition plus one more
 `irregular` entry, and a clock is read to the nearest five aloud far more often than not. It is a
 `kana.json` edit away — the marks are a list on the drill — and needs no code.
+
+## Drawing
+
+**The fourth answer mode draws the kana from memory.** The square is blank, the line under it says
+"Draw **ka** from memory", and the character is drawn on the square with a finger, a pen or a mouse,
+then graded on whether it is that character — never on stroke order or direction. It runs
+entirely in the browser — no library, no model, no request to anyone — which keeps the app working
+offline and with no backend, as everything else does.
+
+### The stroke data
+
+**`strokes/kana-strokes.json` is KanjiVG's strokes as points.** `strokes/build.py` (standard
+library only, like `fonts/subset.py`) takes every card of the decks `kana.json` marks `"draw": true`
+— base and dakuten, hiragana and katakana, 142 characters — reads each one's KanjiVG SVG, and
+resamples every stroke to 32 points evenly spaced along its length in KanjiVG's 109×109 box. The
+app never parses SVG. Three things about it:
+
+- **It is CC BY-SA 3.0.** KanjiVG is, so the JSON is an adaptation under the same licence: its
+  `"//"` key carries the attribution and says what changed, and `KanjiVG-LICENSE.txt` sits beside
+  it. The app's code is not an adaptation and is not affected. Keep the notice if the file is ever
+  rebuilt, and rebuild it rather than editing it.
+- **Which kana can be drawn is content.** The `draw` flag decides what `build.py` builds and what
+  `initDraw()` offers. Combination kana (きゃ) are two glyphs in one box and are deliberately not
+  flagged yet; flag a deck only once its characters grade well in the bench below.
+- **It is fetched only when wanted** — when Drawing is chosen, or a drawing run starts — and never
+  otherwise: 133 KB nobody in another mode needs. `loadStrokes()` shares one fetch between callers.
+
+### The grader
+
+**`js/grade.js` is pure functions — no DOM, no state — so it can be tested on its own.** Both the
+drawing and the reference are resampled to 32 points a stroke and normalised by their own bounding
+box (centred, longer side scaled to 1), so where on the square and how large a character was drawn
+stop mattering while its proportions do not.
+
+**The one question is "is this the character?"** Stroke order and stroke direction are not graded.
+They were, and a correct コ in one stroke failed on count, and a correct character drawn in another
+order failed on order; people do not write the textbook way, and the drill is about recognising the
+shape. What the grader does instead:
+
+1. **Same stroke count:** every assignment of drawn strokes to reference strokes, each either way
+   round, is tried (six strokes at most, so 720) and the best one is the shape.
+2. **Different count:** joined or broken strokes. A drawn stroke may stand for several written ones
+   in a row (`joinedFit()`) when each meets the next within `GRADE_JOIN_GAP` and the drawn stroke's
+   steady length is within `GRADE_JOIN_LENGTH` of the path they make; several drawn strokes may
+   stand for one written one the same way. A stroke shorter than `GRADE_JOIN_MIN` — a dakuten tick,
+   a dot — is never joined, which is what makes a missing tick fail instead of passing as a join.
+   What no join explains is "Something's missing".
+3. **Shape:** mean distance between matched points, mapped to 0–100 (`GRADE_PERFECT` →
+   `GRADE_ZERO`), a pass at `GRADE_PASS`, and a per-stroke limit so one wild stroke cannot hide
+   behind good ones.
+4. **Neighbours:** the drawing is measured the same way against every other same-script kana. One
+   closer than `GRADE_TWIN` of the target's distance wins: "looks more like る". Inside that band a
+   kana written in as many strokes as were drawn is a twin on shape — ソ and ン — and there, only
+   there, drawn direction decides. A kana that only fits through a join is never a twin, or り's arch
+   lost to ろ.
+
+**`steadyLength()` is not `strokeLength()`.** Tremor adds length a steady line does not have — on a
+short tick, enough to make one stroke as long as two — so join lengths are compared after a moving
+average, on both sides alike.
+
+**The thresholds are tuned on synthetic handwriting, and have to be re-tuned the same way if they
+move.** The bench draws all 142 references with an unsteady hand — resized, shifted, tilted,
+wobbled, jittered, unevenly sampled — then joins strokes, drops the last mark of every dakuten kana,
+and draws other same-script kana for every target, joined and not. The last tuning pass, on one
+fixed set of drawings per setting: **honest drawings 142/142**, **honest joined strokes 110/190**
+(the rest are joins across gaps wider than `GRADE_JOIN_GAP`, or ones that land near a neighbour),
+**a missing dakuten or handakuten mark 0/50**, **the wrong kana 0/284**, and the wrong kana with
+strokes joined 1/260 (げ for ぱ). Before it, a correct り drawn with the arch the screen faces use
+scored 37; `GRADE_ZERO` went from 0.32 to 0.45 — the pass stayed at 60, so what reads as a pass
+still reads as one — and the join gap from 0.2 to 0.5, and it passes. The pass score barely moves
+the wrong-kana figure at all: the neighbour check is what refuses a different character, and
+loosening `GRADE_TWIN` or `GRADE_NEIGHBOUR` without rerunning the bench is how a grader starts
+agreeing that ツ is シ.
+
+**`へ` and `ヘ` are the same shape**, and so pass for each other. That is a fact about the two
+scripts, not a flaw: they are never neighbours, since neighbours are same-script only, and a deck
+spanning both scripts names which one it wants in the prompt, as Writing does.
+
+### The mode
+
+- **`drawingNow()` is its own branch everywhere a mode is read**, beside `choosingNow()`: the pad
+  and its controls instead of a field in `render()`, no keyboard to keep up in `keepKeyboard()`, a
+  verdict instead of a correction in `markWrong()`, "Next →" on Check instead of a field's value. It
+  never touches `typedField()`, `kanaAnswer()` or `numericAnswer()`, which stay about typed answers.
+- **The pad is a `<canvas>` inside `.square`**, not a new child of `.play`, so the landscape grid
+  needs nothing (see the invariant about `.play`'s children). It sits above the glyph and below the
+  〇, with `touch-action:none` so a stroke is never a scroll. Strokes are kept as fractions of the pad,
+  so a resize mid-drawing loses nothing, and the ink is repainted from `--c-ink`, so it follows the
+  theme. Once graded, the answer shows faintly behind the ink (`.glyph.is-ghost`), and a press on the
+  square is "continue" again.
+- **Check is never disabled.** With nothing drawn it says so beside the controls (`drawNote()`), per
+  `ux-rules.md`. Enter checks, or continues once graded; Backspace takes back a stroke; a focused
+  button handles its own Enter, or Check would run twice.
+- **A failed drawing gets one reason, and it is never about order or direction.** The kana it looks
+  like, then a stroke count no joining explains ("Something's missing"), then a stroke too far off,
+  then the score; then the answer. A drawing that passed with joined strokes says how many strokes
+  the kana is usually written in, after "Correct". A reveal gets no verdict.
+- **Decks with nothing drawable stay listed but cannot start**, with their subtitle saying why; a
+  mixed deck deals just its drawable cards, and its row counts them. Records are `deckId|draw`, and
+  `promptApplies()` excludes `draw` — no generated drill is ever drawn.
+
+### Easy drawing
+
+**Easy drawing is Drawing with the kana shown faintly on the pad from the start** — the way in, for
+learning a shape before drawing it from memory. It is a switch in Settings (`#easySwitch`,
+`state.easyDraw`, `store.easy`), not an answer mode: Answer by says how an answer arrives, and this
+is still a drawing. It shipped for an hour as a fifth mode, Tracing, and was taken back for that
+reason. Five things about it:
+
+- **Its runs record apart, as `deckId|draw-easy`.** Copying a shape is not recalling one, so pooling
+  the two would let the easy run set a record the real one can never beat — the reason records split
+  by mode at all. `recordMode()` adds the suffix only when the mode is `draw`, so the switch changes
+  nothing for Typing, Choosing or Writing, and `modeLabel()` reads it as "Drawing · easy".
+- **It is a switch because it is on or off and takes effect at once** (`ux-rules.md`), where every
+  other Practice row is a segmented choice. Synced through `store` like the timer: how you want to
+  practise is about what you are learning. `setEasyDraw()` rebuilds the menu, since the deck rows
+  show the easy records while it is on; boot runs it before `setMode()`.
+- **`tracingNow()` — Drawing, with the switch on — decides four things**: `paintPad()` paints the
+  guide under the ink, `drawAsk()` says "Trace **ka** over the faint character", the confirmation
+  says "traced", and neither `markCorrect()` nor `markWrong()` puts the font's glyph behind the pad.
+  The grader does not know: the same `gradeDrawing()`, so a different kana drawn over the guide
+  still fails.
+- **The guide is KanjiVG's strokes, painted faintly on the canvas — never the font's glyph.** It
+  shipped as the glyph and a carefully traced り failed at 37/100: the screen faces write its second
+  stroke as an arch rising out of the first, where KanjiVG, like a textbook, starts it apart at the
+  top. The guide has to be the shape that is graded. `render()` asks for the stroke data if it has
+  not arrived and repaints once it does.
+- **It can be pinned, and that made quick access handle switches.** `cloneRow()`, `mirrorQuick()`
+  and the Q dialog's first focus used to reach for `.seg` children; they now take a row's
+  `[role="radio"]` and `[role="switch"]` controls (`rowControls()`), so a switch row pins like any
+  other. A new pinnable row of either kind needs nothing more than its `data-setting`.
+
+### Testing it
+
+The bench is Node against `grade.js` and the JSON, no DOM. **jsdom** lays nothing out, so the pad is
+0×0 and `padPoint()` divides by 1: dispatch `pointerdown`/`pointermove`/`pointerup` as `MouseEvent`s
+whose `clientX`/`clientY` are already fractions of the pad, and stub `fetch` for the stroke file as
+well as `kana.json`. **Chromium** is where the canvas and the pointer are real: draw a reference with
+`page.mouse`, scaled to the pad's box, and check it passes, that the ink is on the canvas, and that
+Undo, Clear and Check fit from 320px up.
 
 ## Performance mode
 
