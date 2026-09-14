@@ -53,6 +53,25 @@ function paintPad() {
   ctx.lineCap = "round"; ctx.lineJoin = "round";
   ctx.lineWidth = Math.max(2, c.width * 0.034);
   ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--c-ink").trim() || "#000";
+  // Easy drawing's guide is KanjiVG's strokes, the shape the grader measures —
+  // never the font's glyph, which can be another letterform: the screen faces
+  // write り as one arch rising out of the first stroke, where a textbook and
+  // KanjiVG start the second stroke apart at the top. Tracing the glyph failed.
+  const guide = tracingNow() && drawRefs ? drawRefs[card().q] : null;
+  if (guide) {
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    ctx.lineWidth = Math.max(3, c.width * 0.05);
+    guide.forEach((flat) => {
+      ctx.beginPath();
+      for (let i = 0; i + 1 < flat.length; i += 2) {
+        const x = flat[i] / 109 * c.width, y = flat[i + 1] / 109 * c.height;
+        if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
   drawStrokes.forEach((s) => {
     ctx.beginPath();
     s.forEach((p, i) => {
@@ -160,8 +179,8 @@ function drawVerdict(c, g) {
   return "Not close enough yet — " + g.score + "/100.";
 }
 
-// The answer, faint behind the ink: once the card is graded, or from the start
-// in easy drawing.
+// The answer, faint behind the ink, once the card is graded. Not in easy
+// drawing, where the guide on the pad already is the answer.
 function showGhost(c) {
   el.glyph.textContent = c.q;
   el.glyph.lang = "ja";

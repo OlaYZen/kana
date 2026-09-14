@@ -151,7 +151,8 @@ function render() {
   } else if (drawing) {
     // no field to focus: the pad takes the pointer, and the keys are Enter and ⌫
     resetPad();
-    if (tracingNow()) showGhost(c);   // easy drawing: the kana to draw over, from the start
+    // easy drawing: resetPad() paints the guide, once the stroke data is in
+    if (tracingNow() && !drawRefs) loadStrokes().then(() => { if (card() === c) paintPad(); }).catch(() => {});
     el.typedHint.textContent = "Enter ↵ to check · ⌫ to undo";
     el.typedHint.className = "hint hint--keys";
     el.drawCheck.textContent = "Check";
@@ -477,7 +478,7 @@ function markCorrect(typed) {
   // A number is always confirmed the same way round — digits, then kana, then
   // reading — whichever direction it was asked in. The pair is the fact worth
   // repeating; which half was on the card is not.
-  if (drawingNow()) showGhost(c);
+  if (drawingNow() && !tracingNow()) showGhost(c);
   el.feedback.innerHTML = drawingNow()
     ? '<span class="ok">Correct — <b lang="ja">' + c.q + '</b> is “' + c.a + '”, ' + (tracingNow() ? "traced " : "drawn ") +
       (state.lastGrade ? state.lastGrade.score : 100) + "/100" +
@@ -537,7 +538,7 @@ function markWrong(c, viaReveal, typed) {
       "Try " + '<b lang="ja">' + c.a + "</b>. " + tail;
   } else if (drawingNow()) {
     // the one reason it failed, then the answer itself, faint behind the ink
-    showGhost(c);
+    if (!tracingNow()) showGhost(c);
     el.feedback.innerHTML =
       (viaReveal ? "" : '<span class="no">Not quite. </span>' + drawVerdict(c, state.lastGrade) + " ") +
       '<b lang="ja">' + c.q + '</b> is “' + c.a + '”. ' + tail;
