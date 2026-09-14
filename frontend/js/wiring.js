@@ -127,6 +127,9 @@ Array.from(el.datesSwitch.children).forEach((b) =>
 Array.from(el.clockSwitch.children).forEach((b) =>
   b.addEventListener("click", () => setClock(b.dataset.clock === "shown")));
 
+Array.from(el.timesSwitch.children).forEach((b) =>
+  b.addEventListener("click", () => setTimes(b.dataset.times === "exact")));
+
 Array.from(el.themeSwitch.children).forEach((b) =>
   b.addEventListener("click", () => setTheme(b.dataset.theme)));
 

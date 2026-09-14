@@ -44,7 +44,7 @@ function deckRow(deck) {
   b.setAttribute("aria-label", deck.label + " — " + size + unit +
     ", " + modeLabel(mode).toLowerCase() +
     (best ? ", best " + best + "%" : ", no attempts yet") +
-    (bestMs ? ", fastest clean run " + fmtExact(bestMs) : ""));
+    (bestMs ? ", fastest clean run " + fmtRun(bestMs) : ""));
 
   b.innerHTML =
     '<span class="deck__sample" lang="ja">' + deck.sample + "</span>" +
@@ -53,7 +53,7 @@ function deckRow(deck) {
     '<span class="deck__best" title="Your best in ' + modeLabel(mode) + '">' +
       '<span class="deck__pct">' + (best ? best + "%" : "—") + "</span>" +
       (bestMs ? '<span class="deck__time" title="Fastest run with no mistakes">' +
-                fmtExact(bestMs) + "</span>" : "") +
+                fmtRun(bestMs) + "</span>" : "") +
       // the mode names the figure: each mode keeps its own records, and an
       // unlabelled percentage would silently look like the deck's only score
       "<small>" + modeLabel(mode) + "</small>" +

@@ -95,6 +95,7 @@ fetch("kana.json", { cache: "no-cache" })
     setPrompt(state.prompt);   // before setMode: buildMenu() reads it
     setDates(state.dates);     // likewise — the calendar records depend on it
     setClock(state.showClock); // paints the Timer switch
+    setTimes(state.exactTimes); // before setMode: the deck rows read it
     setMode(state.mode);
     initQuick();               // after every setter: the pinned copies start from their state
 

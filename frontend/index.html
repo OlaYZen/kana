@@ -452,6 +452,17 @@
         </div>
       </div>
 
+      <!-- How a run's time is written — rounded to the second, 0:12, or exact,
+           0:11.601 — on the results screen, beside each deck and on the timer.
+           Your progress is always exact and ignores it. Synced, like the timer. -->
+      <div class="modebar modebar--stack" data-setting="times">
+        <span class="modebar__label">Times shown as</span>
+        <div class="seg" id="timesSwitch" role="radiogroup" aria-label="How times are shown">
+          <button type="button" class="seg__btn" data-times="rounded" role="radio" aria-checked="true">Rounded</button>
+          <button type="button" class="seg__btn" data-times="exact" role="radio" aria-checked="false">Exact</button>
+        </div>
+      </div>
+
       <h2 class="settings__h">Display</h2>
 
       <!-- Theme is this device's alone — it is never synced to an account. -->

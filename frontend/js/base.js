@@ -53,7 +53,7 @@ const el = {
   statsBackBtn: $("statsBackBtn"), deckPick: $("deckPick"),
   statsScriptSwitch: $("statsScriptSwitch"),
   themeColor: document.querySelector('meta[name="theme-color"]'),
-  // Seven switches now share .seg__btn. Never select that class document-wide:
+  // Eight switches now share .seg__btn. Never select that class document-wide:
   // the device switch has no data-mode, so a global query wires
   // setMode(undefined) onto it and blanks its aria-checked every time the
   // answer mode changes. Each switch has an id of its own for that reason.
@@ -61,6 +61,7 @@ const el = {
   promptSwitch: $("promptSwitch"),
   datesSwitch: $("datesSwitch"),
   clockSwitch: $("clockSwitch"),
+  timesSwitch: $("timesSwitch"),
   themeSwitch: $("themeSwitch"),
   perfSwitch: $("perfSwitch"),
   deviceSwitch: document.querySelector(".seg--device")

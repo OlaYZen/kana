@@ -28,6 +28,8 @@ const state = {
   dates: DATE_FORMS.includes(store.read().dates) ? store.read().dates : "numeral",
   // whether the run clock is on screen mid-run — hidden unless chosen
   showClock: store.read().clock === "shown",
+  // how a run's time is written — rounded to the second unless Exact is chosen
+  exactTimes: store.read().times === "exact",
   answered: 0, correct: 0, streak: 0, bestStreak: 0,
   missed: [],        // unique wrong cards, chart order
   graded: false,     // answer already scored — waiting to advance
@@ -148,16 +150,15 @@ const typedField = () =>
 const elapsed = () =>
   state.finishedMs || (state.startedAt ? performance.now() - state.startedAt : 0);
 
-// Whole seconds: the live clock in the play bar, where a millisecond figure
-// would only flicker.
+// Whole seconds: how a time is written unless Settings asks for Exact.
 function fmtTime(ms) {
   const total = Math.max(0, Math.round(ms / 1000));
   const m = Math.floor(total / 60), s = total % 60;
   return m + ":" + (s < 10 ? "0" : "") + s;
 }
 
-// A run's exact length, milliseconds and all — what the results screen, the deck
-// rows on the menu and the progress report show. Rounding there hides the difference between two runs
+// A run's exact length, milliseconds and all — what the progress report always
+// shows, and everything else does under Times shown as · Exact. Rounding there hides the difference between two runs
 // of the same deck when you are chasing your own time.
 function fmtExact(ms) {
   const total = Math.max(0, Math.round(ms));
@@ -167,6 +168,12 @@ function fmtExact(ms) {
          "." + String(total % 1000).padStart(3, "0");
 }
 
+// How a run's time is written everywhere but the progress report: the results
+// screen, the best-time chip, the deck list and the live clock. Rounded to the
+// second unless Settings says Exact. The report calls fmtExact itself and
+// ignores the setting — telling two runs apart is the whole of what it is for.
+const fmtRun = (ms) => (state.exactTimes ? fmtExact(ms) : fmtTime(ms));
+
 function startClock() {
   state.startedAt = performance.now();
   state.finishedMs = 0;
@@ -175,17 +182,18 @@ function startClock() {
 
 // Repaints the play bar's clock while a run is going and the Timer switch says
 // to show it. Four times a second keeps a whole-second display from visibly
-// lagging; nothing is measured off this — the run is timed from
-// performance.now(), never by counting ticks.
+// lagging, and about twenty a second lets an exact one's milliseconds run;
+// nothing is measured off this — the run is timed from performance.now(),
+// never by counting ticks.
 function runClockTick() {
   clearInterval(state.clockTick);
   state.clockTick = 0;
   const running = Boolean(state.startedAt) && !state.finishedMs;
   el.playClock.classList.toggle("hidden", !state.showClock);
   if (!state.showClock || !running) return;
-  const paint = () => { el.playClock.textContent = fmtTime(elapsed()); };
+  const paint = () => { el.playClock.textContent = fmtRun(elapsed()); };
   paint();
-  state.clockTick = setInterval(paint, 250);
+  state.clockTick = setInterval(paint, state.exactTimes ? 47 : 250);
 }
 
 // Synced through `store` like the prompt and date settings: whether you want
@@ -197,6 +205,18 @@ function setClock(shown) {
     b.setAttribute("aria-checked", String((b.dataset.clock === "shown") === state.showClock)));
   store.write({ clock: state.showClock ? "shown" : "hidden" });
   runClockTick();
+}
+
+// Rounded or exact, synced through `store` like the timer. The deck list and a
+// running clock pick it up at once; a results screen is written when its run
+// ends; the progress report ignores it and is always exact.
+function setTimes(exact) {
+  state.exactTimes = Boolean(exact);
+  Array.from(el.timesSwitch.children).forEach((b) =>
+    b.setAttribute("aria-checked", String((b.dataset.times === "exact") === state.exactTimes)));
+  store.write({ times: state.exactTimes ? "exact" : "rounded" });
+  runClockTick();
+  if (el.play.classList.contains("hidden")) buildMenu();
 }
 
 function stopClock(keep) {
