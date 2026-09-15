@@ -60,7 +60,7 @@ Under あ and ア, the same three tiers plus a mix of them:
 | Dakuten | 25 | voiced and semi-voiced — が ざ だ ば ぱ |
 | Combination | 36 | yōon, the contracted sounds — きゃ しゅ ちょ |
 | **Mixed hiragana** / **Mixed katakana** | 107 | all three of the above, interleaved |
-| Extended katakana (ア only) | 25 | loanword sounds — ヴ ティ ファ ウォ |
+| Extended katakana (ア only) | 33 | the official loanword spellings — ヴ ティ ファ デュ |
 
 Obsolete kana (ゐ ゑ ヰ ヱ and the archaic forms) are left out on purpose — you will not meet them
 in modern Japanese.
@@ -74,7 +74,7 @@ whether you actually know シ from ツ *and* し from つ:
 | Dakuten kana | 50 | both dakuten decks |
 | Combination kana | 72 | both yōon decks |
 | Mixed kana | 214 | everything in the app, in one run |
-| Mixed kana + extended | 239 | all 214 plus the extended katakana |
+| Mixed kana + extended | 247 | all 214 plus the extended katakana |
 
 None of these is a plain shuffle. Shuffling a pile of cards together deals visible clumps — eight
 yōon in a row, then a long stretch of katakana — and a clump is just the deck it came from arriving
@@ -514,7 +514,7 @@ python -m http.server 8000 --directory frontend
 | 濁点 | 25 | 濁音と半濁音 — が ざ だ ば ぱ |
 | 拗音 | 36 | 小さいかなの組み合わせ — きゃ しゅ ちょ |
 | **Mixed hiragana** / **Mixed katakana** | 107 | 上の 3 つを混ぜたもの |
-| 拡張カタカナ（ア のみ） | 25 | 外来語の音 — ヴ ティ ファ ウォ |
+| 拡張カタカナ（ア のみ） | 33 | 「外来語の表記」の表記 — ヴ ティ ファ デュ |
 
 使われなくなったかな（ゐ ゑ ヰ ヱ や古い字形）は意図的に外してあります。現代の日本語では出てきま
 せん。
@@ -528,7 +528,7 @@ python -m http.server 8000 --directory frontend
 | Dakuten kana | 50 | 濁点を両方 |
 | Combination kana | 72 | 拗音を両方 |
 | Mixed kana | 214 | このアプリの全文字を 1 回で |
-| Mixed kana + extended | 239 | 214 文字に拡張カタカナを加えたもの |
+| Mixed kana + extended | 247 | 214 文字に拡張カタカナを加えたもの |
 
 どれもただの全部シャッフルではありません。まとめて混ぜると、拗音が 8 枚続いたあとにカタカナが
 延々と、といった偏りが目に見えて出ます。偏りは結局そのデッキが戻ってきただけで、混ぜた意味が

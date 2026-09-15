@@ -178,8 +178,11 @@ Six decks: base / dakuten / combination × hiragana / katakana (46 / 25 / 36 car
 total). Obsolete kana (ゐ ゑ ヰ ヱ, the archaic yi/ye/wu forms, polysyllabics) are excluded on
 purpose — do not "complete" the charts by adding them back.
 
-**`katakana-extended` is a seventh kana deck**, the 25 loanword spellings the katakana chart lists
-(ヴ ティ ファ ウォ …), with the IME spellings as `alt` (`thi`, `who`). It is deliberately **not a
+**`katakana-extended` is a seventh kana deck**, the 33 loanword spellings of the 1991 Cabinet notice
+外来語の表記 (ヴ ティ ファ デュ クォ …), also listed on the katakana chart, with the IME spellings as
+`alt` (`thi`, `who`, `qa`). That notice is the boundary: the ANSI/BSI and Hyōjun-shiki extras
+(ウュ, スィ, ヅァ), the linguists' カ゚ and ラ゚, and the obsolete ヷ ヸ ヹ ヺ are left out on purpose,
+for the reason ゐ and ゑ are. It is deliberately **not a
 source of Mixed katakana or Mixed kana**: `mixed` means the 214 and records already set on it must
 keep meaning that. `mixed-extended` under かな is the 214 plus these. ウォ shares `wo` with ヲ, which
 is why Writing pools a reading across a script and not just a category — see the invariants.
@@ -213,7 +216,7 @@ them *after* `buildFlickIndex()` in boot is part of the same rule.
 | Dakuten kana | かな | both dakuten decks | 50 |
 | Combination kana | かな | both yōon decks | 72 |
 | Mixed kana | かな | all six | 214 |
-| Mixed kana + extended | かな | all six and extended katakana | 239 |
+| Mixed kana + extended | かな | all six and extended katakana | 247 |
 
 **There are five seal stamps, and only two of them are scripts anyone writes in.** `kana` is where
 the decks spanning both scripts live; `number` is the counting drills and `calendar` — the 日時
