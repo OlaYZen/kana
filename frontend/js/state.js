@@ -82,13 +82,19 @@ const cardGroup = (c) => (state.deck.groupOf && state.deck.groupOf.get(c)) || st
 // collision, from the other side, is why choose-mode dedupes its distractors
 // by reading rather than by card.)
 //
-// Scoped to the card's own category rather than to the whole deck, which is
-// the same thing everywhere except the mixed deck. There the collision runs
-// across scripts too — か and カ are both "ka" — so the prompt names the
-// script it wants (writeAsk) and the answer is held to it. Accept the whole
-// deck there and every write answer in a mixed run could be typed in hiragana.
-const writeAccepts = (c, value) =>
-  cardGroup(c).cards.some((x) => x.a === c.a && normKana(x.q) === value);
+// Scoped to the card's own script rather than to the whole deck, which is the
+// same thing everywhere except a mixed deck. There the collision runs across
+// scripts too — か and カ are both "ka" — so the prompt names the script it
+// wants (writeAsk) and the answer is held to it. Accept the whole deck there
+// and every write answer in a mixed run could be typed in hiragana. Within a
+// script it has to reach past the category: ヲ and ウォ are both "wo" and sit
+// in different source decks, so a mixed run asking "wo" could want either.
+const writeAccepts = (c, value) => {
+  const own = cardGroup(c);
+  return (state.deck.mix || [own])
+    .filter((d) => d === own || d.script === own.script)
+    .some((d) => d.cards.some((x) => x.a === c.a && normKana(x.q) === value));
+};
 
 // What the current run scores as. A flick drill is the only thing that is not
 // one of the three answer modes; a number or calendar drill answers to them

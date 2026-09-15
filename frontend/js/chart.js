@@ -13,7 +13,7 @@ const add = (parent, tag, cls, text) => {
 
 // Readings come from the decks wherever a kana is drilled, so the chart's
 // layout data and the quiz can never disagree. A flow item may carry its own
-// `a` — the extended katakana are reference-only and in no deck.
+// `a`, for a character that is reference-only and in no deck.
 function chartReadings() {
   const map = new Map();
   state.decks.forEach((d) => d.cards.forEach((c) => {
