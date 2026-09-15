@@ -123,8 +123,8 @@ or font options is a JSON edit, never a code edit. Keys prefixed `//` (`"//fonts
   gojūon line the two kana charts want.
   **Charts carry layout, not readings** — a cell is just a kana string and its romaji is looked up
   from the decks, so the chart and the quiz can never disagree. The exception is a flow item
-  written `{q, a}`, used for the extended katakana (ファ ティ ヴァ …), which are reference-only and
-  in no deck.
+  written `{q, a}`, for a reference-only character in no deck. None ships: the extended katakana
+  used it until they became the `katakana-extended` deck, and are plain strings now.
 - derived: `{id, label, script, sample, subtitle, note, sources[]}` — a deck with **no `cards`**,
   built at boot from the decks `sources` names. `script` places it under a stamp exactly as a real
   deck's does. See **Derived decks** below.
@@ -178,6 +178,12 @@ Six decks: base / dakuten / combination × hiragana / katakana (46 / 25 / 36 car
 total). Obsolete kana (ゐ ゑ ヰ ヱ, the archaic yi/ye/wu forms, polysyllabics) are excluded on
 purpose — do not "complete" the charts by adding them back.
 
+**`katakana-extended` is a seventh kana deck**, the 25 loanword spellings the katakana chart lists
+(ヴ ティ ファ ウォ …), with the IME spellings as `alt` (`thi`, `who`). It is deliberately **not a
+source of Mixed katakana or Mixed kana**: `mixed` means the 214 and records already set on it must
+keep meaning that. `mixed-extended` under かな is the 214 plus these. ウォ shares `wo` with ヲ, which
+is why Writing pools a reading across a script and not just a category — see the invariants.
+
 **A seventh card deck, `time-kanji`, lives under the 日時 stamp** — 時 分 秒 半 午前 午後, each
 asked on its own as a kana card is, reading as `a` and the other spellings (`pun` for 分, `byou`
 for 秒) as `alt`. It is a plain deck because it *is* a plain deck: a fixed list of characters with
@@ -189,13 +195,13 @@ no grid holds a kanji; the derived decks name their sources, so Mixed kana is st
 and its id carries no `cal-` prefix, so `rev 4`'s migration — which matches on that prefix —
 cannot touch its records.
 
-**Six more decks are derived from those six**, and none of them is a new list of cards.
+**Seven more decks are derived from those**, and none of them is a new list of cards.
 `kana.json`'s `derived[]` carries each one's identity and the `sources` it is built from;
 `buildDerivedDecks()` fills in the cards at boot and holds **the same card objects**, not copies.
 That identity is load-bearing twice — `state.missed.includes(c)` and the chart-order review on the
 results screen are both `===` comparisons — and its cost is the rule that nothing walking every
 card in the app may ever be handed one of them, or characters are counted two and three times
-over. `state.decks` therefore stays the six decks `kana.json` lists, `state.derived` is kept beside
+over. `state.decks` therefore stays the decks `kana.json` lists, `state.derived` is kept beside
 it, and `allDecks()` is what the four places meaning "every deck the menu can start" use. Building
 them *after* `buildFlickIndex()` in boot is part of the same rule.
 
@@ -207,6 +213,7 @@ them *after* `buildFlickIndex()` in boot is part of the same rule.
 | Dakuten kana | かな | both dakuten decks | 50 |
 | Combination kana | かな | both yōon decks | 72 |
 | Mixed kana | かな | all six | 214 |
+| Mixed kana + extended | かな | all six and extended katakana | 239 |
 
 **There are five seal stamps, and only two of them are scripts anyone writes in.** `kana` is where
 the decks spanning both scripts live; `number` is the counting drills and `calendar` — the 日時
@@ -1406,12 +1413,14 @@ These each cost a real bug once. Comments in the source mark most of them.
   the prompt is only the reading, so the user cannot tell which of the pair is being asked and
   `writeAccepts()` must accept **any** card whose `a` matches — grading against `card().q` alone
   makes 4 of the 25 dakuten cards unanswerable.
-- **"Any card whose `a` matches" means within the card's own category, not the whole deck.** In a
+- **"Any card whose `a` matches" means within the card's own script, not the whole deck.** In a
   deck spanning both scripts the collision also runs across them — か and カ are both `ka` — and
   every card has a twin. Scoped to the deck, write mode there would accept hiragana for all 214
-  and stop being a test of katakana at all; scoped to `card().q`, じ/ぢ break again. `cardGroup()`
-  is the single knob: it returns the source deck for a derived deck's card and `state.deck` for
-  everything else, so the six real decks grade exactly as they always did. A deck that spans
+  and stop being a test of katakana at all; scoped to `card().q`, じ/ぢ break again. It was scoped
+  to the category until Mixed kana + extended, where ヲ (base) and ウォ (extended) are both `wo`
+  in different source decks of one script, and a prompt of `wo` was a blind guess. `writeAccepts()`
+  therefore takes the card's category (`cardGroup()`) plus every source of the running mix that
+  shares its script; a real deck is still just itself. A deck that spans
   scripts also has to say which one it wants (`writeAsk()`, gated on `spansScripts`) or the
   scoping is just an unwinnable guess — the two ship together.
 - **Enter must not grade while an IME is composing.** That keypress belongs to the IME, which is

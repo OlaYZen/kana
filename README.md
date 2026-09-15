@@ -50,7 +50,7 @@ Google or anyone else — it works with no internet connection at all. See **Cha
 
 **Five seal stamps at the top of the menu**: あ hiragana, ア katakana, あア Kana for the decks that
 are both scripts at once, 十 Numbers for counting, and 日時 Time for weekdays, months, dates and
-the clock. The first three show four decks each; the last two are described further down.
+the clock. The first three are listed below; the last two are described further down.
 
 Under あ and ア, the same three tiers plus a mix of them:
 
@@ -60,6 +60,7 @@ Under あ and ア, the same three tiers plus a mix of them:
 | Dakuten | 25 | voiced and semi-voiced — が ざ だ ば ぱ |
 | Combination | 36 | yōon, the contracted sounds — きゃ しゅ ちょ |
 | **Mixed hiragana** / **Mixed katakana** | 107 | all three of the above, interleaved |
+| Extended katakana (ア only) | 25 | loanword sounds — ヴ ティ ファ ウォ |
 
 Obsolete kana (ゐ ゑ ヰ ヱ and the archaic forms) are left out on purpose — you will not meet them
 in modern Japanese.
@@ -73,6 +74,7 @@ whether you actually know シ from ツ *and* し from つ:
 | Dakuten kana | 50 | both dakuten decks |
 | Combination kana | 72 | both yōon decks |
 | Mixed kana | 214 | everything in the app, in one run |
+| Mixed kana + extended | 239 | all 214 plus the extended katakana |
 
 None of these is a plain shuffle. Shuffling a pile of cards together deals visible clumps — eight
 yōon in a row, then a long stretch of katakana — and a clump is just the deck it came from arriving
@@ -305,7 +307,7 @@ nothing is running the chart sits in that space, so the table you'd look a chara
 already open. Phones and tablets are untouched: one screen at a time, exactly as before.
 
 **Reference chart.** "All characters & romaji" opens the full gojūon tables, laid out the standard
-way, including the extended katakana (ファ ティ ヴァ …) that are reference-only.
+way, including the extended katakana (ファ ティ ヴァ …) the loanword deck drills.
 
 **Character font.** Kana look quite different across faces, and recognising あ in only one of them
 isn't recognising あ. Five Japanese faces ship with the app, so everyone gets the same five
@@ -502,7 +504,7 @@ python -m http.server 8000 --directory frontend
 
 メニューの上には印が 5 つあります。あ（ひらがな）、ア（カタカナ）、あア（Kana）— 両方の文字種に
 またがるデッキ用 —、十（数字）、そして 日時（Time）— 曜日・月・日付・時刻 — です。前の 3 つは
-それぞれ 4 つのデッキ、後の 2 つは詳しくは後述します。
+下の表のデッキ、後の 2 つは詳しくは後述します。
 
 あ と ア の下は、これまでの 3 段階と、その 3 つを混ぜたものです。
 
@@ -512,6 +514,7 @@ python -m http.server 8000 --directory frontend
 | 濁点 | 25 | 濁音と半濁音 — が ざ だ ば ぱ |
 | 拗音 | 36 | 小さいかなの組み合わせ — きゃ しゅ ちょ |
 | **Mixed hiragana** / **Mixed katakana** | 107 | 上の 3 つを混ぜたもの |
+| 拡張カタカナ（ア のみ） | 25 | 外来語の音 — ヴ ティ ファ ウォ |
 
 使われなくなったかな（ゐ ゑ ヰ ヱ や古い字形）は意図的に外してあります。現代の日本語では出てきま
 せん。
@@ -525,6 +528,7 @@ python -m http.server 8000 --directory frontend
 | Dakuten kana | 50 | 濁点を両方 |
 | Combination kana | 72 | 拗音を両方 |
 | Mixed kana | 214 | このアプリの全文字を 1 回で |
+| Mixed kana + extended | 239 | 214 文字に拡張カタカナを加えたもの |
 
 どれもただの全部シャッフルではありません。まとめて混ぜると、拗音が 8 枚続いたあとにカタカナが
 延々と、といった偏りが目に見えて出ます。偏りは結局そのデッキが戻ってきただけで、混ぜた意味が
@@ -730,7 +734,7 @@ Character font、All characters & romaji、Account — があります。**Setti
 積まれず横に並びます。何も走っていないときは右側に一覧表が出るので、調べたい表が最初から開いた
 状態です。スマートフォンとタブレットはこれまでどおり、1 画面ずつです。
 
-**一覧表。**「All characters & romaji」で五十音表が開きます。標準的な並びで、参照用の拡張カタカナ
+**一覧表。**「All characters & romaji」で五十音表が開きます。標準的な並びで、拡張カタカナ
 （ファ ティ ヴァ など）も入っています。
 
 **文字のフォント。** かなは書体によって見え方がかなり違い、1 つの書体でだけ あ が分かっても、
